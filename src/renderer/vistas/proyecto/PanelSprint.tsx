@@ -26,6 +26,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 
+import { primerSprintPlaneado } from '../../../compartido/dominio/cierre';
 import {
   compromisoEfectivo,
   contarTareas,
@@ -48,6 +49,7 @@ import { Glifo } from '../../componentes/iconos';
 import { Medidor } from '../../componentes/Medidor';
 import { useAccionesSprint } from '../../estado/acciones-sprint';
 import { useAccionesInterfaz, useInterfaz } from '../../estado/interfaz';
+import { useMutar } from '../../estado/mutaciones';
 import { chipDeArrastre, esArrastreDeTarea, TIPO_TAREA } from '../../util/arrastre';
 import {
   etiquetaDeTarea,
@@ -87,8 +89,20 @@ export function PanelSprint({
   dosPaneles,
 }: PropsPanelSprint) {
   const { arrastre, redaccion } = useInterfaz();
-  const { arrastrar } = useAccionesInterfaz();
+  const { arrastrar, verCierre } = useAccionesInterfaz();
   const acciones = useAccionesSprint(sprint);
+  const mutar = useMutar();
+
+  /**
+   * Con qué sprint se puede empezar cuando no hay ninguno activo. Es el estado en el que
+   * queda la app justo después de cerrar, y sin esta salida el usuario se quedaría sin
+   * sprint y sin ningún sitio desde donde activar el siguiente: la pantalla de resumen ya
+   * no se puede volver a abrir, porque la entrada al cierre solo existe para el activo.
+   */
+  const planeado = useMemo(
+    () => (sprint === undefined ? primerSprintPlaneado(documento) : undefined),
+    [documento, sprint],
+  );
 
   const filas = useMemo(
     () =>
@@ -165,6 +179,13 @@ export function PanelSprint({
           {sprint ? `${sprint.nombre} · ${fechaCorta(sprint.inicio)}–${fechaCorta(sprint.fin)}` : 'Sin sprint activo'}
         </h2>
         <span className="crece" />
+        {/* La entrada al cierre vive donde el usuario mira el sprint. No confirma nada
+            aquí: abre la pantalla de decisiones, que es donde está la consecuencia. */}
+        {sprint !== undefined && sprint.estado !== 'cerrado' && editable && (
+          <button type="button" className="cab__accion" onClick={() => verCierre(sprint.id)}>
+            Cerrar sprint
+          </button>
+        )}
         <div className="alternador" role="group" aria-label="Alcance del sprint">
           <button type="button" aria-pressed={soloEsteProyecto} onClick={() => cambiarAlcance(true)}>
             Solo {clave}
@@ -179,8 +200,27 @@ export function PanelSprint({
         <div className="vacio">
           <p className="vacio__titulo">No hay ningún sprint activo</p>
           <p className="vacio__nota">
-            Los sprints cerrados siguen guardados y son inmutables. Abrir uno nuevo llega en E8.
+            Los sprints cerrados siguen guardados y son inmutables: ningún comando los toca.
+            {planeado !== undefined
+              ? ` ${planeado.nombre} está planeado con ${planeado.items.length} tarea${planeado.items.length === 1 ? '' : 's'} dentro; actívalo para volver a comprometer.`
+              : ' No hay ninguno planeado todavía.'}
           </p>
+          {/* Activar es un acto aparte de cerrar, y por eso está aquí y no encadenado al
+              cierre. El botón dice a cuál y con cuánto dentro. */}
+          {planeado !== undefined && editable && (
+            <button
+              type="button"
+              className="boton-solido"
+              onClick={() =>
+                void mutar(
+                  { comando: 'activarSprint', sprintId: planeado.id },
+                  `Activar ${planeado.nombre}`,
+                )
+              }
+            >
+              Activar {planeado.nombre}
+            </button>
+          )}
         </div>
       ) : filas.length === 0 ? (
         <div className="vacio">

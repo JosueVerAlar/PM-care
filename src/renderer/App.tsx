@@ -34,6 +34,7 @@ import { BarraLateral } from './armazon/BarraLateral';
 import { DialogoConfirmar } from './componentes/DialogoConfirmar';
 import { ProveedorAlmacen, useAccionesAlmacen, useAlmacen } from './estado/almacen';
 import {
+  esVistaAncha,
   ProveedorInterfaz,
   useAccionesInterfaz,
   useInterfaz,
@@ -46,6 +47,7 @@ import type { Diagnostico } from './puente/api';
 import { enCampoDeTexto, esDeshacer } from './util/atajos';
 import { buscarNodo } from './util/nodos';
 import { hoyLocal, nombreSinClave } from './util/presentacion';
+import { VistaCierre } from './vistas/cierre/VistaCierre';
 import { VistaGlobal } from './vistas/globales/VistaGlobal';
 import { VistaProyecto } from './vistas/proyecto/VistaProyecto';
 
@@ -147,15 +149,16 @@ function Aplicacion({
 
   const proyectos = documento.proyectos.filter((p: Proyecto) => !p.archivado);
   const seleccionada = vista?.tipo === 'proyecto' ? vista.clave : null;
+  // Las vistas anchas (globales y el cierre de sprint) no tienen proyecto: no se cae al
+  // primero por ellas, o la barra superior anunciaría un proyecto que nadie está mirando.
+  const ancha = esVistaAncha(vista);
   // Se resuelve contra el documento vigente: una clave que ya no existe cae al primero.
   const proyecto =
-    proyectos.find((p: Proyecto) => p.clave === seleccionada) ?? (vista?.tipo === 'global' ? undefined : proyectos[0]);
+    proyectos.find((p: Proyecto) => p.clave === seleccionada) ?? (ancha ? undefined : proyectos[0]);
 
-  const titulo = vista?.tipo === 'global' ? 'PM-care' : (proyecto?.clave ?? 'PM-care');
+  const titulo = ancha ? 'PM-care' : (proyecto?.clave ?? 'PM-care');
   const subtitulo =
-    vista?.tipo === 'global' || proyecto === undefined
-      ? null
-      : nombreSinClave(proyecto.clave, proyecto.nombre);
+    ancha || proyecto === undefined ? null : nombreSinClave(proyecto.clave, proyecto.nombre);
 
   // --- ⌘Z ------------------------------------------------------------------
   const alDeshacer = useCallback(() => {
@@ -182,7 +185,7 @@ function Aplicacion({
 
   // --- «Capturar» ----------------------------------------------------------
   const destino = proyecto === undefined ? null : destinoDeCaptura(proyecto, nodoActivo);
-  const puedeCapturar = destino !== null && !soloLectura && vista?.tipo !== 'global';
+  const puedeCapturar = destino !== null && !soloLectura && !ancha;
 
   return (
     <div className={`app${lateralColapsada ? ' app--rail' : ''}`}>
@@ -221,7 +224,7 @@ function Aplicacion({
       )}
 
       {/* Una vista global ocupa el ancho de los dos paneles: no tiene panel hermano. */}
-      <div className={`cuerpo${vista?.tipo === 'global' ? ' cuerpo--global' : ''}`}>
+      <div className={`cuerpo${ancha ? ' cuerpo--global' : ''}`}>
         <BarraLateral
           documento={documento}
           vista={vista}
@@ -231,6 +234,8 @@ function Aplicacion({
 
         {vista?.tipo === 'global' ? (
           <VistaGlobal id={vista.id} documento={documento} />
+        ) : vista?.tipo === 'cierre' ? (
+          <VistaCierre documento={documento} sprintId={vista.sprintId} hoy={hoy} />
         ) : proyecto === undefined ? (
           <SinProyectos ruta={ruta} />
         ) : (

@@ -108,7 +108,12 @@ export function BarraLateral({
             className="lat-item"
             title={p.nombre}
             aria-label={`${p.clave} — ${p.nombre}`}
-            aria-current={vista?.tipo !== 'global' && p.clave === claveActiva}
+            // `!== 'global'` no basta desde E8: con la pantalla de cierre abierta ninguna
+            // fila de proyecto es la actual, y marcar una anunciaría al lector de pantalla
+            // un sitio donde el usuario no está.
+            aria-current={
+              (vista === null || vista.tipo === 'proyecto') && p.clave === claveActiva
+            }
             onClick={() => verProyecto(p.clave)}
           >
             <span className="lat-inicial" aria-hidden="true">

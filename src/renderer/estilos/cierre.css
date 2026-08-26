@@ -1,0 +1,208 @@
+/**
+ * E8 — cierre de sprint. Copiado de `maqueta/vistas.html`, sección 12, no reinventado.
+ *
+ * Ni un color literal: todo sale de los tokens de `base.css`, que son los mismos que E0
+ * validó en claro y oscuro. Lo que la maqueta llamaba `.destino` aquí es el `.alternador`
+ * que ya existe desde E6 — mismo componente visual, mismo comportamiento de
+ * `aria-pressed`, un solo sitio donde arreglarlo.
+ *
+ * El armazón es flex y no rejilla: el aviso del pie aparece y desaparece según lo que el
+ * usuario marque, y una `grid-template-rows` fija dejaría el cuerpo en la pista `auto`
+ * con un hueco muerto abajo cuando el aviso no está.
+ */
+
+.panel--cierre { min-height: 0; }
+
+/* La franja que dice qué se guarda ya y qué espera al botón. */
+.regla-orden {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 11.5px; line-height: 17px; color: var(--tinta-2);
+  max-width: none;
+}
+
+/* El cuerpo: lo único que hace scroll. La barra de acción queda siempre a la vista. */
+.cierre {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 20px;
+}
+
+.cierre__bloque { border-bottom: 1px solid var(--hairline); }
+
+.cierre__cab {
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 16px 10px;
+  background: var(--fondo-cabecera);
+  border-bottom: 1px solid var(--hairline);
+  /* Pegajosa: con catorce filas, saber en qué bloque se está mirando importa más que
+     recuperar 34 px de alto. */
+  position: sticky; top: 0; z-index: 1;
+}
+.cierre__titulo { font-weight: 600; font-size: 13px; margin: 0; }
+.cierre__n { font-size: 11.5px; color: var(--tinta-3); }
+.cierre__pregunta { font-size: 11.5px; color: var(--tinta-2); }
+.cierre__glifo-bloqueo { display: flex; color: var(--bloqueo-tinta); }
+
+/* Un bloque vacío se explica, no se esconde: si «Terminadas» está en cero, ese es el
+   dato más importante de la pantalla y desaparecer sería mentir por omisión. */
+.cierre__vacio {
+  padding: 12px 16px;
+  font-size: 12px; color: var(--tinta-3); font-style: italic;
+  max-width: 62ch;
+}
+
+/* ── una fila ─────────────────────────────────────────────────── */
+
+.item-cierre {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 18px;
+  align-items: start;
+  padding: 9px 16px 10px;
+  max-width: calc(var(--medida-cierre) + 340px);
+  border-bottom: 1px solid var(--hairline);
+}
+.item-cierre > :not(.item-cierre__control) { grid-column: 1; }
+.item-cierre:last-child { border-bottom: 0; }
+.item-cierre:hover { background: var(--hover); }
+
+/* Canal 3: banda izquierda para lo detenido, igual que la banda ámbar de procedencia.
+   El color nunca viaja solo — la fila lleva además su tira con la nota y los días. */
+.item-cierre--bloqueada { box-shadow: inset 3px 0 0 var(--bloqueo-banda); }
+
+.item-cierre__cab { display: flex; align-items: flex-start; gap: 7px; min-width: 0; }
+.item-cierre__titulo { flex: 1; min-width: 0; line-height: 18px; }
+.item-cierre__cab .glifo { height: 18px; }
+.item-cierre__cab .clave { line-height: 18px; }
+
+.item-cierre__ruta {
+  font-size: 11px; color: var(--tinta-3); margin: 1px 0 0 21px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.item-cierre__ruta b { color: var(--tinta-2); font-weight: 600; }
+
+.item-cierre__pie {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  margin: 3px 0 0 21px;
+  font-size: 11.5px; color: var(--tinta-2);
+}
+/* La nota del bloqueo se lee ENTERA aquí. En una tarjeta del sprint se recorta con
+   puntos suspensivos porque compite con el resto de la tarjeta; en este bloque la nota ES
+   el bloque: recortarla dejaría al usuario decidiendo si algo sigue detenido sin poder
+   leer por qué se detuvo. */
+.item-cierre .tira-bloqueo {
+  margin: 5px 0 0 21px;
+  align-items: flex-start;
+  max-width: 92ch;
+}
+.item-cierre .tira-bloqueo svg { margin-top: 3px; }
+.item-cierre .tira-bloqueo span {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 17px;
+}
+
+/* «sin responsable» en una que SÍ va a pasar al siguiente sprint: es el problema que el
+   aviso del pie ofrece arreglar, así que se pinta como problema y no como metadato. */
+.item-cierre__falta {
+  color: var(--nuevo-tinta); background: var(--nuevo-fondo);
+  padding: 0 5px; border-radius: 3px; font-weight: 600;
+}
+
+.item-cierre__asignar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  margin: 7px 0 2px 21px;
+}
+.item-cierre__asignar select {
+  height: 24px; padding: 0 6px;
+  border: 1px solid var(--hairline); border-radius: 5px;
+  background: var(--fondo-panel); color: var(--tinta-1); font-size: 12px;
+}
+
+/* Los controles: columna derecha, centrados contra el bloque de texto. */
+.item-cierre__control {
+  grid-column: 2; grid-row: 1 / -1; align-self: center;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  justify-content: flex-end;
+}
+.item-cierre__solo-lectura { font-size: 11.5px; color: var(--tinta-3); }
+/* Deshabilitado y `aria-pressed`: es el estado vigente, no una opción apagada. Se deja
+   legible a propósito — el `opacity: .5` global lo dejaría por debajo de AA. */
+.item-cierre__control .alternador button:disabled { opacity: 1; cursor: default; }
+
+/* ── barra de acción anclada ──────────────────────────────────── */
+
+.barra-accion {
+  flex: 0 0 auto;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--hairline);
+  background: var(--fondo-cabecera);
+}
+.barra-accion__cuenta { font-size: 11.5px; color: var(--tinta-3); }
+
+.aviso-falta {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 9px; border-radius: 5px;
+  background: var(--nuevo-fondo); color: var(--nuevo-tinta);
+  font-size: 11.5px; font-weight: 500;
+}
+.aviso-falta svg { flex: 0 0 auto; }
+.aviso-falta__accion {
+  text-decoration: underline; color: inherit; font-weight: 600;
+  padding: 1px 3px; border-radius: 3px;
+}
+.aviso-falta__accion:hover { background: rgb(0 0 0 / .08); }
+
+/* ── el resumen, después de cerrar ────────────────────────────── */
+
+.cierre-hecho {
+  flex: 1 1 auto;
+  min-height: 0; overflow-y: auto;
+  padding: 28px 24px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
+}
+.cierre-hecho__titulo {
+  font-size: 17px; line-height: 24px; font-weight: 600;
+  max-width: 56ch;
+}
+.cierre-hecho__nota { font-size: 12px; line-height: 18px; color: var(--tinta-2); max-width: 66ch; }
+
+/* Conteos crudos, sin porcentaje: no hay proporción que dar, hay desenlaces. */
+.cierre-hecho__cuentas {
+  display: flex; flex-wrap: wrap; gap: 10px 28px;
+  margin: 2px 0;
+}
+.cierre-hecho__cuentas > div { display: flex; flex-direction: column; gap: 2px; }
+.cierre-hecho__cuentas dt {
+  font-size: 10.5px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--tinta-3);
+}
+.cierre-hecho__cuentas dd { font-size: 22px; font-weight: 600; line-height: 24px; }
+
+.cierre-hecho__acciones {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  width: 100%; margin-top: 6px;
+  padding-top: 14px; border-top: 1px solid var(--hairline);
+}
+
+/* ── umbral duro ──────────────────────────────────────────────── */
+/* Por debajo de 1040 px los controles no caben a la derecha del texto: se bajan bajo la
+   fila, alineados con el título. El texto conserva su medida de lectura. */
+:root { --medida-cierre: 1000px; }
+
+@media (max-width: 1040px) {
+  .item-cierre { grid-template-columns: minmax(0, 1fr); }
+  .item-cierre__control {
+    grid-column: 1; grid-row: auto;
+    justify-content: flex-start;
+    margin: 7px 0 0 21px;
+  }
+  .barra-accion { gap: 8px; }
+  .barra-accion__cuenta { flex-basis: 100%; }
+}

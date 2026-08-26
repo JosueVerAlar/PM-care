@@ -26,15 +26,18 @@
  * mutación sobre un archivo de decenas de KB; es barato comparado con persistir basura.
  */
 
-import { fechaDe } from '../../compartido/dominio/clasificar';
+import { diasEntre, fechaDe } from '../../compartido/dominio/clasificar';
+import type { Compromiso } from '../../compartido/dominio/derivar';
 import { compromisoEfectivo } from '../../compartido/dominio/derivar';
 import { validarDocumento } from '../../compartido/modelo/esquema';
 import { siguienteId } from '../../compartido/modelo/ids';
 import type {
   Documento,
   Epica,
+  Fecha,
   Historia,
   Instante,
+  ItemSprint,
   Persona,
   Proyecto,
   Sprint,
@@ -42,7 +45,14 @@ import type {
 } from '../../compartido/modelo/tipos';
 import type { EntradaHistorial, FuenteEvento } from '../historial/registrar';
 import { rutaLegible } from '../historial/registrar';
-import type { Comando, NombreComando } from './tipos';
+import type { Comando, DestinoAlCerrar, NombreComando } from './tipos';
+
+/**
+ * Los desenlaces que emite el cierre. Es un subconjunto de `DesenlaceItem`: `no_terminada`
+ * quedó fuera a propósito —lo escribía el cierre viejo y ya no se produce, aunque se
+ * sigue leyendo— y por eso el conteo del evento no lo lleva.
+ */
+type DesenlaceDeCierre = 'completada' | 'arrastrada' | 'devuelta' | 'descartada' | 'cancelada';
 
 export type CodigoError =
   /** El id no existe en el documento. */
@@ -734,12 +744,7 @@ function aplicar(
       // tiene ya; la tarea nunca pierde un dato propio.
       const saliente = sprint.items[indice];
       if (saliente !== undefined) {
-        if (sitio.tarea.responsable === null && saliente.responsable !== null)
-          sitio.tarea.responsable = saliente.responsable;
-        if (sitio.tarea.fecha_limite === null && saliente.fecha_limite !== null)
-          sitio.tarea.fecha_limite = saliente.fecha_limite;
-        if (sitio.tarea.prioridad === null && saliente.prioridad !== null)
-          sitio.tarea.prioridad = saliente.prioridad;
+        volcarCompromiso(sitio.tarea, compromisoEfectivo(saliente, sitio.tarea));
       }
       // Se quita el item entero, no se marca. El rastro de la salida vive en el historial
       // append-only; así `items` siempre significa «lo comprometido», sin filtros.
@@ -770,29 +775,138 @@ function aplicar(
         }
       }
 
-      const conteo = { completada: 0, no_terminada: 0, cancelada: 0 };
+      // 1. Las decisiones se validan ENTERAS antes de tocar nada. Media ceremonia
+      //    aplicada es lo peor que puede pasar aquí: el sprint quedaría cerrado —y por
+      //    tanto inmutable— con las tareas del final sin destino.
+      const decisiones = new Map<string, DestinoAlCerrar>();
+      for (const decision of comando.decisiones ?? []) {
+        if (decisiones.has(decision.tareaId)) {
+          return invalido(
+            `"${decision.tareaId}" aparece dos veces en las decisiones de cierre de ${sprint.id}`,
+          );
+        }
+        if (!sprint.items.some((i) => i.tarea_id === decision.tareaId)) {
+          return invalido(
+            `"${decision.tareaId}" no está comprometida en ${sprint.id}: no hay nada que decidir sobre ella`,
+          );
+        }
+        // Se rechaza en vez de ignorarse: una decisión sobre algo ya terminado solo puede
+        // venir de una pantalla que se desincronizó, y aplicarla a medias sería mentir.
+        const estado = porTarea.get(decision.tareaId)?.estado;
+        if (estado === 'hecha' || estado === 'cancelada') {
+          return invalido(
+            `${decision.tareaId} ya está "${estado}"; su desenlace no se decide al cerrar ${sprint.id}`,
+          );
+        }
+        decisiones.set(decision.tareaId, decision.destino);
+      }
+
+      // 2. Desenlace de cada item y materialización de lo heredado.
+      const conteo: Record<DesenlaceDeCierre, number> = {
+        completada: 0,
+        arrastrada: 0,
+        devuelta: 0,
+        descartada: 0,
+        cancelada: 0,
+      };
+      const paraArrastrar: ItemSprint[] = [];
       for (const item of sprint.items) {
         const tarea = porTarea.get(item.tarea_id);
-        const desenlace =
-          tarea?.estado === 'hecha' ? 'completada' : tarea?.estado === 'cancelada' ? 'cancelada' : 'no_terminada';
+        const compromiso = compromisoEfectivo(item, tarea);
+        let desenlace: DesenlaceDeCierre;
+
+        if (tarea?.estado === 'hecha') {
+          // Lo terminado no se toca ni se decide: se constata.
+          desenlace = 'completada';
+        } else if (tarea?.estado === 'cancelada') {
+          // Ya estaba cancelada antes del cierre; no hubo decisión que registrar.
+          desenlace = 'cancelada';
+        } else {
+          const destino = decisiones.get(item.tarea_id) ?? 'siguiente';
+          if (destino === 'siguiente') {
+            desenlace = 'arrastrada';
+            // Se copian los valores PROPIOS del item, antes de materializar: un `null`
+            // aquí sigue significando «hereda de la tarea», que es lo correcto en un
+            // sprint todavía abierto. El compromiso efectivo es el mismo, y reasignar la
+            // tarea mañana se propaga al sprint nuevo como en cualquier item vivo.
+            paraArrastrar.push({
+              tarea_id: item.tarea_id,
+              responsable: item.responsable,
+              fecha_limite: item.fecha_limite,
+              prioridad: item.prioridad,
+              desenlace: null,
+            });
+          } else {
+            // `backlog` y `descartar` sacan la tarea del ciclo, así que aquí aplica lo
+            // mismo que en `sacarDelSprint`: lo que vivía SOLO en el item se vuelca a la
+            // tarea antes de que el item quede congelado. Si no, el responsable o la
+            // fecha que el usuario escribió en el sprint desaparecerían de la vista.
+            volcarCompromiso(tarea, compromiso);
+            desenlace = destino === 'backlog' ? 'devuelta' : 'descartada';
+            if (destino === 'descartar' && tarea !== undefined) {
+              // «Ya no aplica» es una afirmación sobre la TAREA, no sobre el sprint. Si
+              // solo la sacáramos del sprint volvería al backlog como pendiente y seguiría
+              // contando en todos los denominadores, en la carga de su responsable y en el
+              // Backlog del área: justo lo que el usuario acaba de decir que ya no existe.
+              // Cancelada es el valor que el modelo ya tiene para «esto no cuenta» y es
+              // reversible con `cambiarEstado`; el desenlace `descartada` conserva que la
+              // decisión se tomó en este cierre.
+              tarea.estado = 'cancelada';
+            }
+          }
+        }
+
         item.desenlace = desenlace;
         conteo[desenlace] += 1;
         // Se materializa lo heredado ANTES de congelar: a partir de aquí el sprint es
         // inmutable, y reasignar la tarea mañana no puede reescribir lo que se comprometió.
-        const compromiso = compromisoEfectivo(item, tarea);
         item.responsable = compromiso.responsable;
         item.fecha_limite = compromiso.fechaLimite;
         item.prioridad = compromiso.prioridad;
       }
+
+      // 3. El sprint siguiente se resuelve —y solo se crea— si de verdad hay algo que
+      //    arrastrar. Cerrar no debe dejar sprints vacíos de recuerdo.
+      let siguiente: Sprint | null = null;
+      let creadoElSiguiente = false;
+      if (paraArrastrar.length > 0) {
+        const resolucion = resolverSprintSiguiente(doc, sprint, comando.siguienteSprintId);
+        if (!resolucion.ok) return resolucion;
+        siguiente = resolucion.destino;
+        creadoElSiguiente = resolucion.creado;
+        // Entran ARRIBA y en su orden: «enviar al próximo sprint como prioridad». El
+        // orden del array ES la prioridad, y lo que se arrastra es deuda: se ve primero.
+        // Lo que ya estuviera planeado ahí no se duplica ni se reordena.
+        const nuevos = paraArrastrar.filter(
+          (item) => !siguiente?.items.some((i) => i.tarea_id === item.tarea_id),
+        );
+        siguiente.items.unshift(...nuevos);
+      }
+
       sprint.estado = 'cerrado';
+
+      // El resumen se lee a ojo en `historial.jsonl`, así que concuerda en número y solo
+      // menciona lo que de verdad pasó.
+      const partes = [cuenta(conteo.completada, 'completada')];
+      if (conteo.arrastrada > 0) {
+        partes.push(`${cuenta(conteo.arrastrada, 'arrastrada')} a ${siguiente?.id}`);
+      }
+      if (conteo.devuelta > 0) partes.push(`${cuenta(conteo.devuelta, 'devuelta')} al backlog`);
+      if (conteo.descartada > 0) partes.push(cuenta(conteo.descartada, 'descartada'));
+      if (conteo.cancelada > 0) partes.push(`${cuenta(conteo.cancelada, 'cancelada')} de antes`);
 
       return {
         ok: true,
         documento: doc,
         evento: anotar({
           sprint_id: sprint.id,
-          resumen: `Sprint ${sprint.id} cerrado: ${conteo.completada} completadas, ${conteo.no_terminada} no terminadas, ${conteo.cancelada} canceladas`,
-          detalle: { ...conteo, items: sprint.items.length },
+          resumen: `Sprint ${sprint.id} cerrado: ${partes.join(', ')}`,
+          detalle: {
+            ...conteo,
+            items: sprint.items.length,
+            siguiente_sprint: siguiente?.id ?? null,
+            siguiente_sprint_creado: creadoElSiguiente,
+          },
         }),
       };
     }
@@ -1142,6 +1256,148 @@ function posicionValida(
   const tope = yaEsta ? Math.max(sprint.items.length - 1, 0) : sprint.items.length;
   if (posicion === undefined || posicion === null) return tope;
   return Math.min(Math.max(Math.trunc(posicion), 0), tope);
+}
+
+// --- sprint: volcado y sprint siguiente -------------------------------------
+
+/**
+ * Vuelca en la tarea lo que estaba comprometido en el item. **Solo rellena huecos**: la
+ * tarea nunca pierde un dato propio, así que llamarlo de más es inofensivo.
+ *
+ * Lo usan los dos caminos por los que una tarea deja de estar comprometida —sacarla de un
+ * sprint abierto y cerrarlo con destino `backlog` o `descartar`—, y son el mismo problema:
+ * si el responsable o la fecha vivían solo en el item, quitarlos de la vista los perdería.
+ */
+function volcarCompromiso(tarea: Tarea | undefined, compromiso: Compromiso): void {
+  if (tarea === undefined) return;
+  if (tarea.responsable === null && compromiso.responsable !== null) {
+    tarea.responsable = compromiso.responsable;
+  }
+  if (tarea.fecha_limite === null && compromiso.fechaLimite !== null) {
+    tarea.fecha_limite = compromiso.fechaLimite;
+  }
+  if (tarea.prioridad === null && compromiso.prioridad !== null) {
+    tarea.prioridad = compromiso.prioridad;
+  }
+}
+
+/** `1 completada`, `3 completadas`. Todos los desenlaces son femeninos y regulares. */
+function cuenta(n: number, singular: string): string {
+  return `${n} ${singular}${n === 1 ? '' : 's'}`;
+}
+
+type ResolucionSiguiente =
+  | { ok: true; destino: Sprint; creado: boolean }
+  | { ok: false; error: ErrorComando };
+
+/**
+ * A dónde van las tareas arrastradas. Crea el sprint si hace falta (y lo empuja al
+ * documento), siempre `planeado`.
+ *
+ * **Por qué se crea `planeado` y no `activo`.** Dos razones, y la segunda es dura:
+ * (a) el usuario dijo que cerrar y planear son actos distintos —el sprint siguiente casi
+ * nunca está listo el día que se cierra el anterior—, y (b) el documento admite un solo
+ * sprint `activo`: cerrar un sprint PLANEADO mientras otro sigue activo es legal (ver
+ * `cerrarSprint`), así que activar el destino por nuestra cuenta dejaría dos activos y el
+ * esquema tumbaría el cierre entero. Activar es un comando aparte, de un clic.
+ *
+ * Sin `siguienteSprintId` se toma **el primer sprint `planeado` por fecha de inicio**: si
+ * el usuario ya planeó el siguiente, arrastrar ahí es lo que espera, y crear otro le
+ * dejaría dos sprints donde había uno. Es el mismo criterio, literalmente, que
+ * `siguienteSprintPlaneado` en `compartido/dominio/cierre.ts`, que es lo que la pantalla
+ * de cierre NOMBRA antes de pulsar el botón; si los dos lados eligieran distinto, el
+ * botón prometería un sprint y el reductor usaría otro.
+ *
+ * Un sprint `activo` no entra como destino por omisión aunque no esté cerrado: meterle
+ * el arrastre a la quincena que ya está corriendo cambia un compromiso vigente que nadie
+ * pidió cambiar. Si el usuario lo quiere, lo nombra con `siguienteSprintId` y se acepta.
+ */
+function resolverSprintSiguiente(
+  doc: Documento,
+  cerrando: Sprint,
+  pedido: string | undefined,
+): ResolucionSiguiente {
+  if (pedido !== undefined) {
+    if (pedido === cerrando.id) {
+      return invalido(`${cerrando.id} no puede ser su propio sprint siguiente`);
+    }
+    const existente = doc.sprints.find((s) => s.id === pedido);
+    if (existente !== undefined) {
+      // Arrastrar a un sprint ya cerrado reescribiría lo que pasó (regla 8).
+      if (existente.estado === 'cerrado') return sprintCerrado(existente);
+      return { ok: true, destino: existente, creado: false };
+    }
+    return { ok: true, destino: crearSprintSiguiente(doc, cerrando, pedido), creado: true };
+  }
+
+  const yaPlaneado = doc.sprints
+    .filter((s) => s.id !== cerrando.id && s.estado === 'planeado')
+    .sort((a, b) => (a.inicio < b.inicio ? -1 : a.inicio > b.inicio ? 1 : 0))[0];
+  if (yaPlaneado !== undefined) return { ok: true, destino: yaPlaneado, creado: false };
+
+  const nuevo = crearSprintSiguiente(doc, cerrando, idSprintLibre(doc, cerrando.id));
+  return { ok: true, destino: nuevo, creado: true };
+}
+
+/** Añade al documento el sprint que continúa a `anterior`. Nace vacío y `planeado`. */
+function crearSprintSiguiente(doc: Documento, anterior: Sprint, id: string): Sprint {
+  const inicio = primerDiaHabil(sumarDias(anterior.fin, 1));
+  const nuevo: Sprint = {
+    id,
+    // El nombre sigue la serie del anterior ("Sprint 34" → "Sprint 35"). Si no la tiene,
+    // el id es mejor nombre que uno inventado: al menos coincide con lo que se busca.
+    nombre: siguienteDeLaSerie(anterior.nombre) ?? id,
+    inicio,
+    // Misma duración que el que se cierra: la cadencia del usuario es el único dato que
+    // tenemos, y no hay comando para corregir fechas de sprint. Nada de inventar dos
+    // semanas «porque sí».
+    fin: sumarDias(inicio, Math.max(diasEntre(anterior.inicio, anterior.fin), 0)),
+    estado: 'planeado',
+    items: [],
+  };
+  doc.sprints.push(nuevo);
+  return nuevo;
+}
+
+/** Id libre para el sprint siguiente, avanzando la serie del anterior: `S-2026-34` → `-35`. */
+function idSprintLibre(doc: Documento, base: string): string {
+  const usados = new Set(doc.sprints.map((s) => s.id));
+  let candidato = siguienteDeLaSerie(base) ?? `${base}-2`;
+  for (let intento = 0; usados.has(candidato) && intento < 1000; intento += 1) {
+    candidato = siguienteDeLaSerie(candidato) ?? `${candidato}-2`;
+  }
+  return candidato;
+}
+
+/** `"Sprint 34"` → `"Sprint 35"`, `"S-2026-09"` → `"S-2026-10"`. `null` si no acaba en número. */
+function siguienteDeLaSerie(texto: string): string | null {
+  const coincidencia = /^(.*?)(\d+)$/.exec(texto);
+  if (coincidencia === null) return null;
+  const [, prefijo, numero] = coincidencia;
+  if (prefijo === undefined || numero === undefined) return null;
+  return `${prefijo}${String(Number(numero) + 1).padStart(numero.length, '0')}`;
+}
+
+const MS_POR_DIA = 86_400_000;
+
+/** Aritmética de calendario sobre una fecha dada. No consulta el reloj: sigue siendo puro. */
+function sumarDias(fecha: Fecha, dias: number): Fecha {
+  const base = Date.parse(`${fecha}T00:00:00Z`);
+  if (Number.isNaN(base)) return fecha;
+  return new Date(base + dias * MS_POR_DIA).toISOString().slice(0, 10);
+}
+
+/**
+ * Corre el arranque al lunes si cayó en fin de semana. Es la única heurística de
+ * calendario de la app y se limita a esto: los sprints del usuario van de lunes a
+ * viernes, y sin comando para editar fechas de sprint, un sprint que arranca en sábado
+ * solo se corrige a mano en el JSON.
+ */
+function primerDiaHabil(fecha: Fecha): Fecha {
+  const dia = new Date(`${fecha}T00:00:00Z`).getUTCDay();
+  if (dia === 6) return sumarDias(fecha, 2);
+  if (dia === 0) return sumarDias(fecha, 1);
+  return fecha;
 }
 
 // --- errores ----------------------------------------------------------------

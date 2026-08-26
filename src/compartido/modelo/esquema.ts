@@ -59,10 +59,32 @@ export const EsquemaEstadoSprint = z.enum(['planeado', 'activo', 'cerrado']);
  * Qué pasó con una tarea en un sprint. Se fija al cerrarlo; mientras el sprint está
  * abierto es `null`.
  *
- * No hay valor "arrastrada": eso se deriva de que la misma tarea aparezca en los items
- * de más de un sprint, y así el usuario no tiene que clasificarlo a mano.
+ * Los cuatro primeros son los que emite hoy la ceremonia de cierre: lo terminado
+ * (`completada`) y las tres salidas que el usuario decide para lo que no se terminó —
+ * pasa al sprint siguiente (`arrastrada`), vuelve al backlog (`devuelta`) o ya no aplica
+ * (`descartada`).
+ *
+ * **`arrastrada` es el desenlace del item, no el contador de arrastres.** «Cuántos
+ * sprints lleva arrastrándose» se sigue derivando de en cuántos sprints aparece la tarea
+ * (`sprintsQueLaTocaron`), nunca de un número persistido que se desincronizaría en cuanto
+ * alguien sacara la tarea de un sprint.
+ *
+ * Los dos últimos son historia y se conservan porque hay documentos escritos antes de que
+ * existiera la ceremonia (regla 14: lo que el usuario ya tiene no se rompe):
+ *
+ * - `no_terminada` — lo que emitía el cierre viejo, cuando no había decisión que tomar.
+ *   Ningún comando lo escribe ya; sigue siendo válido al leer.
+ * - `cancelada` — la tarea YA estaba cancelada cuando se cerró el sprint. No es lo mismo
+ *   que `descartada`: ahí no hubo decisión de cierre que registrar, solo un hecho previo.
  */
-export const EsquemaDesenlaceItem = z.enum(['completada', 'no_terminada', 'cancelada']);
+export const EsquemaDesenlaceItem = z.enum([
+  'completada',
+  'arrastrada',
+  'devuelta',
+  'descartada',
+  'no_terminada',
+  'cancelada',
+]);
 
 export const EsquemaPersona = z
   .object({

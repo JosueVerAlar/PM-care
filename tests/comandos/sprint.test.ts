@@ -416,25 +416,30 @@ describe('cerrarSprint — el desenlace sale del estado de cada tarea', () => {
     });
   });
 
-  it('lo que quedó en curso o pendiente pasa como no_terminada, sin inventarle otro desenlace', () => {
+  it('lo que quedó en curso o pendiente se arrastra por omisión, sin inventarle otro desenlace', () => {
+    // Antes esto era `no_terminada` para las dos. Con la ceremonia de cierre el destino
+    // por omisión es `siguiente`, así que el desenlace de lo no terminado que nadie
+    // decide es `arrastrada`. Lo que NO cambia y es lo que esta prueba cuida: el
+    // desenlace de lo terminado y lo cancelado sigue saliendo del estado de la tarea, no
+    // de ninguna decisión.
     const { documento } = exigirOk(
       reducirSinMutar(conLosCuatroEstados(), { comando: 'cerrarSprint', sprintId: 'S-1' }),
     );
     expect(documento.sprints[0]?.items.map((i) => i.desenlace)).toEqual([
       'completada',
-      'no_terminada',
+      'arrastrada',
       'cancelada',
-      'no_terminada',
+      'arrastrada',
     ]);
   });
 
-  it('el resumen cuenta las tres casillas', () => {
+  it('el resumen cuenta las casillas', () => {
     const { evento } = exigirOk(
       reducirSinMutar(conLosCuatroEstados(), { comando: 'cerrarSprint', sprintId: 'S-1' }),
     );
     expect(evento.detalle).toMatchObject({
       completada: 1,
-      no_terminada: 2,
+      arrastrada: 2,
       cancelada: 1,
       items: 4,
     });
@@ -517,9 +522,24 @@ describe('cerrarSprint — materializa lo heredado antes de congelar', () => {
 });
 
 describe('cerrarSprint — después queda inmutable (regla 8)', () => {
-  /** Un sprint recién cerrado con dos tareas dentro. */
+  /**
+   * Un sprint recién cerrado con dos tareas dentro.
+   *
+   * Las dos se cierran con destino `backlog` a propósito: este bloque prueba la
+   * inmutabilidad del sprint cerrado, y con el destino por omisión (`siguiente`) el
+   * cierre crearía además el sprint siguiente y metería ahí las dos tareas, que es ruido
+   * para lo que aquí se comprueba. El destino de cada tarea lo cubre el bloque de la
+   * ceremonia de cierre.
+   */
   function yaCerrado(): Documento {
-    return aplicar(comprometido(2), { comando: 'cerrarSprint', sprintId: 'S-1' });
+    return aplicar(comprometido(2), {
+      comando: 'cerrarSprint',
+      sprintId: 'S-1',
+      decisiones: [
+        { tareaId: 'PM-T1', destino: 'backlog' },
+        { tareaId: 'PM-T2', destino: 'backlog' },
+      ],
+    });
   }
 
   it('cerrarlo otra vez se rechaza: el segundo cierre recalcularía los desenlaces', () => {
@@ -531,9 +551,9 @@ describe('cerrarSprint — después queda inmutable (regla 8)', () => {
 
   it('un desenlace ya fijado no cambia aunque la tarea cambie de estado después', () => {
     const doc = yaCerrado();
-    expect(doc.sprints[0]?.items[0]?.desenlace).toBe('no_terminada');
+    expect(doc.sprints[0]?.items[0]?.desenlace).toBe('devuelta');
     const terminada = aplicar(doc, { comando: 'cambiarEstado', id: 'PM-T1', estado: 'hecha' });
-    expect(terminada.sprints[0]?.items[0]?.desenlace).toBe('no_terminada');
+    expect(terminada.sprints[0]?.items[0]?.desenlace).toBe('devuelta');
   });
 
   it('ningún comando de sprint lo toca: mover, sacar y activar se rechazan los tres', () => {
@@ -607,7 +627,10 @@ describe('cerrarSprint — después queda inmutable (regla 8)', () => {
     expect(documento.sprints[0]?.estado).toBe('cerrado');
   });
 
-  it('cerrar un sprint no toca a los otros sprints', () => {
+  it('cerrar sin nada que arrastrar no toca a los otros sprints', () => {
+    // El cierre solo escribe en otro sprint cuando de verdad arrastra algo hacia él, y
+    // eso es lo único que puede tocarlo. Aquí la única tarea vuelve al backlog, así que
+    // el sprint planeado tiene que quedar byte por byte como estaba.
     const base = comprometido(1);
     const dos = {
       ...base,
@@ -616,7 +639,13 @@ describe('cerrarSprint — después queda inmutable (regla 8)', () => {
         unSprint({ id: 'S-2', estado: 'planeado', inicio: '2026-09-01', fin: '2026-09-14' }),
       ],
     };
-    const { documento } = exigirOk(reducirSinMutar(dos, { comando: 'cerrarSprint', sprintId: 'S-1' }));
+    const { documento } = exigirOk(
+      reducirSinMutar(dos, {
+        comando: 'cerrarSprint',
+        sprintId: 'S-1',
+        decisiones: [{ tareaId: 'PM-T1', destino: 'backlog' }],
+      }),
+    );
     expect(documento.sprints[1]).toEqual(dos.sprints[1]);
   });
 });

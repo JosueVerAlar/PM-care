@@ -264,7 +264,50 @@ const SacarDelSprint = z
   .object({ comando: z.literal('sacarDelSprint'), tareaId: Id, sprintId: Id })
   .strict();
 
-const CerrarSprint = z.object({ comando: z.literal('cerrarSprint'), sprintId: Id }).strict();
+/**
+ * Qué se hace con una tarea que el sprint no terminó.
+ *
+ * - `siguiente` — pasa al sprint siguiente conservando su compromiso. Es el valor por
+ *   omisión: cerrar sin decir nada tiene que hacer lo que el usuario describió como
+ *   normal, no dejarle las tareas huérfanas.
+ * - `backlog` — sale del ciclo y se queda en su historia, disponible para replanearse.
+ * - `descartar` — «ya no aplica». Cancela la tarea; ver el reductor para el porqué.
+ */
+export const EsquemaDestinoAlCerrar = z.enum(['siguiente', 'backlog', 'descartar']);
+
+export type DestinoAlCerrar = z.infer<typeof EsquemaDestinoAlCerrar>;
+
+const DecisionDeCierre = z
+  .object({ tareaId: Id, destino: EsquemaDestinoAlCerrar })
+  .strict();
+
+/**
+ * La ceremonia de cierre completa, en **un solo comando**.
+ *
+ * Es un comando y no una secuencia de `sacarDelSprint` + `moverAlSprint` + `cerrarSprint`
+ * por una razón concreta: deshacer. Cerrar un sprint de diez tareas y que `deshacer`
+ * revirtiera solo la última sería peor que no tener deshacer, porque el usuario creería
+ * que volvió atrás. Un comando = un documento en la pila = un `deshacer` que devuelve
+ * exactamente al estado anterior al cierre.
+ *
+ * - `decisiones` es opcional y parcial: **lo que no se nombra va a `siguiente`**. Un
+ *   sprint sin nada pendiente se cierra sin mandar nada.
+ * - `siguienteSprintId` nombra a dónde van las de `siguiente`. Si no existe, el reductor
+ *   lo crea `planeado` (no lo activa: cerrar y planear son dos actos distintos). Si se
+ *   omite, se usa el siguiente sprint no cerrado que ya estuviera planeado, y si no hay
+ *   ninguno se crea.
+ *
+ * Las tareas ya terminadas o ya canceladas no se nombran aquí: su desenlace no se decide,
+ * se constata. El reductor rechaza una decisión sobre ellas en vez de ignorarla.
+ */
+const CerrarSprint = z
+  .object({
+    comando: z.literal('cerrarSprint'),
+    sprintId: Id,
+    decisiones: z.array(DecisionDeCierre).optional(),
+    siguienteSprintId: Id.optional(),
+  })
+  .strict();
 
 const ActivarSprint = z.object({ comando: z.literal('activarSprint'), sprintId: Id }).strict();
 

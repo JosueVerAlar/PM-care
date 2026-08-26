@@ -35,9 +35,32 @@ export type IdVistaGlobal =
   | 'carga'
   | 'equipos';
 
-export type Vista =
+/** Las vistas a las que se llega desde la barra lateral. Son a las que se puede volver. */
+export type VistaSimple =
   | { tipo: 'proyecto'; clave: string }
   | { tipo: 'global'; id: IdVistaGlobal };
+
+export type Vista =
+  | VistaSimple
+  /**
+   * E8 — el cierre de sprint es una VISTA COMPLETA, no un modal. Catorce decisiones no
+   * caben en un cuadro de 400 px sin que el usuario pierda de vista lo que ya decidió, y
+   * si cerrar cuesta, se deja de cerrar: todo se acumula en el sprint uno.
+   *
+   * Lleva el `sprintId` y no un booleano porque la pantalla tiene que seguir existiendo
+   * DESPUÉS del cierre para enseñar el resumen, y para entonces ese sprint ya no es el
+   * activo: buscarlo por «el activo» dejaría la pantalla en blanco justo al terminar.
+   *
+   * `regreso` es de dónde vino, para que «Cancelar» devuelva al usuario a la pantalla que
+   * estaba mirando y no a un proyecto elegido por nosotros. `null` = todavía no había
+   * elegido nada, y entonces se vuelve al primer proyecto igual que al arrancar.
+   */
+  | { tipo: 'cierre'; sprintId: string; regreso: VistaSimple | null };
+
+/** ¿La vista ocupa el ancho de los dos paneles? Ninguna de estas tiene panel hermano. */
+export function esVistaAncha(vista: Vista | null): boolean {
+  return vista !== null && (vista.tipo === 'global' || vista.tipo === 'cierre');
+}
 
 /** «Terminadas» es una PESTAÑA del panel del árbol, no un tercer panel (CLAUDE.md). */
 export type PestanaArbol = 'backlog' | 'terminadas';
@@ -127,6 +150,8 @@ export interface EstadoInterfaz {
 type AccionInterfaz =
   | { tipo: 'verProyecto'; clave: string }
   | { tipo: 'verGlobal'; id: IdVistaGlobal }
+  | { tipo: 'verCierre'; sprintId: string }
+  | { tipo: 'salirDelCierre' }
   | { tipo: 'alternarNodo'; id: string }
   | { tipo: 'expandir'; ids: readonly string[] }
   | { tipo: 'colapsarTodo' }
@@ -180,6 +205,24 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
       if (estado.vista?.tipo === 'global' && estado.vista.id === accion.id) return estado;
       return { ...estado, vista: { tipo: 'global', id: accion.id }, redaccion: null, arrastre: null };
 
+    case 'verCierre': {
+      if (estado.vista?.tipo === 'cierre' && estado.vista.sprintId === accion.sprintId) return estado;
+      // Entrar dos veces al cierre no debe encadenar regresos: el punto de partida sigue
+      // siendo la última vista NORMAL, no la pantalla de cierre anterior.
+      const regreso = estado.vista?.tipo === 'cierre' ? estado.vista.regreso : estado.vista;
+      // Se cierra lo que hubiera abierto: un formulario de compromiso apuntando a una
+      // tarjeta del sprint no se puede pintar en una pantalla que ya no tiene tarjetas.
+      return {
+        ...estado,
+        vista: { tipo: 'cierre', sprintId: accion.sprintId, regreso },
+        redaccion: null,
+        arrastre: null,
+      };
+    }
+    case 'salirDelCierre':
+      if (estado.vista?.tipo !== 'cierre') return estado;
+      return { ...estado, vista: estado.vista.regreso };
+
     case 'alternarNodo': {
       const expandidos = new Set(estado.expandidos);
       if (!expandidos.delete(accion.id)) expandidos.add(accion.id);
@@ -228,6 +271,10 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
 export interface AccionesInterfaz {
   verProyecto(clave: string): void;
   verGlobal(id: IdVistaGlobal): void;
+  /** Abre la pantalla de cierre de ese sprint. Todavía no cierra nada. */
+  verCierre(sprintId: string): void;
+  /** Vuelve a la vista desde la que se entró al cierre. */
+  salirDelCierre(): void;
   alternarNodo(id: string): void;
   expandir(ids: readonly string[]): void;
   colapsarTodo(): void;
@@ -257,6 +304,8 @@ export function ProveedorInterfaz({ children }: { children: ReactNode }) {
     () => ({
       verProyecto: (clave) => despachar({ tipo: 'verProyecto', clave }),
       verGlobal: (id) => despachar({ tipo: 'verGlobal', id }),
+      verCierre: (sprintId) => despachar({ tipo: 'verCierre', sprintId }),
+      salirDelCierre: () => despachar({ tipo: 'salirDelCierre' }),
       alternarNodo: (id) => despachar({ tipo: 'alternarNodo', id }),
       expandir: (ids) => despachar({ tipo: 'expandir', ids }),
       colapsarTodo: () => despachar({ tipo: 'colapsarTodo' }),
