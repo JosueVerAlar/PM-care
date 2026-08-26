@@ -1,0 +1,1026 @@
+{
+  "esquema_version": 1,
+  "personas": [
+    {
+      "id": "roberto-cortes",
+      "nombre": "Roberto Carlos Cortés Ramírez",
+      "activa": true,
+      "clave_externa": null
+    },
+    {
+      "id": "jesus-castillo",
+      "nombre": "Jesús Alberto Castillo Hernández",
+      "activa": true,
+      "clave_externa": null
+    },
+    {
+      "id": "josue-vergara",
+      "nombre": "Josué Vergara",
+      "activa": true,
+      "clave_externa": null
+    },
+    {
+      "id": "jose-dominguez",
+      "nombre": "José Praxedes Domínguez Acosta",
+      "activa": true,
+      "clave_externa": null
+    },
+    {
+      "id": "miguel-medina",
+      "nombre": "Miguel Medina",
+      "activa": true,
+      "clave_externa": null
+    }
+  ],
+  "proyectos": [
+    {
+      "clave": "SICOE",
+      "nombre": "SICOE — Control escolar",
+      "descripcion": "Sistema de control escolar del subsistema. Es el proyecto con más superficie.",
+      "prioridad": "alta",
+      "archivado": false,
+      "planeacion_cerrada_en": "2026-06-30",
+      "contadores": {
+        "epicas": 5,
+        "historias": 10,
+        "tareas": 28
+      },
+      "equipo": [
+        {
+          "persona_id": "roberto-cortes",
+          "rol": "líder técnico"
+        },
+        {
+          "persona_id": "jesus-castillo",
+          "rol": "backend"
+        },
+        {
+          "persona_id": "josue-vergara",
+          "rol": "backend y QA"
+        },
+        {
+          "persona_id": "jose-dominguez",
+          "rol": "vistas"
+        }
+      ],
+      "epicas": [
+        {
+          "id": "SICOE-E1",
+          "titulo": "Módulo de regularización",
+          "descripcion": null,
+          "planeada": true,
+          "clave_externa": "SICOE-98",
+          "historias": [
+            {
+              "id": "SICOE-H1",
+              "titulo": "Grupos de regularización y recursamiento",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "SICOE-T1",
+                  "titulo": "Contrato y mock de la API de grupos de regularización",
+                  "descripcion": "Definir el contrato antes de que backend y vistas avancen en paralelo.",
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "josue-vergara",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-07-14T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-104"
+                },
+                {
+                  "id": "SICOE-T2",
+                  "titulo": "Backend de grupos de recursamiento con flujo de aprobación",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "josue-vergara",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-07-14T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-105"
+                },
+                {
+                  "id": "SICOE-T3",
+                  "titulo": "Vistas de grupos de regularización y aprobación",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "jose-dominguez",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-07-14T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-106"
+                },
+                {
+                  "id": "SICOE-T4",
+                  "titulo": "QA: pruebas extremo a extremo de grupos de regularización",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "josue-vergara",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-07-14T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-108"
+                }
+              ]
+            },
+            {
+              "id": "SICOE-H2",
+              "titulo": "Grupos extraordinarios",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "SICOE-T5",
+                  "titulo": "Backend de grupos extraordinarios e inscripción de alumnos",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "josue-vergara",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-07-14T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-107"
+                }
+              ]
+            },
+            {
+              "id": "SICOE-H3",
+              "titulo": "Reportes de regularización por plantel",
+              "descripcion": "Sin desglosar todavía; se abre cuando cierre el flujo de aprobación.",
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": []
+            }
+          ]
+        },
+        {
+          "id": "SICOE-E2",
+          "titulo": "Movimientos de alumno y auditoría",
+          "descripcion": null,
+          "planeada": true,
+          "clave_externa": "SICOE-99",
+          "historias": [
+            {
+              "id": "SICOE-H4",
+              "titulo": "Registro auditable de movimientos",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "SICOE-T6",
+                  "titulo": "Sembrar catálogo de motivos y alinear enums de estatus del alumno",
+                  "descripcion": null,
+                  "estado": "en_curso",
+                  "planeada": true,
+                  "responsable": "jesus-castillo",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-07-14T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [
+                    {
+                      "tipo": "informacion",
+                      "motivo": "Faltaba el catálogo oficial de motivos de baja de la Dirección Académica",
+                      "bloqueada_en": "2026-07-28T11:00:00-06:00",
+                      "desbloqueada_en": "2026-08-06T16:40:00-06:00"
+                    }
+                  ],
+                  "clave_externa": "SICOE-100"
+                },
+                {
+                  "id": "SICOE-T7",
+                  "titulo": "Servicio de registro auditable de movimientos de estatus",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "jesus-castillo",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-07-14T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-101"
+                },
+                {
+                  "id": "SICOE-T8",
+                  "titulo": "Vista de movimientos de alumno e historial de estatus",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "jose-dominguez",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-07-14T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-102"
+                }
+              ]
+            },
+            {
+              "id": "SICOE-H5",
+              "titulo": "Cambio de carrera con revalidación",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "SICOE-T9",
+                  "titulo": "Endpoint de cambio de carrera con revalidación y auditoría",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "josue-vergara",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-07-14T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-103"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "SICOE-E3",
+          "titulo": "Módulo de usuarios",
+          "descripcion": null,
+          "planeada": true,
+          "clave_externa": "SICOE-45",
+          "historias": [
+            {
+              "id": "SICOE-H6",
+              "titulo": "Alta y consulta de usuarios",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "SICOE-T10",
+                  "titulo": "Endpoint consulta y filtrado de usuarios",
+                  "descripcion": null,
+                  "estado": "hecha",
+                  "planeada": true,
+                  "responsable": "jesus-castillo",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": "2026-08-05T18:20:00-06:00",
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-53"
+                },
+                {
+                  "id": "SICOE-T11",
+                  "titulo": "Endpoints Creación de usuarios con contraseña y validación",
+                  "descripcion": null,
+                  "estado": "hecha",
+                  "planeada": true,
+                  "responsable": "roberto-cortes",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": "2026-07-22T17:05:00-06:00",
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-54"
+                },
+                {
+                  "id": "SICOE-T12",
+                  "titulo": "Vista Creación Usuarios",
+                  "descripcion": null,
+                  "estado": "hecha",
+                  "planeada": true,
+                  "responsable": "jose-dominguez",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": "2026-07-23T13:15:00-06:00",
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-55"
+                }
+              ]
+            },
+            {
+              "id": "SICOE-H7",
+              "titulo": "Datos y contraseña del usuario",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "SICOE-T13",
+                  "titulo": "Vista Datos Usuario",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "jose-dominguez",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-44"
+                },
+                {
+                  "id": "SICOE-T14",
+                  "titulo": "Endpoint Restablecimiento de contraseñas",
+                  "descripcion": null,
+                  "estado": "en_curso",
+                  "planeada": true,
+                  "responsable": "jesus-castillo",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [
+                    {
+                      "tipo": "decision",
+                      "motivo": "Falta decidir si el correo de restablecimiento sale por el SMTP institucional o por un proveedor externo",
+                      "bloqueada_en": "2026-08-18T10:30:00-06:00",
+                      "desbloqueada_en": null
+                    }
+                  ],
+                  "clave_externa": "SICOE-56"
+                },
+                {
+                  "id": "SICOE-T15",
+                  "titulo": "Manejo de usuarios (definición)",
+                  "descripcion": "Petición que llegó de Dirección después de cerrar la planeación.",
+                  "estado": "pendiente",
+                  "planeada": false,
+                  "responsable": "jose-dominguez",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-07-09T10:45:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-85"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "SICOE-E4",
+          "titulo": "Portabilidad interna",
+          "descripcion": null,
+          "planeada": true,
+          "clave_externa": "SICOE-18",
+          "historias": [
+            {
+              "id": "SICOE-H8",
+              "titulo": "Catálogos y consultas base",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "SICOE-T16",
+                  "titulo": "GET alumnos por curp",
+                  "descripcion": null,
+                  "estado": "hecha",
+                  "planeada": true,
+                  "responsable": "jesus-castillo",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": "2026-07-29T12:00:00-06:00",
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-72"
+                },
+                {
+                  "id": "SICOE-T17",
+                  "titulo": "GET carreras",
+                  "descripcion": null,
+                  "estado": "hecha",
+                  "planeada": true,
+                  "responsable": "jesus-castillo",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": "2026-07-29T12:30:00-06:00",
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-73"
+                },
+                {
+                  "id": "SICOE-T18",
+                  "titulo": "GET materias/carrera/{carrera_id}/semestre",
+                  "descripcion": null,
+                  "estado": "hecha",
+                  "planeada": true,
+                  "responsable": "jesus-castillo",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": "2026-08-04T11:10:00-06:00",
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-74"
+                },
+                {
+                  "id": "SICOE-T19",
+                  "titulo": "GET calificaciones del alumno",
+                  "descripcion": null,
+                  "estado": "hecha",
+                  "planeada": true,
+                  "responsable": "josue-vergara",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": "2026-08-19T15:45:00-06:00",
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-75"
+                }
+              ]
+            },
+            {
+              "id": "SICOE-H9",
+              "titulo": "Alta y aceptación de solicitudes",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "SICOE-T20",
+                  "titulo": "POST Crear solicitud con captura",
+                  "descripcion": null,
+                  "estado": "hecha",
+                  "planeada": true,
+                  "responsable": "jesus-castillo",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": "2026-08-13T19:00:00-06:00",
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-69"
+                },
+                {
+                  "id": "SICOE-T21",
+                  "titulo": "POST Crear solicitud de alumno previamente registrado",
+                  "descripcion": null,
+                  "estado": "hecha",
+                  "planeada": true,
+                  "responsable": "jesus-castillo",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": "2026-08-14T12:20:00-06:00",
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-70"
+                },
+                {
+                  "id": "SICOE-T22",
+                  "titulo": "POST aceptar solicitud (3 casos de uso)",
+                  "descripcion": "Los tres casos: con captura, alumno registrado y con equivalencias.",
+                  "estado": "en_curso",
+                  "planeada": true,
+                  "responsable": "jesus-castillo",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-76"
+                },
+                {
+                  "id": "SICOE-T23",
+                  "titulo": "Contrato y mock de aceptar solicitud de portabilidad",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "josue-vergara",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-08-11T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-92"
+                },
+                {
+                  "id": "SICOE-T24",
+                  "titulo": "Vista de aceptación de solicitud con captura de equivalencias",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "jose-dominguez",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-08-11T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-93"
+                }
+              ]
+            },
+            {
+              "id": "SICOE-H10",
+              "titulo": "Rechazo, cancelación y expiración",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "SICOE-T25",
+                  "titulo": "POST rechazar y cancelar solicitud",
+                  "descripcion": null,
+                  "estado": "hecha",
+                  "planeada": true,
+                  "responsable": "jesus-castillo",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": "2026-08-20T17:30:00-06:00",
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-77"
+                },
+                {
+                  "id": "SICOE-T26",
+                  "titulo": "JOB expiración de solicitud",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "jesus-castillo",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-78"
+                },
+                {
+                  "id": "SICOE-T27",
+                  "titulo": "Acciones de rechazo y cancelación en el tablero de solicitudes",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "josue-vergara",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-08-11T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-94"
+                },
+                {
+                  "id": "SICOE-T28",
+                  "titulo": "Manejo de materias pendientes",
+                  "descripcion": "Se descartó: el caso lo cubre la revalidación de equivalencias.",
+                  "estado": "cancelada",
+                  "planeada": true,
+                  "responsable": "jesus-castillo",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-06-02T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": "SICOE-81"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "SICOE-E5",
+          "titulo": "Módulo docente",
+          "descripcion": "Declarada en Jira, sin desglosar todavía.",
+          "planeada": true,
+          "clave_externa": "SICOE-20",
+          "historias": []
+        }
+      ],
+      "clave_externa": "SICOE"
+    },
+    {
+      "clave": "INFRA",
+      "nombre": "Infraestructura",
+      "descripcion": "Trabajo continuo de servidores. Las épicas son áreas permanentes, no entregables.",
+      "prioridad": "media",
+      "archivado": false,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 2,
+        "historias": 3,
+        "tareas": 5
+      },
+      "equipo": [
+        {
+          "persona_id": "roberto-cortes",
+          "rol": "líder técnico"
+        },
+        {
+          "persona_id": "miguel-medina",
+          "rol": "servidores"
+        },
+        {
+          "persona_id": "jesus-castillo",
+          "rol": "backend"
+        }
+      ],
+      "epicas": [
+        {
+          "id": "INFRA-E1",
+          "titulo": "Operación continua de servidores",
+          "descripcion": null,
+          "planeada": true,
+          "clave_externa": null,
+          "historias": [
+            {
+              "id": "INFRA-H1",
+              "titulo": "Respaldos y monitoreo",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "INFRA-T1",
+                  "titulo": "Respaldos automáticos de la base de SICOE con verificación de restauración",
+                  "descripcion": null,
+                  "estado": "en_curso",
+                  "planeada": true,
+                  "responsable": "miguel-medina",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-08-11T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": null
+                },
+                {
+                  "id": "INFRA-T2",
+                  "titulo": "Alertas de espacio en disco en los servidores de aplicación",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "miguel-medina",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-08-11T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": null
+                }
+              ]
+            },
+            {
+              "id": "INFRA-H2",
+              "titulo": "Certificados y acceso",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "INFRA-T3",
+                  "titulo": "Renovación de certificados TLS del portal de servicios",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "jesus-castillo",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-08-24T09:12:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": null
+                },
+                {
+                  "id": "INFRA-T4",
+                  "titulo": "Rotación de llaves SSH de los servidores de despliegue",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "miguel-medina",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-08-11T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": null
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "INFRA-E2",
+          "titulo": "Migración a contenedores",
+          "descripcion": null,
+          "planeada": true,
+          "clave_externa": null,
+          "historias": [
+            {
+              "id": "INFRA-H3",
+              "titulo": "Preparación",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "INFRA-T5",
+                  "titulo": "Inventario de servicios y dependencias por servidor",
+                  "descripcion": null,
+                  "estado": "hecha",
+                  "planeada": true,
+                  "responsable": "roberto-cortes",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-07-14T09:00:00-06:00",
+                  "hecha_en": "2026-08-18T20:00:00-06:00",
+                  "bloqueos": [],
+                  "clave_externa": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "clave_externa": null
+    },
+    {
+      "clave": "PED",
+      "nombre": "Plataforma de educación a distancia",
+      "descripcion": null,
+      "prioridad": "baja",
+      "archivado": false,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 1,
+        "historias": 1,
+        "tareas": 2
+      },
+      "equipo": [
+        {
+          "persona_id": "roberto-cortes",
+          "rol": "líder técnico"
+        },
+        {
+          "persona_id": "miguel-medina",
+          "rol": "integraciones"
+        }
+      ],
+      "epicas": [
+        {
+          "id": "PED-E1",
+          "titulo": "Aulas virtuales",
+          "descripcion": null,
+          "planeada": true,
+          "clave_externa": null,
+          "historias": [
+            {
+              "id": "PED-H1",
+              "titulo": "Acceso de alumnos y docentes",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "PED-T1",
+                  "titulo": "Sincronizar padrón de alumnos con la plataforma",
+                  "descripcion": null,
+                  "estado": "en_curso",
+                  "planeada": true,
+                  "responsable": "miguel-medina",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-07-14T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": null
+                },
+                {
+                  "id": "PED-T2",
+                  "titulo": "Alta masiva de docentes por plantel",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": "miguel-medina",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "creada_en": "2026-07-14T09:00:00-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": null
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "clave_externa": null
+    }
+  ],
+  "sprints": [
+    {
+      "id": "S-2026-31",
+      "nombre": "Sprint 31",
+      "inicio": "2026-07-13",
+      "fin": "2026-07-24",
+      "estado": "cerrado",
+      "items": [
+        {
+          "tarea_id": "SICOE-T11",
+          "responsable": "roberto-cortes",
+          "fecha_limite": "2026-07-24",
+          "prioridad": "alta",
+          "desenlace": "completada"
+        },
+        {
+          "tarea_id": "SICOE-T12",
+          "responsable": "jose-dominguez",
+          "fecha_limite": "2026-07-24",
+          "prioridad": "media",
+          "desenlace": "completada"
+        },
+        {
+          "tarea_id": "SICOE-T26",
+          "responsable": "jesus-castillo",
+          "fecha_limite": "2026-07-24",
+          "prioridad": "baja",
+          "desenlace": "no_terminada"
+        }
+      ]
+    },
+    {
+      "id": "S-2026-32",
+      "nombre": "Sprint 32",
+      "inicio": "2026-07-27",
+      "fin": "2026-08-07",
+      "estado": "cerrado",
+      "items": [
+        {
+          "tarea_id": "SICOE-T16",
+          "responsable": "jesus-castillo",
+          "fecha_limite": "2026-08-07",
+          "prioridad": "alta",
+          "desenlace": "completada"
+        },
+        {
+          "tarea_id": "SICOE-T17",
+          "responsable": "jesus-castillo",
+          "fecha_limite": "2026-08-07",
+          "prioridad": "alta",
+          "desenlace": "completada"
+        },
+        {
+          "tarea_id": "SICOE-T18",
+          "responsable": "jesus-castillo",
+          "fecha_limite": "2026-08-07",
+          "prioridad": "media",
+          "desenlace": "completada"
+        },
+        {
+          "tarea_id": "SICOE-T10",
+          "responsable": "jesus-castillo",
+          "fecha_limite": "2026-08-07",
+          "prioridad": "media",
+          "desenlace": "completada"
+        }
+      ]
+    },
+    {
+      "id": "S-2026-33",
+      "nombre": "Sprint 33",
+      "inicio": "2026-08-10",
+      "fin": "2026-08-21",
+      "estado": "cerrado",
+      "items": [
+        {
+          "tarea_id": "SICOE-T20",
+          "responsable": "jesus-castillo",
+          "fecha_limite": "2026-08-21",
+          "prioridad": "alta",
+          "desenlace": "completada"
+        },
+        {
+          "tarea_id": "SICOE-T21",
+          "responsable": "jesus-castillo",
+          "fecha_limite": "2026-08-21",
+          "prioridad": "alta",
+          "desenlace": "completada"
+        },
+        {
+          "tarea_id": "SICOE-T25",
+          "responsable": "jesus-castillo",
+          "fecha_limite": "2026-08-21",
+          "prioridad": "media",
+          "desenlace": "completada"
+        },
+        {
+          "tarea_id": "SICOE-T22",
+          "responsable": "jesus-castillo",
+          "fecha_limite": "2026-08-21",
+          "prioridad": "alta",
+          "desenlace": "no_terminada"
+        },
+        {
+          "tarea_id": "SICOE-T19",
+          "responsable": "josue-vergara",
+          "fecha_limite": "2026-08-21",
+          "prioridad": "media",
+          "desenlace": "completada"
+        },
+        {
+          "tarea_id": "INFRA-T5",
+          "responsable": "roberto-cortes",
+          "fecha_limite": "2026-08-21",
+          "prioridad": "baja",
+          "desenlace": "completada"
+        }
+      ]
+    },
+    {
+      "id": "S-2026-34",
+      "nombre": "Sprint 34",
+      "inicio": "2026-08-24",
+      "fin": "2026-09-04",
+      "estado": "activo",
+      "items": [
+        {
+          "tarea_id": "SICOE-T22",
+          "responsable": null,
+          "fecha_limite": "2026-08-28",
+          "prioridad": "alta",
+          "desenlace": null
+        },
+        {
+          "tarea_id": "SICOE-T14",
+          "responsable": null,
+          "fecha_limite": "2026-08-25",
+          "prioridad": "alta",
+          "desenlace": null
+        },
+        {
+          "tarea_id": "SICOE-T6",
+          "responsable": null,
+          "fecha_limite": "2026-09-02",
+          "prioridad": "media",
+          "desenlace": null
+        },
+        {
+          "tarea_id": "SICOE-T1",
+          "responsable": null,
+          "fecha_limite": "2026-08-28",
+          "prioridad": "alta",
+          "desenlace": null
+        },
+        {
+          "tarea_id": "SICOE-T2",
+          "responsable": null,
+          "fecha_limite": "2026-09-04",
+          "prioridad": "media",
+          "desenlace": null
+        },
+        {
+          "tarea_id": "SICOE-T26",
+          "responsable": null,
+          "fecha_limite": null,
+          "prioridad": "baja",
+          "desenlace": null
+        },
+        {
+          "tarea_id": "SICOE-T13",
+          "responsable": null,
+          "fecha_limite": "2026-08-31",
+          "prioridad": "media",
+          "desenlace": null
+        },
+        {
+          "tarea_id": "INFRA-T1",
+          "responsable": null,
+          "fecha_limite": "2026-08-28",
+          "prioridad": "alta",
+          "desenlace": null
+        },
+        {
+          "tarea_id": "INFRA-T3",
+          "responsable": "jesus-castillo",
+          "fecha_limite": "2026-09-01",
+          "prioridad": "media",
+          "desenlace": null
+        },
+        {
+          "tarea_id": "PED-T1",
+          "responsable": null,
+          "fecha_limite": "2026-09-04",
+          "prioridad": "media",
+          "desenlace": null
+        }
+      ]
+    }
+  ]
+}

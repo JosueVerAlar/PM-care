@@ -1,0 +1,10 @@
+node_modules/
+dist/
+empaquetado/
+*.log
+.DS_Store
+
+# Datos reales del usuario: nunca al repo
+datos/backlog.json
+datos/historial.jsonl
+datos/respaldos/

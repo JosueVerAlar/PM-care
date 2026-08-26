@@ -1,0 +1,33 @@
+:root {
+  --fondo: #f4f6f8;
+  --tinta: #101519;
+  --tinta-2: #414d58;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #0e1216;
+    --tinta: #e6eaef;
+    --tinta-2: #aeb9c4;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--tinta);
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.humo {
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  height: 100vh;
+  text-align: center;
+}
+.humo p { color: var(--tinta-2); margin: 0; }
