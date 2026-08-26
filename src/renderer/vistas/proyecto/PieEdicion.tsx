@@ -23,6 +23,7 @@ import type { Documento, Fecha, Proyecto, Sprint, TipoBloqueo } from '../../../c
 import { useAccionesInterfaz, useInterfaz, type ClaseNodo } from '../../estado/interfaz';
 import { useMutar } from '../../estado/mutaciones';
 import { buscarNodo, rutaDeNodo } from '../../util/nodos';
+import { etiquetaBloqueo, TIPOS_BLOQUEO } from '../../util/presentacion';
 import { FormularioCompromiso } from './FormularioCompromiso';
 
 const NOMBRE_CLASE: Record<ClaseNodo, string> = {
@@ -31,29 +32,11 @@ const NOMBRE_CLASE: Record<ClaseNodo, string> = {
   tarea: 'tarea',
 };
 
-/**
- * Etiquetas de los tipos de bloqueo. El enum vive en el esquema; aquí solo su nombre.
- *
- * Se escribe la lista a mano en vez de leer `EsquemaTipoBloqueo.options`: importar el
- * esquema traería Zod al bundle del renderer para pintar cinco cadenas. El `Record`
- * tipado contra `TipoBloqueo` ya rompe la compilación si el esquema gana un tipo nuevo,
- * que es la garantía que importaba.
+/*
+ * Las etiquetas y la lista de tipos de bloqueo viven en `util/presentacion.ts` desde E9:
+ * este formulario y la vista global de Bloqueos tienen que llamar «Falta una decisión» a
+ * lo mismo, y dos tablas en dos archivos divergen en cuanto alguien retoca una.
  */
-const NOMBRE_BLOQUEO: Record<TipoBloqueo, string> = {
-  dependencia: 'Depende de otra tarea',
-  externo: 'Alguien de fuera',
-  decision: 'Falta una decisión',
-  informacion: 'Falta información',
-  otro: 'Otro',
-};
-
-const TIPOS_BLOQUEO: readonly TipoBloqueo[] = [
-  'dependencia',
-  'externo',
-  'decision',
-  'informacion',
-  'otro',
-];
 
 export interface PropsPieEdicion {
   documento: Documento;
@@ -285,7 +268,7 @@ function FormularioBloqueo({
           <select value={tipo} onChange={(e) => setTipo(e.target.value as TipoBloqueo)}>
             {TIPOS_BLOQUEO.map((opcion) => (
               <option key={opcion} value={opcion}>
-                {NOMBRE_BLOQUEO[opcion]}
+                {etiquetaBloqueo(opcion)}
               </option>
             ))}
           </select>

@@ -149,6 +149,7 @@ export interface EstadoInterfaz {
 
 type AccionInterfaz =
   | { tipo: 'verProyecto'; clave: string }
+  | { tipo: 'irATarea'; clave: string; abrir: readonly string[]; tareaId: string }
   | { tipo: 'verGlobal'; id: IdVistaGlobal }
   | { tipo: 'verCierre'; sprintId: string }
   | { tipo: 'salirDelCierre' }
@@ -201,6 +202,32 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
         arrastre: null,
       };
     }
+    /**
+     * E9–E11 — «Ir a la tarea» desde una vista global.
+     *
+     * Es UNA acción y no tres despachos encadenados porque los tres pasos son
+     * indivisibles: cambiar de proyecto RESETEA el plegado, así que expandir en un
+     * despacho aparte dependería de que llegara después, y bastaría una reordenación
+     * para que la tarea quedara enterrada bajo una épica cerrada.
+     *
+     * La pestaña se fuerza a «backlog» aunque la tarea esté hecha: esa pestaña pinta el
+     * árbol entero, y «Terminadas» filtra. Llegar a una tarea y no verla porque la
+     * pestaña la esconde es peor que no ofrecer el salto.
+     */
+    case 'irATarea':
+      return {
+        ...estado,
+        vista: { tipo: 'proyecto', clave: accion.clave },
+        expandidos: new Set(accion.abrir),
+        pestana: 'backlog',
+        nodoActivo: accion.tareaId,
+        // El nonce mueve el foco de verdad: el usuario venía de otra pantalla y el
+        // teclado tiene que aterrizar en la fila, no en el principio del árbol.
+        focoArbol: estado.focoArbol + 1,
+        redaccion: null,
+        arrastre: null,
+      };
+
     case 'verGlobal':
       if (estado.vista?.tipo === 'global' && estado.vista.id === accion.id) return estado;
       return { ...estado, vista: { tipo: 'global', id: accion.id }, redaccion: null, arrastre: null };
@@ -270,6 +297,11 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
 
 export interface AccionesInterfaz {
   verProyecto(clave: string): void;
+  /**
+   * Abre el proyecto, despliega el camino hasta la tarea y le pone el foco. `abrir` son
+   * los ids de la épica y de la historia que la contienen.
+   */
+  irATarea(clave: string, abrir: readonly string[], tareaId: string): void;
   verGlobal(id: IdVistaGlobal): void;
   /** Abre la pantalla de cierre de ese sprint. Todavía no cierra nada. */
   verCierre(sprintId: string): void;
@@ -303,6 +335,7 @@ export function ProveedorInterfaz({ children }: { children: ReactNode }) {
   const acciones = useMemo<AccionesInterfaz>(
     () => ({
       verProyecto: (clave) => despachar({ tipo: 'verProyecto', clave }),
+      irATarea: (clave, abrir, tareaId) => despachar({ tipo: 'irATarea', clave, abrir, tareaId }),
       verGlobal: (id) => despachar({ tipo: 'verGlobal', id }),
       verCierre: (sprintId) => despachar({ tipo: 'verCierre', sprintId }),
       salirDelCierre: () => despachar({ tipo: 'salirDelCierre' }),

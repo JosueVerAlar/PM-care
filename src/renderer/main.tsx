@@ -9,6 +9,7 @@ import './estilos/arbol.css'
 import './estilos/sprint.css'
 import './estilos/edicion.css'
 import './estilos/cierre.css'
+import './estilos/globales.css'
 import './estilos/pantallas.css'
 
 const raiz = document.getElementById('raiz')

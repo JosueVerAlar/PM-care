@@ -194,6 +194,24 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
   }, [activoVigente, focoArbol]);
 
   /**
+   * E9–E11: llegar desde una vista global con «Ir a la tarea».
+   *
+   * El nonce de arriba no sirve para este caso: el árbol se MONTA de cero al cambiar de
+   * pantalla, así que `ultimoFoco` nace ya igualado y el efecto sale por la primera línea.
+   * Aquí se enfoca al montar, y solo si alguien fijó un nodo activo explícitamente —abrir
+   * un proyecto por la barra lateral lo deja en `null`, así que este efecto no le roba el
+   * foco a nadie al arrancar.
+   */
+  const montado = useRef(false);
+  useEffect(() => {
+    if (montado.current) return;
+    montado.current = true;
+    if (nodoActivo !== null) nodos.current.get(nodoActivo)?.focus();
+    // Solo al montar: las dependencias vacías son la intención, no un olvido.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
    * «Baja una fila», pedido desde fuera del árbol. Lo resuelve aquí porque el árbol es el
    * único que conoce el orden vigente de las filas: qué está plegado y qué pestaña se
    * mira cambian cuál es «la siguiente». Es lo que permite encadenar `S · Enter · S ·

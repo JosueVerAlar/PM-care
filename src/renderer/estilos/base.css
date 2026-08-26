@@ -59,6 +59,12 @@
   --medidor-pista:   #E4E4E8;
   --medidor-relleno: #6E6E76;
 
+  /* E11 · reparto de carga. Dos neutros que solo SEPARAN tramos contiguos: no codifican
+     identidad — el proyecto lo dice la etiqueta de debajo, no el tono. Medidos por `diseno`
+     en `maqueta/vistas.html`: 5.05:1 y 3.43:1 sobre la superficie del panel. */
+  --reparto-a: #6E6E76;
+  --reparto-b: #8A8A92;
+
   /* métrica */
   --alto-epica: 32px;
   --alto-historia: 28px;
@@ -68,6 +74,10 @@
   --sangria-3: 44px;
   --ancho-lateral: 216px;
   --ancho-rail: 48px;
+  /* Medida de lectura de las vistas globales, que ocupan las dos columnas: dejar que un
+     título y su clave se separen 1200 px vuelve la fila ilegible. Se limita el CONTENIDO;
+     el hover y el hairline siguen llegando al borde. Viene de la maqueta de E0. */
+  --medida: 1040px;
 
   color-scheme: light dark;
 }
@@ -115,6 +125,9 @@
 
     --medidor-pista:   #3A3A40;
     --medidor-relleno: #8E8E98;
+
+    --reparto-a: #8E8E98;   /* 5.24:1 */
+    --reparto-b: #6A6A73;   /* 3.18:1 */
   }
 }
 

@@ -12,6 +12,7 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { compromisoEfectivo } from '../../src/compartido/dominio/derivar';
 import { reducir } from '../../src/principal/comandos/reductor';
 import { unItem, unSprint } from '../apoyo/constructores';
 import type { Documento } from '../../src/compartido/modelo/tipos';
@@ -284,6 +285,60 @@ describe('sacarDelSprint — conserva lo escrito', () => {
     const tarea = documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0];
     expect(tarea?.responsable).toBe('ana');          // el suyo, no el del item
     expect(tarea?.fecha_limite).toBe('2026-09-30');  // este sí lo hereda: no tenía
+  });
+
+  it('la PRIORIDAD también se vuelca: el volcado son los tres campos del compromiso, no dos', () => {
+    // Hueco de las dos pruebas anteriores: las dos miran responsable y fecha límite, así
+    // que quitar la línea de `prioridad` del volcado no ponía roja ninguna. Y la prioridad
+    // es la que ordena el backlog del área: perderla al sacar del sprint manda la tarea al
+    // fondo de una lista donde el usuario ya no la busca.
+    const { doc, historiaId } = arbolConTareas(0);
+    const conTarea = aplicar(doc, { comando: 'crearTarea', historiaId, titulo: 'Sin prioridad propia' });
+    const enSprint: Documento = {
+      ...conTarea,
+      sprints: [
+        unSprint({ id: 'S-1', estado: 'activo', items: [unItem('PM-T1', { prioridad: 'alta' })] }),
+      ],
+    };
+    const { documento } = exigirOk(
+      reducirSinMutar(enSprint, { comando: 'sacarDelSprint', tareaId: 'PM-T1', sprintId: 'S-1' }),
+    );
+    expect(documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.prioridad).toBe('alta');
+  });
+
+  it('tras el volcado, la ida y vuelta conserva el COMPROMISO, aunque el documento cambie', () => {
+    // La prueba de ida y vuelta que ya existe usa tareas sin nada escrito, así que el
+    // volcado no entra en juego y el documento vuelve idéntico. Cuando el compromiso vivía
+    // solo en el item, el viaje lo MUEVE de sitio: el item vuelve en null —«hereda de la
+    // tarea»— y el dato ahora vive en la tarea. Lo que tiene que sobrevivir es el valor
+    // efectivo, no la forma; congelarlo aquí evita que alguien «arregle» el documento
+    // haciendo que el item se recree con lo de antes y duplicando la fuente de verdad.
+    const { doc, historiaId } = arbolConTareas(0);
+    const conGente = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana' });
+    const conTarea = aplicar(conGente, { comando: 'crearTarea', historiaId, titulo: 'T' });
+    const enSprint: Documento = {
+      ...conTarea,
+      sprints: [
+        unSprint({
+          id: 'S-1',
+          estado: 'activo',
+          items: [unItem('PM-T1', { responsable: 'ana', fecha_limite: '2026-09-30', prioridad: 'alta' })],
+        }),
+      ],
+    };
+    const antes = compromisoEfectivo(
+      enSprint.sprints[0]!.items[0]!,
+      enSprint.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0],
+    );
+
+    const ida = aplicar(enSprint, { comando: 'sacarDelSprint', tareaId: 'PM-T1', sprintId: 'S-1' });
+    const vuelta = aplicar(ida, { comando: 'moverAlSprint', tareaId: 'PM-T1', sprintId: 'S-1' });
+
+    const item = vuelta.sprints[0]?.items[0];
+    const tarea = vuelta.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0];
+    expect(compromisoEfectivo(item!, tarea)).toEqual(antes);
+    // El item vuelve heredando: el dato ya no vive por duplicado.
+    expect(item).toMatchObject({ responsable: null, fecha_limite: null, prioridad: null });
   });
 
   it('tampoco toca el estado ni el historial de bloqueos', () => {

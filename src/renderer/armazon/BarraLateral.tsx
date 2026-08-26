@@ -15,24 +15,9 @@ import { paraBacklogDelArea, paraVistaBloqueos, paraVistaTerminadas, senalesDePr
 import { sprintActivo } from '../../compartido/dominio/derivar';
 import type { Documento, Fecha } from '../../compartido/modelo/tipos';
 import { ContadorBloqueos } from '../componentes/Chips';
-import { Icono, type NombreIcono } from '../componentes/iconos';
+import { Icono } from '../componentes/iconos';
 import { useAccionesInterfaz, type IdVistaGlobal, type Vista } from '../estado/interfaz';
-
-interface EntradaGlobal {
-  id: IdVistaGlobal;
-  icono: NombreIcono;
-  texto: string;
-}
-
-const GLOBALES: EntradaGlobal[] = [
-  { id: 'panorama', icono: 'panorama', texto: 'Panorama' },
-  { id: 'sprint', icono: 'sprint', texto: 'Sprint' },
-  { id: 'bloqueos', icono: 'bloqueos', texto: 'Bloqueos' },
-  { id: 'terminadas', icono: 'terminadas', texto: 'Terminadas' },
-  { id: 'backlog', icono: 'backlog', texto: 'Backlog del área' },
-  { id: 'carga', icono: 'carga', texto: 'Carga por persona' },
-  { id: 'equipos', icono: 'equipos', texto: 'Equipos' },
-];
+import { GLOBALES } from '../vistas/globales/registro';
 
 export function BarraLateral({
   documento,

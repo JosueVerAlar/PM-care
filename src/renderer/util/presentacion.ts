@@ -11,7 +11,7 @@
  */
 
 import type { EstadoDerivado } from '../../compartido/dominio/derivar';
-import type { EstadoTarea, Fecha, Instante } from '../../compartido/modelo/tipos';
+import type { EstadoTarea, Fecha, Instante, TipoBloqueo } from '../../compartido/modelo/tipos';
 import type { FormaEstado } from '../componentes/iconos';
 
 const FORMA_TAREA: Record<EstadoTarea, FormaEstado> = {
@@ -62,6 +62,55 @@ export function formaDerivada(estado: EstadoDerivado): FormaEstado {
 export function etiquetaDerivada(estado: EstadoDerivado): string {
   return ETIQUETA_DERIVADA[estado];
 }
+
+// --- bloqueos ---------------------------------------------------------------
+
+/**
+ * Etiquetas de los tipos de bloqueo. El enum vive en el esquema; aquí solo su nombre.
+ *
+ * Se escribe la lista a mano en vez de leer `EsquemaTipoBloqueo.options`: importar el
+ * esquema traería Zod al bundle del renderer para pintar cinco cadenas. El `Record`
+ * tipado contra `TipoBloqueo` ya rompe la compilación si el esquema gana un tipo nuevo,
+ * que es la garantía que importaba.
+ */
+const NOMBRE_BLOQUEO: Record<TipoBloqueo, string> = {
+  dependencia: 'Depende de otra tarea',
+  externo: 'Alguien de fuera',
+  decision: 'Falta una decisión',
+  informacion: 'Falta información',
+  otro: 'Otro',
+};
+
+/**
+ * Qué destraba a TODO un grupo del mismo tipo. Es la razón de agrupar por tipo y no por
+ * proyecto: lo que se suelta con el mismo movimiento queda junto, y la frase lo nombra.
+ *
+ * No es una promesa de la app, es la salida típica: por eso está redactada como acción de
+ * quien lee, no como predicción.
+ */
+const SALIDA_BLOQUEO: Record<TipoBloqueo, string> = {
+  dependencia: 'se sueltan terminando la tarea de la que cuelgan',
+  externo: 'no dependen del equipo: solo cabe dar seguimiento',
+  decision: 'se sueltan en una sola reunión de decisión',
+  informacion: 'se sueltan pidiendo el dato a quien lo tiene',
+  otro: 'sin salida típica: cada uno se destraba a su manera',
+};
+
+export function etiquetaBloqueo(tipo: TipoBloqueo): string {
+  return NOMBRE_BLOQUEO[tipo];
+}
+
+export function salidaBloqueo(tipo: TipoBloqueo): string {
+  return SALIDA_BLOQUEO[tipo];
+}
+
+export const TIPOS_BLOQUEO: readonly TipoBloqueo[] = [
+  'dependencia',
+  'externo',
+  'decision',
+  'informacion',
+  'otro',
+];
 
 /**
  * El nombre del proyecto sin repetir su clave.
@@ -133,4 +182,16 @@ export function dias(n: number): string {
 /** Ordinal corto para el chip de arrastre: 2.º, 3.º… */
 export function ordinal(n: number): string {
   return `${n}.º`;
+}
+
+/**
+ * «1 tarea» / «12 tareas». El singular roto («1 tareas») delata una plantilla y hace que
+ * el resto de la pantalla se lea como generada, no como escrita.
+ */
+export function cuenta(n: number, singular: string, plural: string): string {
+  return `${n} ${n === 1 ? singular : plural}`;
+}
+
+export function tareas(n: number): string {
+  return cuenta(n, 'tarea', 'tareas');
 }

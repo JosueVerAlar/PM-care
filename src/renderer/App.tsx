@@ -48,6 +48,7 @@ import { enCampoDeTexto, esDeshacer } from './util/atajos';
 import { buscarNodo } from './util/nodos';
 import { hoyLocal, nombreSinClave } from './util/presentacion';
 import { VistaCierre } from './vistas/cierre/VistaCierre';
+import { entradaGlobal } from './vistas/globales/registro';
 import { VistaGlobal } from './vistas/globales/VistaGlobal';
 import { VistaProyecto } from './vistas/proyecto/VistaProyecto';
 
@@ -156,9 +157,21 @@ function Aplicacion({
   const proyecto =
     proyectos.find((p: Proyecto) => p.clave === seleccionada) ?? (ancha ? undefined : proyectos[0]);
 
-  const titulo = ancha ? 'PM-care' : (proyecto?.clave ?? 'PM-care');
+  // La barra superior nombra lo que se está mirando. En una vista global eso es la vista,
+  // no «PM-care»: con seis pantallas transversales, un título genérico deja de decir dónde
+  // está uno en cuanto se cambia de vista dos veces.
+  const titulo =
+    vista?.tipo === 'global'
+      ? entradaGlobal(vista.id).texto
+      : ancha
+        ? 'PM-care'
+        : (proyecto?.clave ?? 'PM-care');
   const subtitulo =
-    ancha || proyecto === undefined ? null : nombreSinClave(proyecto.clave, proyecto.nombre);
+    vista?.tipo === 'global'
+      ? entradaGlobal(vista.id).pregunta
+      : ancha || proyecto === undefined
+        ? null
+        : nombreSinClave(proyecto.clave, proyecto.nombre);
 
   // --- ⌘Z ------------------------------------------------------------------
   const alDeshacer = useCallback(() => {
@@ -233,7 +246,7 @@ function Aplicacion({
         />
 
         {vista?.tipo === 'global' ? (
-          <VistaGlobal id={vista.id} documento={documento} />
+          <VistaGlobal id={vista.id} documento={documento} hoy={hoy} />
         ) : vista?.tipo === 'cierre' ? (
           <VistaCierre documento={documento} sprintId={vista.sprintId} hoy={hoy} />
         ) : proyecto === undefined ? (

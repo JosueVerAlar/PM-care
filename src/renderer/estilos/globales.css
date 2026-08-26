@@ -1,0 +1,543 @@
+/**
+ * E9, E10 y E11 — las seis vistas globales.
+ *
+ * Copiado de `maqueta/vistas.html` (secciones 7 a 14), no reinventado: la métrica, la
+ * densidad y los tamaños ya se validaron ahí en claro y oscuro. **Ni un color literal**:
+ * todo sale de los tokens de `base.css`, que son los que E0 midió.
+ *
+ * Los tres canales visuales siguen sin pisarse en ninguna de estas pantallas:
+ *   1. ESTADO      -> la forma del glifo (`.glifo`, de `arbol.css`).
+ *   2. PROCEDENCIA -> banda de 3 px al borde izquierdo + chip «Nuevo».
+ *   3. BLOQUEO     -> fondo y tinta de bloqueo, SIEMPRE con palabra o número al lado.
+ */
+
+/* ── armazón común ────────────────────────────────────────────── */
+
+.panel--global { min-height: 0; }
+
+/* Lo único que hace scroll: la cabecera y la nota al pie quedan ancladas. */
+.lienzo {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Metadato dentro de una cabecera de panel: «Agrupar por», «Ordenar por», avisos. */
+.cab__nota {
+  font-size: 11.5px; color: var(--tinta-3);
+  white-space: nowrap;
+}
+
+/* La nota al pie dice de qué NO habla la vista. Una vez, abajo, nunca por fila. */
+.nota-pie {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border-top: 1px solid var(--hairline);
+  background: var(--fondo-cabecera);
+  font-size: 11px; line-height: 16px; color: var(--tinta-3);
+}
+.nota-pie b { color: var(--tinta-2); font-weight: 600; }
+
+.serie { color: var(--tinta-1); font-weight: 600; }
+
+/* Campo de filtro de la cabecera. La etiqueta va en `.solo-lectores`: el `placeholder`
+   desaparece al escribir y no es un nombre accesible. */
+.campo-filtro {
+  flex: 0 1 260px; min-width: 120px;
+  height: 24px; padding: 0 8px;
+  border: 1px solid var(--hairline); border-radius: 5px;
+  background: var(--fondo-panel); color: var(--tinta-1);
+  font: inherit; font-size: 12px;
+}
+.campo-filtro::placeholder { color: var(--tinta-3); }
+
+/* ── grupos plegables (Bloqueos, Terminadas, Backlog) ─────────── */
+
+.grupo { border-bottom: 1px solid var(--hairline); }
+
+.grupo__cab {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; padding: 9px 16px;
+  background: var(--fondo-cabecera);
+  text-align: left;
+}
+.grupo__cab:hover { background: var(--hover); }
+.grupo__titulo { font-weight: 600; font-size: 12.5px; }
+.grupo__titulo--tenue { color: var(--tinta-2); font-weight: 500; }
+.grupo__n { font-size: 11.5px; color: var(--tinta-3); }
+.grupo__nota {
+  font-size: 11.5px; color: var(--tinta-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.grupo__cifra {
+  display: flex; align-items: baseline; gap: 4px;
+  font-size: 15px; font-weight: 600; color: var(--tinta-1);
+}
+.grupo__cifra small { font-size: 11px; font-weight: 400; color: var(--tinta-2); }
+.grupo__cifra--tenue { color: var(--tinta-2); }
+
+.grupo__barra {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 8px 16px;
+  font-size: 11.5px; color: var(--tinta-2);
+}
+.grupo__vacio {
+  padding: 10px 16px 14px;
+  font-size: 12px; line-height: 17px; color: var(--tinta-2);
+  max-width: 74ch;
+}
+.grupo--aparte { border-top: 2px solid var(--hairline); }
+
+/* Botón pequeño de acción dentro de una fila. */
+.mini {
+  height: 22px; padding: 0 8px; border-radius: 4px;
+  border: 1px solid var(--hairline); background: var(--fondo-panel);
+  font-size: 11.5px; color: var(--tinta-2);
+}
+.mini:hover:not(:disabled) { background: var(--hover); color: var(--tinta-1); }
+.mini--fuerte { color: var(--tinta-1); font-weight: 500; }
+
+.copiar {
+  height: 22px; padding: 0 9px; border-radius: 4px;
+  border: 1px solid var(--hairline); background: var(--fondo-panel);
+  font-size: 11.5px; color: var(--tinta-1); font-weight: 500;
+}
+.copiar:hover:not(:disabled) { background: var(--hover); }
+
+/* Migaja: el proyecto en tinta más fuerte que el resto del camino. Con tareas de once
+   proyectos mezcladas, el proyecto es lo primero que la vista tiene que poder saltar. */
+.migaja {
+  font-size: 11px; color: var(--tinta-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.migaja b { color: var(--tinta-2); font-weight: 600; }
+
+/* ═══════════════════════════════════════════════════════════════
+   E9 · BLOQUEOS
+   ═══════════════════════════════════════════════════════════════ */
+
+.fila-bloqueo {
+  position: relative;
+  display: grid;
+  grid-template-columns: 62px minmax(0, var(--medida));
+  gap: 0 12px;
+  padding: 10px 16px 11px;
+  border-top: 1px solid var(--hairline);
+}
+.fila-bloqueo:hover { background: var(--hover); }
+
+/* CANAL 2 · procedencia: banda de 3 px. Nunca ocupa el lugar del estado. */
+.fila-bloqueo--nuevo::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--nuevo-banda);
+}
+
+.fila-bloqueo__dias { text-align: right; }
+.fila-bloqueo__cifra {
+  display: block;
+  font-size: 17px; line-height: 20px; font-weight: 600;
+  color: var(--bloqueo-tinta);
+}
+.fila-bloqueo__unidad {
+  display: block;
+  font-size: 10px; letter-spacing: .04em; color: var(--tinta-3);
+}
+
+.fila-bloqueo__cuerpo { min-width: 0; }
+.fila-bloqueo__cab { display: flex; align-items: flex-start; gap: 7px; min-width: 0; }
+.fila-bloqueo__cab .glifo { height: 18px; }
+.fila-bloqueo__cab .clave { line-height: 18px; }
+.fila-bloqueo__titulo {
+  flex: 1; min-width: 0; line-height: 18px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* CANAL 3 · la nota. Es la razón de existir de la vista: tinta plena, no gris. */
+.fila-bloqueo__nota {
+  display: flex; align-items: flex-start; gap: 7px;
+  margin-top: 6px; padding: 5px 9px;
+  border-radius: 4px;
+  border-left: 2px solid var(--bloqueo-banda);
+  background: var(--bloqueo-fondo);
+  color: var(--tinta-1);
+  font-size: 12px; line-height: 17px;
+  max-width: 92ch;
+}
+.fila-bloqueo__nota svg { flex: 0 0 auto; margin-top: 5px; color: var(--bloqueo-tinta); }
+
+.fila-bloqueo__meta { margin-top: 4px; font-size: 11px; color: var(--tinta-3); }
+.fila-bloqueo__acciones { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   E10a · TERMINADAS
+   ═══════════════════════════════════════════════════════════════ */
+
+.subgrupo { padding: 2px 0 8px; }
+.subgrupo__titulo {
+  display: flex; align-items: baseline; gap: 7px;
+  padding: 7px 16px 3px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tinta-3);
+}
+.subgrupo__n { font-size: 11px; letter-spacing: 0; text-transform: none; font-weight: 400; }
+
+.fila-hecha {
+  display: flex; align-items: center; gap: 8px;
+  padding: 3px 16px; min-height: 24px;
+  max-width: calc(var(--medida) + 32px);
+}
+.fila-hecha:hover { background: var(--hover); }
+.fila-hecha__titulo {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fila-hecha__fecha { flex: 0 0 62px; text-align: right; font-size: 11px; color: var(--tinta-3); }
+.fila-hecha .clave { flex: 0 0 84px; text-align: right; }
+/* La acción por fila solo aparece al pasar por encima: cien botones «Ir» a la vez son
+   ruido, pero el foco del teclado tiene que revelarlo igual. */
+.fila-hecha__ir {
+  flex: 0 0 auto;
+  height: 20px; padding: 0 7px; border-radius: 4px;
+  font-size: 11px; color: var(--tinta-2);
+  opacity: 0;
+}
+.fila-hecha:hover .fila-hecha__ir,
+.fila-hecha__ir:focus-visible { opacity: 1; }
+.fila-hecha__ir:hover { background: var(--seleccion); color: var(--tinta-1); }
+
+/* ═══════════════════════════════════════════════════════════════
+   E10b · PANORAMA
+   ═══════════════════════════════════════════════════════════════ */
+
+/* La franja ocupa el mejor espacio SOLO si hay bloqueos. Si no hay, el componente no la
+   pinta: nada de estados vacíos celebratorios. */
+.franja {
+  flex: 0 0 auto;
+  padding: 12px 16px 14px;
+  border-bottom: 2px solid var(--hairline);
+}
+.franja__cab {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 9px;
+  color: var(--bloqueo-tinta);
+}
+.franja__titulo { font-size: 13px; font-weight: 600; }
+.franja__detalle { font-size: 11.5px; opacity: .9; }
+.franja__rejilla {
+  display: grid; gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+.franja__item {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 6px 9px; border-radius: 5px;
+  background: var(--fondo-cabecera);
+  border: 1px solid var(--hairline);
+  text-align: left; width: 100%; min-width: 0;
+}
+.franja__item:hover { background: var(--hover); }
+.franja__dias {
+  flex: 0 0 auto;
+  font-size: 15px; font-weight: 600; color: var(--bloqueo-tinta);
+}
+.franja__dias small { font-size: 10px; font-weight: 500; margin-left: 1px; }
+.franja__texto { flex: 1 1 auto; min-width: 0; display: block; overflow: hidden; }
+.franja__tarea {
+  display: block; font-size: 12px; color: var(--tinta-1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.franja__proy {
+  display: block; font-size: 10.5px; color: var(--tinta-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.franja__mas {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  padding: 6px 9px; border-radius: 5px;
+  border: 1px solid var(--hairline); background: var(--fondo-panel);
+  font-size: 11.5px; font-weight: 500; color: var(--tinta-2);
+}
+.franja__mas:hover { background: var(--hover); color: var(--tinta-1); }
+
+.seccion { padding: 14px 16px 6px; }
+.seccion__titulo {
+  display: flex; align-items: baseline; gap: 7px;
+  margin-bottom: 9px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tinta-3);
+}
+.seccion__n { font-size: 11px; letter-spacing: 0; text-transform: none; font-weight: 400; }
+.seccion__aclaracion {
+  margin-top: 9px;
+  font-size: 11.5px; line-height: 17px; color: var(--tinta-3);
+  max-width: 74ch;
+}
+
+.rejilla {
+  display: grid; gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+}
+.rejilla--equipos { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+
+.tarjeta-proy {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 11px 13px 12px;
+  border: 1px solid var(--hairline); border-radius: 7px;
+  background: var(--fondo-panel);
+  text-align: left; min-width: 0;
+}
+.tarjeta-proy:hover { background: var(--hover); }
+.tarjeta-proy__cab { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.tarjeta-proy__clave {
+  flex: 0 0 auto;
+  font-size: 10px; font-weight: 600; letter-spacing: .04em; color: var(--tinta-3);
+}
+.tarjeta-proy__nombre {
+  flex: 1; min-width: 0; font-size: 13px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tarjeta-proy__avance {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11.5px; color: var(--tinta-2);
+}
+/* El medidor de la tarjeta no compite por la columna fija de 84 px del árbol. */
+.tarjeta-proy__avance .medidor,
+.tarjeta-proy__avance .conteo-solo,
+.tarjeta-proy__avance .sin-desglosar { flex: 0 0 auto; }
+.tarjeta-proy__sep { color: var(--tinta-3); }
+.tarjeta-proy__pie {
+  display: flex; flex-direction: column; gap: 2px;
+  font-size: 11.5px; color: var(--tinta-2);
+}
+/* Lo que manda en el orden sube de tinta y de peso; el resto se queda en metadato. */
+.tarjeta-proy__quieto--largo { color: var(--tinta-1); font-weight: 500; }
+.tarjeta-proy__bloqueo { color: var(--bloqueo-tinta); }
+.tarjeta-proy__tenue { color: var(--tinta-3); }
+
+/* Proyectos sin nada capturado: fichas, no tarjetas. No merecen el espacio de una barra
+   que además tendría que mentir. */
+.fichas { display: flex; flex-wrap: wrap; gap: 6px; }
+.ficha {
+  display: flex; align-items: center; gap: 7px;
+  height: 28px; padding: 0 10px; border-radius: 5px;
+  border: 1px dashed var(--hairline);
+  color: var(--tinta-2); font-size: 12px;
+}
+.ficha:hover { background: var(--hover); color: var(--tinta-1); border-style: solid; }
+.ficha__clave { font-size: 10px; font-weight: 600; letter-spacing: .04em; color: var(--tinta-3); }
+
+/* ═══════════════════════════════════════════════════════════════
+   E10c · BACKLOG DEL ÁREA — filas densas de una línea
+   ═══════════════════════════════════════════════════════════════ */
+
+.fila-backlog {
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+  padding: 3px 16px; min-height: 26px;
+  border-top: 1px solid var(--hairline);
+  /* +32 px por el `padding` lateral: el contenido queda en la medida, el hairline no. */
+  max-width: calc(var(--medida) + 32px);
+}
+.fila-backlog:hover { background: var(--hover); }
+.fila-backlog--nuevo::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--nuevo-banda);
+}
+.fila-backlog__titulo {
+  flex: 1 1 auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fila-backlog__proy {
+  flex: 0 0 auto;
+  font-size: 11px; letter-spacing: .02em; color: var(--tinta-3);
+}
+.fila-backlog__quien {
+  flex: 0 0 130px;
+  font-size: 11.5px; color: var(--tinta-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fila-backlog__falta { color: var(--tinta-3); font-style: italic; }
+.fila-backlog__fecha { flex: 0 0 82px; text-align: right; font-size: 11px; color: var(--tinta-3); }
+.fila-backlog__vencida { color: var(--bloqueo-tinta); font-weight: 600; }
+.fila-backlog .clave { flex: 0 0 84px; text-align: right; }
+.fila-backlog__ir {
+  flex: 0 0 auto;
+  height: 20px; padding: 0 7px; border-radius: 4px;
+  font-size: 11px; color: var(--tinta-2);
+  opacity: 0;
+}
+.fila-backlog:hover .fila-backlog__ir,
+.fila-backlog__ir:focus-visible { opacity: 1; }
+.fila-backlog__ir:hover { background: var(--seleccion); color: var(--tinta-1); }
+
+/* ═══════════════════════════════════════════════════════════════
+   E11a · CARGA POR PERSONA
+
+   DECISIÓN DE HONESTIDAD, no una nota al pie:
+     · la barra NO lleva pista de fondo. Una pista es un techo, y un techo promete una
+       capacidad que la app no conoce.
+     · el largo compara con la persona de más carga, no con un máximo inventado.
+     · ningún semáforo. Los únicos colores vivos son los que ya significan algo: el rojo
+       del bloqueo y el de lo vencido.
+   ═══════════════════════════════════════════════════════════════ */
+
+.aviso-honestidad {
+  display: flex; gap: 10px;
+  margin: 14px 16px 4px;
+  padding: 11px 13px;
+  border: 1px solid var(--hairline); border-radius: 7px;
+  background: var(--fondo-cabecera);
+}
+.aviso-honestidad__marca { flex: 0 0 3px; border-radius: 2px; background: var(--medidor-relleno); }
+.aviso-honestidad__texto {
+  font-size: 12px; line-height: 17px; color: var(--tinta-2);
+  max-width: 72ch;
+}
+.aviso-honestidad__texto b { color: var(--tinta-1); font-weight: 600; }
+
+.carga-cab,
+.persona {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) minmax(0, 440px);
+  justify-content: start;
+  gap: 4px 28px;
+}
+.carga-cab {
+  padding: 12px 16px 7px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tinta-3);
+  border-bottom: 1px solid var(--hairline);
+}
+.carga-cab__nota { letter-spacing: 0; text-transform: none; font-weight: 400; font-size: 11px; }
+
+.persona {
+  padding: 12px 16px 13px;
+  border-bottom: 1px solid var(--hairline);
+  align-items: start;
+}
+.persona:hover { background: var(--hover); }
+.persona--hueco .persona__nombre { color: var(--tinta-2); }
+
+.persona__cab { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.persona__nombre {
+  font-size: 13px; font-weight: 600; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.persona__equipos { font-size: 11px; color: var(--tinta-3); }
+.persona__total { display: flex; align-items: baseline; gap: 5px; margin-top: 3px; }
+.persona__cifra { font-size: 22px; line-height: 24px; font-weight: 600; }
+.persona__unidad { font-size: 11.5px; color: var(--tinta-2); }
+.persona__disp { font-size: 11.5px; color: var(--tinta-3); }
+.persona__marcas {
+  display: flex; flex-wrap: wrap; gap: 4px 10px;
+  margin-top: 6px; font-size: 11.5px;
+}
+.marca { display: inline-flex; align-items: center; gap: 5px; color: var(--tinta-2); }
+.marca--bloq { color: var(--bloqueo-tinta); font-weight: 500; }
+.marca--cero { color: var(--tinta-3); }
+
+.reparto { padding-top: 4px; min-width: 0; }
+/* SIN `background` en el contenedor: eso es lo que la convertiría en pista. */
+.reparto__barra { display: flex; gap: 2px; height: 10px; margin-bottom: 7px; }
+.reparto__tramo { height: 100%; border-radius: 2px; min-width: 5px; }
+.reparto__tramo:nth-child(odd) { background: var(--reparto-a); }
+.reparto__tramo:nth-child(even) { background: var(--reparto-b); }
+.reparto__etiquetas {
+  display: flex; flex-wrap: wrap; gap: 3px 12px;
+  font-size: 11.5px; color: var(--tinta-2);
+}
+.reparto__etq { display: inline-flex; align-items: baseline; gap: 5px; }
+.reparto__n { color: var(--tinta-1); font-weight: 600; }
+.reparto__vacio { font-size: 11.5px; color: var(--tinta-3); }
+
+/* ═══════════════════════════════════════════════════════════════
+   E11b · EQUIPOS
+   ═══════════════════════════════════════════════════════════════ */
+
+.cruce { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.cruce__fila {
+  display: flex; align-items: center; gap: 10px;
+  padding: 5px 8px; border-radius: 5px;
+  border: 1px solid var(--hairline);
+}
+.cruce__nombre { flex: 0 0 auto; font-size: 12.5px; font-weight: 600; }
+.cruce__equipos { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.cruce__carga { flex: 0 0 auto; font-size: 11px; color: var(--tinta-2); }
+
+.equipo {
+  border: 1px solid var(--hairline); border-radius: 7px;
+  background: var(--fondo-panel);
+  overflow: hidden;
+}
+.equipo__cab {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--fondo-cabecera);
+}
+.equipo__nombre {
+  flex: 1; min-width: 0; text-align: left;
+  font-size: 13px; font-weight: 600; color: var(--tinta-1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.equipo__nombre:hover { text-decoration: underline; }
+.equipo__n { font-size: 11px; color: var(--tinta-3); }
+
+.equipo__lista { list-style: none; }
+.miembro {
+  display: flex; align-items: center; gap: 9px;
+  padding: 5px 12px; min-height: 34px;
+  border-bottom: 1px solid var(--hairline);
+}
+.miembro:last-child { border-bottom: 0; }
+.miembro:hover { background: var(--hover); }
+.miembro__inicial {
+  flex: 0 0 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  background: var(--chip-fondo); color: var(--chip-tinta);
+  font-size: 10px; font-weight: 600;
+}
+.miembro__datos { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 15px; }
+.miembro__nombre {
+  font-size: 12.5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.miembro__rol { font-size: 11px; color: var(--tinta-3); }
+.miembro__carga { flex: 0 0 58px; text-align: right; font-size: 11px; color: var(--tinta-2); }
+
+.equipo__aparte {
+  padding: 8px 12px;
+  border-top: 1px solid var(--hairline);
+  background: var(--fondo-cabecera);
+}
+.equipo__aparte-titulo {
+  font-size: 10.5px; font-weight: 600; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--tinta-3);
+  margin-bottom: 4px;
+}
+.equipo__aparte-fila {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 11.5px; color: var(--tinta-2);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ANCHOS — mismo umbral duro de E0: por debajo de 1040 px la lateral se va a rail y las
+   columnas anchas se apilan. La barra de reparto CONSERVA su escala en vez de estirarse
+   con la ventana: si se estirara, la persona con más carga tocaría siempre el borde y se
+   leería como «al 100 %», que es justo lo que esta vista no puede decir.
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1040px) {
+  .carga-cab,
+  .persona { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .carga-cab > :first-child { display: none; }
+  .reparto { padding-top: 0; max-width: 440px; }
+  .fila-backlog__quien { flex-basis: 96px; }
+}
+
+@media (max-width: 760px) {
+  .rejilla,
+  .rejilla--equipos { grid-template-columns: 1fr; }
+  .fila-bloqueo { grid-template-columns: 46px minmax(0, 1fr); gap: 0 10px; }
+  .fila-backlog__proy,
+  .fila-backlog__fecha { display: none; }
+}
