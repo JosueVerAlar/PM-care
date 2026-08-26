@@ -1,33 +1,316 @@
+/* ═══════════════════════════════════════════════════════════════
+   TOKENS Y ARMAZÓN
+
+   Los valores vienen de la maqueta de E0 sin retocar: la paleta se midió con
+   script (WCAG AA en los 30 pares de texto/fondo y separación en OKLab para
+   deuteranopía) en tema claro y oscuro. Cambiar un hex aquí invalida esa
+   medición, así que no se cambia sin volver a medir.
+
+   Todo el color vive en esta sección. Ningún otro archivo trae un hex.
+   ═══════════════════════════════════════════════════════════════ */
+
 :root {
-  --fondo: #f4f6f8;
-  --tinta: #101519;
-  --tinta-2: #414d58;
+  /* superficies */
+  --fondo-app:      #FFFFFF;
+  --fondo-lateral:  #F5F5F7;
+  --fondo-panel:    #FFFFFF;
+  --fondo-cabecera: #FAFAFB;
+  --hairline:       #DCDCE0;
+
+  /* tinta */
+  --tinta-1: #1D1D1F;   /* 16.8:1 sobre panel */
+  --tinta-2: #55555C;   /*  7.4:1 */
+  --tinta-3: #86868B;   /*  3.6:1 — solo metadatos */
+
+  /* interacción — NEUTRA a propósito: el azul compite con «en curso» */
+  --hover:     #F0F0F3;
+  --seleccion: #E4E4E8;
+  --foco:      #1D4ED8;
+
+  /* CANAL 1 · estado — solo dos tonos vivos; pendiente y cancelada son neutros */
+  --estado-hecha:        #047857;  /* 5.5:1 */
+  --estado-curso:        #1D4ED8;  /* 6.7:1 */
+  --estado-pendiente:    #86868B;
+  --estado-cancelada:    #86868B;
+  --estado-sindesglosar: #A1A1A6;
+
+  /* CANAL 2 · procedencia */
+  --nuevo-banda:  #CA8A04;  /* 2.9:1 — elemento GRÁFICO, nunca texto */
+  --nuevo-fondo:  #FDF0CC;
+  --nuevo-tinta:  #713F12;  /* 7.6:1 sobre --nuevo-fondo */
+
+  /* CANAL 3 · bloqueo — bandera sobre la tarea, no reemplaza su estado */
+  --bloqueo-banda: #B91C1C;  /* 6.5:1 */
+  --bloqueo-fondo: #FDF0F0;
+  --bloqueo-tinta: #991B1B;  /* 7.5:1 */
+
+  /* chips neutros */
+  --chip-fondo: #ECECF0;
+  --chip-tinta: #4B5563;     /* 6.4:1 */
+
+  /* medidor — relleno NEUTRO: el verde está reservado para «hecha» */
+  --medidor-pista:   #E4E4E8;
+  --medidor-relleno: #6E6E76;
+
+  /* métrica */
+  --alto-epica: 32px;
+  --alto-historia: 28px;
+  --alto-tarea: 26px;
+  --sangria-1: 12px;
+  --sangria-2: 28px;
+  --sangria-3: 44px;
+  --ancho-lateral: 216px;
+  --ancho-rail: 48px;
+
   color-scheme: light dark;
 }
 
+/* La app no tiene interruptor de tema propio: sigue el del sistema, como cualquier
+   otra ventana de macOS. El `backgroundColor` de la BrowserWindow ya se elige con
+   `nativeTheme` para que no haya destello blanco al abrir en oscuro. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --fondo: #0e1216;
-    --tinta: #e6eaef;
-    --tinta-2: #aeb9c4;
+    --fondo-app:      #1C1C1E;
+    --fondo-lateral:  #232326;
+    --fondo-panel:    #1C1C1E;
+    --fondo-cabecera: #202023;
+    --hairline:       #3A3A3F;
+
+    --tinta-1: #F2F2F5;
+    --tinta-2: #A9A9B2;
+    --tinta-3: #7C7C85;
+
+    --hover:     #2A2A2E;
+    --seleccion: #3A3A40;
+    --foco:      #4C8DF6;
+
+    --estado-hecha:        #0FA97A;
+    --estado-curso:        #4C8DF6;
+    --estado-pendiente:    #7C7C85;
+    --estado-cancelada:    #7C7C85;
+    --estado-sindesglosar: #6A6A73;
+
+    --nuevo-banda:  #D9A441;
+    --nuevo-fondo:  #3A2D0F;
+    --nuevo-tinta:  #F0CE7E;
+
+    --bloqueo-banda: #EF4444;
+    --bloqueo-fondo: #3A1A1A;
+    --bloqueo-tinta: #FCA5A5;
+
+    --chip-fondo: #2E2E33;
+    --chip-tinta: #B0B0BA;
+
+    --medidor-pista:   #3A3A40;
+    --medidor-relleno: #8E8E98;
   }
 }
 
-* { box-sizing: border-box; }
+/* ── base ─────────────────────────────────────────────────────── */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #raiz { height: 100%; }
 
 body {
-  margin: 0;
-  background: var(--fondo);
-  color: var(--tinta);
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--tinta-1);
+  background: var(--fondo-app);
   -webkit-font-smoothing: antialiased;
+  overflow: hidden;
 }
 
-.humo {
-  display: grid;
-  place-content: center;
-  gap: 8px;
-  height: 100vh;
-  text-align: center;
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+button:disabled { cursor: default; opacity: .5; }
+
+.crece { flex: 1; }
+
+/* Números siempre tabulares: las columnas de conteo no deben bailar al cambiar de fila. */
+.tabular, .medidor__conteo, .conteo-solo, .clave, .contador { font-variant-numeric: tabular-nums; }
+
+/**
+ * Texto solo para lectores de pantalla. El glifo de estado lleva SIEMPRE uno de estos
+ * al lado: la forma la ve quien mira, el nombre lo oye quien no.
+ */
+.solo-lectores {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
-.humo p { color: var(--tinta-2); margin: 0; }
+
+/* Foco visible y del mismo grosor en todo: se navega el árbol entero con el teclado. */
+:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: -2px;
+  border-radius: 3px;
+}
+
+/* ── armazón ──────────────────────────────────────────────────── */
+
+/**
+ * Columna flexible, no rejilla de filas fijas: la franja de solo lectura aparece y
+ * desaparece, y con `grid-template-rows` el cuerpo caía en la pista `auto` cuando la
+ * franja no estaba, dejando un hueco muerto al pie de la ventana.
+ */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.app > .toolbar { flex: 0 0 44px; }
+.app > .solo-lectura { flex: 0 0 auto; }
+.app > .cuerpo { flex: 1 1 auto; }
+
+.cuerpo {
+  display: grid;
+  grid-template-columns: var(--ancho-lateral) 1fr 1fr;
+  min-height: 0;
+}
+.app--rail .cuerpo { grid-template-columns: var(--ancho-rail) 1fr 1fr; }
+/* Una vista global no tiene panel hermano: ocupa las dos columnas. */
+.cuerpo--global { grid-template-columns: var(--ancho-lateral) 1fr; }
+.app--rail .cuerpo--global { grid-template-columns: var(--ancho-rail) 1fr; }
+
+/* Separación entre paneles: hairline de 1 px. Sin tarjetas flotantes, sin sombras. */
+.panel {
+  min-width: 0; min-height: 0;
+  display: flex; flex-direction: column;
+  background: var(--fondo-panel);
+}
+.panel + .panel { border-left: 1px solid var(--hairline); }
+
+/* ── barra de herramientas ────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px 0 80px;   /* hueco de los semáforos de `titleBarStyle: hiddenInset` */
+  background: var(--fondo-lateral);
+  border-bottom: 1px solid var(--hairline);
+  -webkit-app-region: drag;
+}
+.toolbar button, .toolbar .proyecto-actual { -webkit-app-region: no-drag; }
+
+.tb-boton {
+  display: flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 9px;
+  border-radius: 5px;
+  color: var(--tinta-2);
+}
+.tb-boton:hover { background: var(--hover); color: var(--tinta-1); }
+
+.proyecto-actual {
+  display: flex; align-items: baseline; gap: 8px;
+  height: 26px; padding: 0 8px;
+  font-size: 13px; font-weight: 600; color: var(--tinta-1);
+  min-width: 0;
+}
+.proyecto-actual__nombre {
+  font-weight: 400; font-size: 11.5px; color: var(--tinta-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.tb-primario {
+  height: 26px; padding: 0 11px; border-radius: 5px;
+  border: 1px solid var(--hairline);
+  background: var(--fondo-panel);
+  color: var(--tinta-1); font-weight: 500;
+}
+.tb-primario:hover:not(:disabled) { background: var(--hover); }
+
+.insignia-lectura {
+  display: inline-flex; align-items: center;
+  height: 20px; padding: 0 7px; border-radius: 4px;
+  background: var(--bloqueo-fondo); color: var(--bloqueo-tinta);
+  font-size: 11px; font-weight: 600;
+}
+
+/* ── cabeceras de panel ───────────────────────────────────────── */
+
+.cab {
+  display: flex; align-items: center; gap: 10px;
+  height: 38px; padding: 0 12px;
+  background: var(--fondo-cabecera);
+  border-bottom: 1px solid var(--hairline);
+  flex: 0 0 auto;
+}
+.cab__titulo {
+  font-size: 12px; font-weight: 600; letter-spacing: .055em;
+  text-transform: uppercase; color: var(--tinta-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Es un botón, no un metadato: `--tinta-3` (3.6:1) no basta para texto accionable. */
+.cab__accion {
+  font-size: 11.5px; color: var(--tinta-2); padding: 3px 7px; border-radius: 4px;
+  white-space: nowrap;
+}
+.cab__accion:hover { background: var(--hover); color: var(--tinta-1); }
+
+.alternador { display: flex; padding: 2px; background: var(--chip-fondo); border-radius: 5px; }
+.alternador button {
+  padding: 2px 8px; border-radius: 3px;
+  font-size: 11.5px; color: var(--tinta-2); white-space: nowrap;
+}
+.alternador button[aria-pressed="true"] {
+  background: var(--fondo-panel); color: var(--tinta-1); font-weight: 500;
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+
+/* ── medidor ──────────────────────────────────────────────────── */
+/* Las tres variantes miden 84 px para que el conteo de la épica, el de la historia
+   y el «sin desglosar» caigan en la MISMA columna. */
+
+.medidor { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex: 0 0 84px; }
+.medidor__pista {
+  width: 44px; height: 4px; border-radius: 2px;
+  background: var(--medidor-pista); overflow: hidden;
+}
+.medidor__relleno { display: block; height: 100%; border-radius: 2px; background: var(--medidor-relleno); }
+.medidor__conteo { font-size: 11px; color: var(--tinta-2); min-width: 34px; text-align: right; }
+
+.conteo-solo { flex: 0 0 84px; text-align: right; font-size: 11px; color: var(--tinta-2); }
+
+/* Contenedor sin hojas: ni medidor ni 0 %. Se dice lo que pasa. */
+.sin-desglosar {
+  flex: 0 0 84px; text-align: right;
+  font-size: 11px; color: var(--tinta-3); white-space: nowrap;
+}
+
+/* ── chips y contadores ───────────────────────────────────────── */
+
+.chip {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center;
+  height: 15px; padding: 0 5px; border-radius: 3px;
+  font-size: 10px; font-weight: 600; letter-spacing: .025em;
+  white-space: nowrap;
+}
+.chip--nuevo   { background: var(--nuevo-fondo); color: var(--nuevo-tinta); }
+.chip--bloqueo { background: var(--bloqueo-fondo); color: var(--bloqueo-tinta); gap: 4px; }
+.chip--neutro  { background: var(--chip-fondo); color: var(--chip-tinta); font-weight: 500; }
+
+/* Contador de bloqueadas: cuadrado + número. Nunca el color solo. */
+.contador {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 11px; color: var(--bloqueo-banda);
+  flex: 0 0 auto;
+}
+.contador svg { flex: 0 0 auto; }
+
+/* ── umbral duro ──────────────────────────────────────────────── */
+/* Por debajo de ~1040 px el panel del sprint no cabe con densidad legible: se
+   colapsa a un panel y la lateral se va a rail. Es la decisión de E0, medida
+   sobre una pantalla de 14". */
+@media (max-width: 1040px) {
+  .cuerpo,
+  .app--rail .cuerpo,
+  .cuerpo--global,
+  .app--rail .cuerpo--global { grid-template-columns: var(--ancho-rail) 1fr; }
+  .panel--sprint { display: none; }
+}

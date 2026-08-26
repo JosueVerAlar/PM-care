@@ -7,5 +7,6 @@ export default defineConfig({
   plugins: [react()],
   base: './',
   build: { outDir: 'dist/renderer', emptyOutDir: true },
-  server: { port: 5173, strictPort: true },
+  // 5190 y no el 5173 por omisión: ese puerto suele estar ocupado por otro Vite.
+  server: { port: 5190, strictPort: true },
 })

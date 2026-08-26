@@ -116,6 +116,7 @@ export function unProyectoAleatorio(rng: Aleatorio, opciones: OpcionesArbol = {}
     descripcion: null,
     prioridad: null,
     archivado: false,
+    cerrado_en: null,
     planeacion_cerrada_en: null,
     contadores: { epicas: nE, historias: nH, tareas: nT },
     equipo: [],

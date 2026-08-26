@@ -1,0 +1,98 @@
+/* ═══════════════════════════════════════════════════════════════
+   ÁRBOL — épica · historia · tarea.
+
+   Los tres niveles comparten 13px/18px. La jerarquía la cargan el peso, la
+   tinta y la sangría, no el tamaño: bajar la tarea a 11px la volvería lo más
+   difícil de leer siendo lo más consultado.
+   ═══════════════════════════════════════════════════════════════ */
+
+.arbol { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 8px; }
+
+.arbol--vacio {
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: 6px; padding: 32px; text-align: center;
+}
+
+.fila {
+  position: relative;
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; padding-right: 12px;
+  text-align: left; color: var(--tinta-1);
+  cursor: default;
+}
+.fila:hover { background: var(--hover); }
+
+/* Selección NEUTRA. Un azul aquí se leería como cambio de estado. */
+.fila[aria-selected="true"] { background: var(--seleccion); }
+/* Sobre la selección los metadatos suben de tinta para no perder contraste. */
+.fila[aria-selected="true"] .clave,
+.fila[aria-selected="true"] .medidor__conteo,
+.fila[aria-selected="true"] .conteo-solo,
+.fila[aria-selected="true"] .sin-desglosar { color: var(--tinta-2); }
+
+.fila--epica    { height: var(--alto-epica);    padding-left: var(--sangria-1); font-weight: 600; }
+.fila--historia { height: var(--alto-historia); padding-left: var(--sangria-2); font-weight: 500; color: var(--tinta-2); }
+.fila--tarea    { height: var(--alto-tarea);    padding-left: var(--sangria-3); font-weight: 400; }
+
+.fila__texto {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* CANAL 2 · PROCEDENCIA: banda de 3 px al borde izquierdo. Vive en x 0–3 px y la
+   sangría mínima es 12 px, así que nunca choca con el texto ni con el glifo. */
+.fila--nuevo::before,
+.tarjeta--nuevo::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--nuevo-banda);
+}
+
+/* Tarea ya llevada al sprint: atenuada en el árbol, no oculta. */
+.fila--en-sprint .fila__texto { color: var(--tinta-2); }
+.fila--en-sprint .glifo { opacity: .65; }
+
+/* Cancelada: tachada, tinta apagada y fuera de todo denominador. No gasta un tono
+   de la paleta: no es una señal que haya que perseguir. */
+.fila--cancelada .fila__texto { text-decoration: line-through; color: var(--tinta-3); }
+
+.chevron {
+  flex: 0 0 14px; display: flex; align-items: center; justify-content: center;
+  color: var(--tinta-3); transition: transform .12s ease;
+}
+.chevron--abierto { transform: rotate(90deg); }
+.chevron--vacio { visibility: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron { transition: none; }
+}
+
+/* CANAL 1 · ESTADO: columna fija de 14 px. Ni el bloqueo ni la procedencia entran aquí. */
+.glifo { flex: 0 0 14px; display: flex; align-items: center; justify-content: center; }
+.glifo--pendiente    { color: var(--estado-pendiente); }
+.glifo--curso        { color: var(--estado-curso); }
+.glifo--hecha        { color: var(--estado-hecha); }
+.glifo--cancelada    { color: var(--estado-cancelada); }
+.glifo--sindesglosar { color: var(--estado-sindesglosar); }
+
+/* Columna fija: todas las claves alineadas a la derecha en los tres niveles. */
+.clave {
+  flex: 0 0 88px; text-align: right;
+  font-size: 11px; color: var(--tinta-3); letter-spacing: .02em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.fila .contador { margin-right: 2px; }
+
+/* ── leyenda al pie ───────────────────────────────────────────── */
+
+.leyenda {
+  flex: 0 0 auto;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px;
+  padding: 7px 12px;
+  border-top: 1px solid var(--hairline);
+  background: var(--fondo-cabecera);
+  font-size: 11px; color: var(--tinta-2);
+}
+.leyenda__item { display: flex; align-items: center; gap: 5px; }
+.leyenda__banda { width: 3px; height: 12px; border-radius: 1px; background: var(--nuevo-banda); }
+.leyenda__nota { flex-basis: 100%; color: var(--tinta-3); }

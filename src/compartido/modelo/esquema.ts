@@ -191,7 +191,27 @@ export const EsquemaProyecto = z
      * idénticos: el tablero solo sabe decir qué está quieto, no qué importa.
      */
     prioridad: EsquemaPrioridad.nullable().default(null),
+    /**
+     * ¿Fuera de la vista diaria? Responde a "no me lo pintes", no a "ya terminó". Un
+     * proyecto pausado sin fecha de conclusión se archiva igual.
+     */
     archivado: z.boolean().default(false),
+    /**
+     * Fecha en que el proyecto CONCLUYÓ. `null` = sigue vivo.
+     *
+     * Es un campo aparte de `archivado` y no un enum de estado porque las dos preguntas
+     * son distintas y ninguna se deriva de la otra: `archivado` es "sácalo de mi vista"
+     * y `cerrado_en` es "cuándo terminó". Cerrar implica archivar (lo hace
+     * `cerrarProyecto`); archivar no implica cerrar.
+     *
+     * Y ninguno de los dos es eliminar: cerrar CONSERVA toda la historia del proyecto —
+     * sus tareas siguen ahí, y los sprints cerrados que las comprometieron siguen
+     * apuntando a algo real (regla 8). Ver `eliminarProyecto` en el reductor.
+     *
+     * Aditivo con `.default(null)`: los documentos escritos antes de que este campo
+     * existiera siguen validando sin tocarlos.
+     */
+    cerrado_en: EsquemaFecha.nullable().default(null),
     /**
      * Fecha en que se pulsó "Cerrar planeación inicial". Lo capturado después nace
      * `planeada: false`. `null` = nunca se cerró, así que todo es planeado y el código de

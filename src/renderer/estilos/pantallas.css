@@ -1,0 +1,111 @@
+/* ═══════════════════════════════════════════════════════════════
+   PANTALLAS DE ESTADO — cargando, sin puente, vacíos y solo lectura.
+
+   Ninguna de estas es un adorno: son las tres cuartas partes del tiempo que
+   alguien pasa en una app cuando algo va mal.
+   ═══════════════════════════════════════════════════════════════ */
+
+.pantalla {
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: 10px; height: 100vh; padding: 40px; text-align: center;
+}
+.pantalla__titulo { font-size: 15px; font-weight: 600; }
+.pantalla__nota { max-width: 46ch; color: var(--tinta-2); line-height: 20px; }
+
+/* Estado vacío dentro de un panel. */
+.vacio {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  gap: 8px; padding: 40px 24px; text-align: center;
+}
+.vacio__titulo { font-size: 14px; font-weight: 600; }
+.vacio__nota { max-width: 48ch; color: var(--tinta-2); line-height: 19px; }
+.vacio__dato { color: var(--tinta-2); }
+.vacio__etapa { font-size: 11.5px; color: var(--tinta-3); }
+
+code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11.5px;
+  background: var(--chip-fondo);
+  color: var(--chip-tinta);
+  padding: 1px 4px; border-radius: 3px;
+  word-break: break-all;
+}
+
+/* ── botones de las pantallas ─────────────────────────────────── */
+
+.boton {
+  height: 28px; padding: 0 12px; border-radius: 5px;
+  border: 1px solid var(--hairline);
+  background: var(--fondo-panel);
+  color: var(--tinta-1); font-size: 12.5px;
+}
+.boton:hover:not(:disabled) { background: var(--hover); }
+.boton--primario { font-weight: 600; }
+
+/* ── modo solo lectura ────────────────────────────────────────── */
+
+.solo-lectura {
+  overflow-y: auto;
+  height: 100vh;
+  padding: 48px 24px;
+  background: var(--fondo-app);
+}
+.solo-lectura__caja {
+  max-width: 720px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+/* Variante en franja: el documento sigue siendo válido (conflicto externo), así que
+   la app de abajo se puede seguir mirando y esto solo avisa y ofrece salidas. */
+.solo-lectura--compacta {
+  height: auto;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--bloqueo-banda);
+  background: var(--bloqueo-fondo);
+}
+.solo-lectura--compacta .solo-lectura__caja { max-width: none; gap: 8px; }
+.solo-lectura--compacta .solo-lectura__titulo { font-size: 13px; }
+.solo-lectura--compacta .solo-lectura__insignia { display: none; }
+
+.solo-lectura__insignia {
+  align-self: flex-start;
+  padding: 3px 8px; border-radius: 4px;
+  background: var(--bloqueo-fondo); color: var(--bloqueo-tinta);
+  font-size: 11px; font-weight: 600; letter-spacing: .02em;
+}
+.solo-lectura__titulo { font-size: 17px; line-height: 24px; font-weight: 600; }
+.solo-lectura__subtitulo {
+  margin-top: 6px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tinta-3);
+}
+.solo-lectura__problemas { padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.solo-lectura__ruta { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.solo-lectura__etiqueta {
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tinta-3);
+}
+.solo-lectura__acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.solo-lectura__aviso {
+  padding: 8px 10px; border-radius: 5px;
+  background: var(--bloqueo-fondo); color: var(--bloqueo-tinta);
+  font-size: 12px; line-height: 17px;
+}
+.solo-lectura__nota { font-size: 11.5px; color: var(--tinta-3); line-height: 17px; }
+
+/* ── lista de respaldos ───────────────────────────────────────── */
+
+.respaldos { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.respaldos__lista { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.respaldos__fila {
+  display: flex; align-items: center; gap: 10px;
+  padding: 5px 8px; border-radius: 5px;
+  font-size: 12px; cursor: pointer;
+}
+.respaldos__fila:hover { background: var(--hover); }
+.respaldos__nombre { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.respaldos__clase { color: var(--tinta-3); font-size: 11px; }
+.respaldos__marca { color: var(--tinta-2); font-size: 11px; }
+.respaldos__bytes { color: var(--tinta-3); font-size: 11px; min-width: 60px; text-align: right; }
+.respaldos > .boton { align-self: flex-start; }

@@ -35,6 +35,7 @@ import type {
   Epica,
   Historia,
   Instante,
+  Persona,
   Proyecto,
   Sprint,
   Tarea,
@@ -101,6 +102,294 @@ function aplicar(
     nuevoEvento(ahora, comando.comando, fuente, campos);
 
   switch (comando.comando) {
+    // --- proyectos ------------------------------------------------------
+    case 'crearProyecto': {
+      // La unicidad de la clave se comprueba aquí y no en el esquema del payload porque
+      // hace falta el documento entero para saberlo. Y hace falta comprobarla: dos
+      // proyectos con la misma clave harían que `SICOE-T14` fuera dos tareas distintas.
+      const chocando = doc.proyectos.find((p) => p.clave === comando.clave);
+      if (chocando !== undefined) {
+        return invalido(`ya existe un proyecto con la clave "${comando.clave}": ${chocando.nombre}`);
+      }
+
+      const proyecto: Proyecto = {
+        clave: comando.clave,
+        nombre: comando.nombre,
+        descripcion: comando.descripcion ?? null,
+        prioridad: comando.prioridad ?? null,
+        archivado: false,
+        cerrado_en: null,
+        planeacion_cerrada_en: null,
+        // Arranca en cero y de ahí solo sube (regla 15). Nunca se recalcula.
+        contadores: { epicas: 0, historias: 0, tareas: 0 },
+        equipo: [],
+        epicas: [],
+        clave_externa: null,
+      };
+      doc.proyectos.push(proyecto);
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          proyecto_id: proyecto.clave,
+          origen: rutaLegible([proyecto.clave]),
+          resumen: `Proyecto creado: ${proyecto.clave} — ${proyecto.nombre}`,
+        }),
+      };
+    }
+
+    case 'editarProyecto': {
+      const proyecto = doc.proyectos.find((p) => p.clave === comando.clave);
+      if (proyecto === undefined) return falta(`el proyecto "${comando.clave}"`);
+      if (
+        comando.nombre === undefined &&
+        comando.descripcion === undefined &&
+        comando.prioridad === undefined
+      ) {
+        return sinCambios();
+      }
+      // `clave` viene solo para localizar el proyecto: el comando no tiene ningún campo
+      // que la cambie, y esa ausencia ES la garantía de inmutabilidad (regla 15). Lo que
+      // el usuario ve y corrige es `nombre`.
+      const antes = instantaneaDeProyecto(proyecto);
+      if (comando.nombre !== undefined) proyecto.nombre = comando.nombre;
+      if (comando.descripcion !== undefined) proyecto.descripcion = comando.descripcion;
+      if (comando.prioridad !== undefined) proyecto.prioridad = comando.prioridad;
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          proyecto_id: proyecto.clave,
+          origen: rutaLegible([proyecto.clave]),
+          resumen: `Proyecto editado: ${proyecto.clave} — ${proyecto.nombre}`,
+          detalle: { antes, despues: instantaneaDeProyecto(proyecto) },
+        }),
+      };
+    }
+
+    case 'cerrarProyecto': {
+      const proyecto = doc.proyectos.find((p) => p.clave === comando.clave);
+      if (proyecto === undefined) return falta(`el proyecto "${comando.clave}"`);
+      if (proyecto.cerrado_en !== null) {
+        return invalido(`${proyecto.clave} ya está cerrado desde ${proyecto.cerrado_en}`);
+      }
+
+      // Cerrar NO toca ni una tarea. La tentación es marcar como canceladas las que
+      // quedaron pendientes «porque el proyecto ya terminó», y eso es inventarse un
+      // desenlace: el dato honesto es que el proyecto se cerró con 7 tareas sin hacer.
+      // Tampoco toca los sprints: los cerrados son inmutables (regla 8) y los abiertos
+      // siguen mostrando lo comprometido hasta que el usuario lo saque a mano.
+      proyecto.cerrado_en = fechaDe(ahora);
+      // Cerrar implica archivar. Al revés no: un proyecto pausado se archiva sin cerrarse.
+      proyecto.archivado = true;
+      const abiertas = contarTareas(proyecto, (t) => t.estado !== 'hecha' && t.estado !== 'cancelada');
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          proyecto_id: proyecto.clave,
+          origen: rutaLegible([proyecto.clave]),
+          resumen: `Proyecto cerrado: ${proyecto.clave} (${abiertas} tareas quedaron sin terminar)`,
+          detalle: { cerrado_en: proyecto.cerrado_en, tareas_abiertas: abiertas },
+        }),
+      };
+    }
+
+    case 'reabrirProyecto': {
+      const proyecto = doc.proyectos.find((p) => p.clave === comando.clave);
+      if (proyecto === undefined) return falta(`el proyecto "${comando.clave}"`);
+      if (proyecto.cerrado_en === null && !proyecto.archivado) {
+        return invalido(`${proyecto.clave} no está cerrado`);
+      }
+      const desde = proyecto.cerrado_en;
+      proyecto.cerrado_en = null;
+      proyecto.archivado = false;
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          proyecto_id: proyecto.clave,
+          origen: rutaLegible([proyecto.clave]),
+          resumen: `Proyecto reabierto: ${proyecto.clave}`,
+          detalle: { estaba_cerrado_desde: desde },
+        }),
+      };
+    }
+
+    case 'eliminarProyecto': {
+      if (comando.confirmacion !== comando.clave) {
+        return invalido(
+          `para eliminar "${comando.clave}" hay que repetir su clave en "confirmacion"; llegó "${comando.confirmacion}"`,
+        );
+      }
+      const proyecto = doc.proyectos.find((p) => p.clave === comando.clave);
+      if (proyecto === undefined) return falta(`el proyecto "${comando.clave}"`);
+
+      const tareas = idsDeTareasDeProyecto(proyecto);
+      const cerrado = primerSprintCerradoCon(doc, tareas);
+      if (cerrado !== null) return proyectoConHistoriaCerrada(proyecto, cerrado, tareas);
+
+      quitarDeSprintsAbiertos(doc, tareas);
+      doc.proyectos.splice(doc.proyectos.indexOf(proyecto), 1);
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          // El evento conserva la clave y el nombre aunque el proyecto ya no exista: es
+          // lo único que quedará para explicar por qué el historial de antes de esta
+          // línea habla de un proyecto que no está en el documento.
+          proyecto_id: proyecto.clave,
+          origen: rutaLegible([proyecto.clave]),
+          resumen: `Proyecto eliminado: ${proyecto.clave} — ${proyecto.nombre} (${proyecto.epicas.length} épicas, ${tareas.size} tareas)`,
+          detalle: { nombre: proyecto.nombre, tareas: [...tareas] },
+        }),
+      };
+    }
+
+    // --- personas -------------------------------------------------------
+    case 'crearPersona': {
+      // Alta sin ceremonia: el id se deriva del nombre y el choque se resuelve solo. Al
+      // usuario no se le pregunta por un identificador que no le importa y que además no
+      // podrá cambiar nunca.
+      const id = idDePersonaDesdeNombre(comando.nombre, new Set(doc.personas.map((p) => p.id)));
+      const persona: Persona = {
+        id,
+        nombre: comando.nombre,
+        activa: true,
+        clave_externa: null,
+      };
+      doc.personas.push(persona);
+
+      const equipos = comando.equipos ?? [];
+      const asignado = fijarEquiposDe(doc, persona.id, equipos);
+      if (!asignado.ok) return { ok: false, error: asignado.error };
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          resumen: `Persona dada de alta: ${persona.nombre} (${persona.id})`,
+          detalle: { equipos: asignado.despues },
+        }),
+      };
+    }
+
+    case 'editarPersona': {
+      const persona = doc.personas.find((p) => p.id === comando.id);
+      if (persona === undefined) return falta(`la persona "${comando.id}"`);
+      if (comando.nombre === undefined && comando.equipos === undefined) return sinCambios();
+
+      // Corregir el nombre NO regenera el id. El id ya está copiado en cada
+      // `tarea.responsable` y en cada item de sprint —incluidos los cerrados—, así que
+      // recalcularlo aquí reescribiría de quién fue el trabajo del mes pasado. Que el id
+      // se derive del nombre es una comodidad del alta, no una relación que se mantenga.
+      const antes = { nombre: persona.nombre, equipos: equiposDe(doc, persona.id) };
+      if (comando.nombre !== undefined) persona.nombre = comando.nombre;
+
+      if (comando.equipos !== undefined) {
+        if (!persona.activa && comando.equipos.length > 0) {
+          return invalido(
+            `${persona.id} está desactivada; reactívala con "reactivarPersona" antes de meterla a un equipo`,
+          );
+        }
+        const asignado = fijarEquiposDe(doc, persona.id, comando.equipos);
+        if (!asignado.ok) return { ok: false, error: asignado.error };
+      }
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          resumen: `Persona editada: ${persona.nombre} (${persona.id})`,
+          detalle: { antes, despues: { nombre: persona.nombre, equipos: equiposDe(doc, persona.id) } },
+        }),
+      };
+    }
+
+    case 'desactivarPersona': {
+      const persona = doc.personas.find((p) => p.id === comando.id);
+      if (persona === undefined) return falta(`la persona "${comando.id}"`);
+      if (!persona.activa) return invalido(`${persona.id} ya está inactiva`);
+
+      persona.activa = false;
+      // Se le quita la pertenencia a los equipos, pero NO se toca ni una de sus tareas ni
+      // un solo item de sprint: su historia es suya y sigue diciendo su nombre.
+      //
+      // Por qué sacarla de los equipos en vez de dejarla y confiar en que cada vista
+      // filtre por `activa`: el equipo de un proyecto significa "quién está dedicado a
+      // esto HOY", que es exactamente lo que deja de ser cierto. Si el dato se quedara,
+      // la invariante viviría repartida en cada pantalla y la primera que se olvidara del
+      // filtro volvería a ofrecerla en un desplegable. De qué equipos salió queda en el
+      // detalle del evento, así que la baja es reversible a mano.
+      const salioDe = equiposDe(doc, persona.id);
+      const vaciado = fijarEquiposDe(doc, persona.id, []);
+      if (!vaciado.ok) return { ok: false, error: vaciado.error };
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          resumen: `Persona desactivada: ${persona.nombre} (${persona.id})`,
+          detalle: { equipos: salioDe },
+        }),
+      };
+    }
+
+    case 'reactivarPersona': {
+      const persona = doc.personas.find((p) => p.id === comando.id);
+      if (persona === undefined) return falta(`la persona "${comando.id}"`);
+      if (persona.activa) return invalido(`${persona.id} ya está activa`);
+      persona.activa = true;
+      // No vuelve sola a sus equipos anteriores: a qué proyectos se dedica ahora es una
+      // decisión de hoy, no la restauración de cómo estaba hace seis meses. Se la mete
+      // con `editarPersona` o `editarEquipo`.
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({ resumen: `Persona reactivada: ${persona.nombre} (${persona.id})` }),
+      };
+    }
+
+    case 'eliminarPersona': {
+      const persona = doc.personas.find((p) => p.id === comando.id);
+      if (persona === undefined) return falta(`la persona "${comando.id}"`);
+
+      const ataduras = referenciasAPersona(doc, persona.id);
+      if (ataduras.length > 0) {
+        return {
+          ok: false,
+          error: {
+            codigo: 'invalido',
+            mensaje: `no se puede eliminar a ${persona.id}: ${ataduras.join('; ')}. Usa "desactivarPersona": deja de recibir trabajo nuevo y su historia se conserva`,
+          },
+        };
+      }
+
+      // Llegar aquí significa que nadie la nombra en ninguna tarea ni en ningún sprint.
+      // Solo puede quedarle pertenencia a equipos, que es estado del presente y no
+      // registro histórico: se retira aquí porque el esquema exige que todo `persona_id`
+      // de un equipo exista, y queda anotada en el evento.
+      const salioDe = equiposDe(doc, persona.id);
+      const vaciado = fijarEquiposDe(doc, persona.id, []);
+      if (!vaciado.ok) return { ok: false, error: vaciado.error };
+      doc.personas.splice(doc.personas.indexOf(persona), 1);
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          resumen: `Persona eliminada: ${persona.nombre} (${persona.id})`,
+          detalle: { equipos: salioDe },
+        }),
+      };
+    }
+
     // --- épicas ---------------------------------------------------------
     case 'crearEpica': {
       const proyecto = doc.proyectos.find((p) => p.clave === comando.proyecto);
@@ -261,8 +550,9 @@ function aplicar(
       const sitio = buscarHistoria(doc, comando.historiaId);
       if (sitio === null) return falta(`la historia "${comando.historiaId}"`);
       const responsable = comando.responsable ?? null;
-      if (responsable !== null && !doc.personas.some((p) => p.id === responsable)) {
-        return falta(`la persona "${responsable}"`);
+      if (responsable !== null) {
+        const problema = noAsignable(doc, responsable);
+        if (problema !== null) return { ok: false, error: problema };
       }
 
       const emitido = siguienteId(sitio.proyecto.clave, sitio.proyecto.contadores, 'tarea');
@@ -310,8 +600,11 @@ function aplicar(
       if (comando.titulo !== undefined) { tarea.titulo = comando.titulo; cambios.push('titulo'); }
       if (comando.descripcion !== undefined) { tarea.descripcion = comando.descripcion; cambios.push('descripcion'); }
       if (comando.responsable !== undefined) {
-        if (comando.responsable !== null && !doc.personas.some((p) => p.id === comando.responsable)) {
-          return falta(`la persona "${comando.responsable}"`);
+        if (comando.responsable !== null) {
+          // Quitar el responsable (`null`) siempre se puede, incluso si quien estaba ya
+          // se desactivó: lo que se prohíbe es ponerle trabajo nuevo a alguien inactivo.
+          const problema = noAsignable(doc, comando.responsable);
+          if (problema !== null) return { ok: false, error: problema };
         }
         tarea.responsable = comando.responsable;
         cambios.push('responsable');
@@ -571,9 +864,8 @@ function aplicar(
 
       const vistos = new Set<string>();
       for (const miembro of comando.miembros) {
-        if (!doc.personas.some((p) => p.id === miembro.persona_id)) {
-          return falta(`la persona "${miembro.persona_id}"`);
-        }
+        const problema = noAsignable(doc, miembro.persona_id);
+        if (problema !== null) return { ok: false, error: problema };
         if (vistos.has(miembro.persona_id)) {
           return { ok: false, error: { codigo: 'invalido', mensaje: `"${miembro.persona_id}" aparece dos veces en el equipo` } };
         }
@@ -641,6 +933,171 @@ function idsDeTareasDeEpica(epica: Epica): Set<string> {
   return ids;
 }
 
+function idsDeTareasDeProyecto(proyecto: Proyecto): Set<string> {
+  const ids = new Set<string>();
+  for (const epica of proyecto.epicas) {
+    for (const id of idsDeTareasDeEpica(epica)) ids.add(id);
+  }
+  return ids;
+}
+
+function contarTareas(proyecto: Proyecto, cumple: (tarea: Tarea) => boolean): number {
+  let total = 0;
+  for (const epica of proyecto.epicas) {
+    for (const historia of epica.historias) {
+      for (const tarea of historia.tareas) if (cumple(tarea)) total += 1;
+    }
+  }
+  return total;
+}
+
+// --- personas ---------------------------------------------------------------
+
+/**
+ * Nadie asigna trabajo nuevo a una persona desactivada. Devuelve el error o `null`.
+ *
+ * La comprobación vive aquí y no en las vistas por la misma razón que las demás
+ * invariantes del reductor: si viviera en cada pantalla, la próxima pantalla que se
+ * escriba se olvidará. `activa: false` significa exactamente esto —conserva su historia,
+ * no recibe nada nuevo—, y "esto" tiene que ser una sola línea de código, no una
+ * costumbre.
+ */
+function noAsignable(doc: Documento, personaId: string): ErrorComando | null {
+  const persona = doc.personas.find((p) => p.id === personaId);
+  if (persona === undefined) {
+    return { codigo: 'no-encontrado', mensaje: `no existe la persona "${personaId}"` };
+  }
+  if (!persona.activa) {
+    return {
+      codigo: 'invalido',
+      mensaje: `${persona.id} (${persona.nombre}) está desactivada; reactívala con "reactivarPersona" antes de asignarle nada`,
+    };
+  }
+  return null;
+}
+
+/** Claves de los proyectos en cuyo equipo aparece la persona. */
+function equiposDe(doc: Documento, personaId: string): string[] {
+  return doc.proyectos
+    .filter((proyecto) => proyecto.equipo.some((m) => m.persona_id === personaId))
+    .map((proyecto) => proyecto.clave);
+}
+
+type ResultadoEquipos =
+  | { ok: true; despues: string[] }
+  | { ok: false; error: ErrorComando };
+
+/**
+ * Deja a la persona exactamente en los equipos de `claves` y en ninguno más.
+ *
+ * Es la relación equipo↔persona escrita desde el lado de la persona; `editarEquipo` la
+ * escribe desde el lado del proyecto. Las dos tocan el mismo array porque un equipo no
+ * es una entidad aparte: ES `proyecto.equipo`. Duplicar la pertenencia en un segundo
+ * lugar para que cada vista tuviera "su" copia es justo lo que haría que un día no
+ * coincidieran.
+ *
+ * Donde la persona YA era miembro no se toca nada: su `rol` es un dato que esta lista no
+ * conoce y no tiene por qué borrar.
+ */
+function fijarEquiposDe(doc: Documento, personaId: string, claves: readonly string[]): ResultadoEquipos {
+  const deseadas: string[] = [];
+  for (const clave of claves) {
+    if (!doc.proyectos.some((p) => p.clave === clave)) {
+      return { ok: false, error: { codigo: 'no-encontrado', mensaje: `no existe el proyecto "${clave}"` } };
+    }
+    if (!deseadas.includes(clave)) deseadas.push(clave);
+  }
+
+  for (const proyecto of doc.proyectos) {
+    const indice = proyecto.equipo.findIndex((m) => m.persona_id === personaId);
+    const debeEstar = deseadas.includes(proyecto.clave);
+    if (debeEstar && indice < 0) proyecto.equipo.push({ persona_id: personaId, rol: null });
+    else if (!debeEstar && indice >= 0) proyecto.equipo.splice(indice, 1);
+  }
+  return { ok: true, despues: deseadas };
+}
+
+/**
+ * Todo lo que dejaría de tener sentido si la persona desapareciera del documento, en
+ * frases listas para mostrar. Vacío = se puede eliminar.
+ *
+ * Mira las tareas vivas y **todos** los items de sprint, cerrados incluidos. Ese segundo
+ * caso es el que importa: un sprint cerrado guarda el responsable materializado, y es un
+ * registro de lo que pasó (regla 8). Borrar a la persona lo dejaría apuntando a un id
+ * que ya no existe, y el esquema lo rechazaría —así que el comando fallaría igual, pero
+ * con un "documento-invalido" que no le explica nada a nadie.
+ *
+ * La pertenencia a equipos NO se cuenta: es estado del presente, no historia.
+ */
+function referenciasAPersona(doc: Documento, personaId: string): string[] {
+  const razones: string[] = [];
+
+  const tareas: string[] = [];
+  for (const proyecto of doc.proyectos) {
+    for (const epica of proyecto.epicas) {
+      for (const historia of epica.historias) {
+        for (const tarea of historia.tareas) {
+          if (tarea.responsable === personaId) tareas.push(tarea.id);
+        }
+      }
+    }
+  }
+  if (tareas.length > 0) {
+    razones.push(`es responsable de ${tareas.length} tarea(s) (${muestra(tareas)})`);
+  }
+
+  const cerrados: string[] = [];
+  const abiertos: string[] = [];
+  for (const sprint of doc.sprints) {
+    if (!sprint.items.some((item) => item.responsable === personaId)) continue;
+    (sprint.estado === 'cerrado' ? cerrados : abiertos).push(sprint.id);
+  }
+  if (cerrados.length > 0) {
+    razones.push(`aparece como responsable en el sprint cerrado ${muestra(cerrados)}, que no se reescribe`);
+  }
+  if (abiertos.length > 0) {
+    razones.push(`aparece como responsable en el sprint ${muestra(abiertos)}`);
+  }
+  return razones;
+}
+
+/** Los primeros tres ids y cuántos más. Un mensaje de error no es un volcado. */
+function muestra(ids: readonly string[]): string {
+  const primeros = ids.slice(0, 3).join(', ');
+  return ids.length > 3 ? `${primeros} y ${ids.length - 3} más` : primeros;
+}
+
+/**
+ * Id legible derivado del nombre: "Ana García" → `ana-garcia`.
+ *
+ * Se quitan los acentos con NFD en vez de con una tabla de reemplazos porque una tabla
+ * escrita a mano siempre acaba sin la letra que hacía falta. La 'ñ' se descompone igual
+ * y queda como 'n'; es lo correcto para un id que se teclea y se busca con Cmd-F.
+ *
+ * El choque se resuelve con un sufijo numérico y sin preguntar: dos "Ana García" son un
+ * caso real y raro, y frenar un alta para que el usuario invente un identificador es
+ * justo la ceremonia que se quiere evitar. Empieza en `-2` porque `ana-garcia-1` daría a
+ * entender que hay un "primero" y la primera no lleva sufijo.
+ */
+function idDePersonaDesdeNombre(nombre: string, tomados: ReadonlySet<string>): string {
+  const base =
+    nombre
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') ||
+    // Un nombre sin una sola letra latina (`"李四"`, `"???"`) no produce id; se le da uno
+    // genérico y el bucle de abajo lo numera. El nombre real se conserva intacto.
+    'persona';
+
+  if (!tomados.has(base)) return base;
+  for (let sufijo = 2; ; sufijo += 1) {
+    const candidato = `${base}-${sufijo}`;
+    if (!tomados.has(candidato)) return candidato;
+  }
+}
+
 // --- sprints ----------------------------------------------------------------
 
 /** El primer sprint CERRADO que compromete alguna de estas tareas, o `null`. */
@@ -683,6 +1140,10 @@ function sinCambios(): { ok: false; error: ErrorComando } {
   return { ok: false, error: { codigo: 'invalido', mensaje: 'el comando no indica ningún cambio' } };
 }
 
+function invalido(mensaje: string): { ok: false; error: ErrorComando } {
+  return { ok: false, error: { codigo: 'invalido', mensaje } };
+}
+
 function sprintCerrado(sprint: Sprint): { ok: false; error: ErrorComando } {
   return {
     ok: false,
@@ -704,6 +1165,45 @@ function atadaASprintCerrado(
   };
 }
 
+/**
+ * Se prohíbe eliminar un proyecto que dejó rastro en un sprint CERRADO. La alternativa
+ * es `cerrarProyecto`, que conserva todo y lo saca de la vista diaria.
+ *
+ * Por qué prohibir y no convertirlo en lápida:
+ *
+ * Un sprint cerrado es el único registro de qué se comprometió y qué salió en un periodo
+ * concreto: es de donde sale "el avance real del mes pasado" (regla 8). Sus items apuntan
+ * a tareas por id. Si eliminar el proyecto se llevara esas tareas, ese número cambiaría
+ * solo y en silencio —hoy dice 12 de 20, mañana 12 de 14 porque catorce desaparecieron—,
+ * y sin que nadie hubiera tocado el sprint. Eso no es borrar un proyecto: es reescribir
+ * el pasado.
+ *
+ * La lápida (dejar el proyecto vacío conservando clave y título para que los ids sigan
+ * resolviendo) suena a término medio y es lo peor de las dos: el registro histórico
+ * necesita el TÍTULO DE CADA TAREA, no el del proyecto, así que un sprint cerrado pasaría
+ * a listar seis filas sin nombre. Un histórico que ya no se puede leer no conserva nada;
+ * solo esconde que se perdió.
+ *
+ * Así que un proyecto con historia no se elimina, se cierra. Lo eliminable es lo que
+ * nunca llegó a pasar: el proyecto creado con la clave equivocada, la prueba de ayer.
+ * Y esa es exactamente la misma regla que ya rige para `eliminarTarea`, `eliminarEpica`
+ * y `eliminarHistoria`; aquí solo se aplica al bloque entero.
+ */
+function proyectoConHistoriaCerrada(
+  proyecto: Proyecto,
+  sprint: Sprint,
+  tareas: ReadonlySet<string>,
+): { ok: false; error: ErrorComando } {
+  const afectadas = sprint.items.filter((i) => tareas.has(i.tarea_id)).map((i) => i.tarea_id);
+  return {
+    ok: false,
+    error: {
+      codigo: 'sprint-cerrado',
+      mensaje: `no se puede eliminar ${proyecto.clave}: ${afectadas.length} de sus tareas (${muestra(afectadas)}) forman parte del sprint cerrado ${sprint.id} y borrarlas cambiaría lo que ese sprint dice que pasó. Ciérralo con "cerrarProyecto": conserva toda su historia y sale de la vista diaria`,
+    },
+  };
+}
+
 // --- utilidades -------------------------------------------------------------
 
 /**
@@ -720,6 +1220,14 @@ function clonar<T>(valor: T): T {
 function naceComoPlaneada(proyecto: Proyecto, ahora: Instante): boolean {
   const cierre = proyecto.planeacion_cerrada_en;
   return cierre === null || fechaDe(ahora) <= cierre;
+}
+
+function instantaneaDeProyecto(proyecto: Proyecto): Record<string, unknown> {
+  return {
+    nombre: proyecto.nombre,
+    descripcion: proyecto.descripcion,
+    prioridad: proyecto.prioridad,
+  };
 }
 
 function instantaneaDeTarea(tarea: Tarea): Record<string, unknown> {

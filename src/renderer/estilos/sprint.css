@@ -1,0 +1,58 @@
+/* ═══════════════════════════════════════════════════════════════
+   SPRINT — tarjetas PLANAS: separadas por hairline, sin sombra.
+   Una sombra por tarjeta en una lista de 20 convierte el panel en ruido.
+   ═══════════════════════════════════════════════════════════════ */
+
+.resumen {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 11.5px; color: var(--tinta-2);
+  flex: 0 0 auto;
+}
+
+.lista-sprint { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 0; }
+
+.tarjeta {
+  position: relative;
+  padding: 9px 12px 10px;
+  border-bottom: 1px solid var(--hairline);
+}
+.tarjeta:hover { background: var(--hover); }
+
+.tarjeta__cab { display: flex; align-items: flex-start; gap: 7px; }
+.tarjeta__titulo { flex: 1; min-width: 0; line-height: 18px; }
+.tarjeta__cab .glifo { height: 18px; }
+.tarjeta__cab .clave { line-height: 18px; }
+
+/* Migaja de ruta en una sola línea: recupera ancho de texto útil sin perder el dónde. */
+.tarjeta__ruta {
+  margin: 2px 0 0 21px;
+  font-size: 11px; color: var(--tinta-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.tarjeta__pie {
+  display: flex; align-items: center; gap: 6px;
+  margin: 5px 0 0 21px;
+  font-size: 11.5px; color: var(--tinta-2);
+  min-width: 0;
+}
+.tarjeta__persona { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tarjeta__sep { color: var(--tinta-3); }
+/* Un compromiso a medias se nombra, no se rellena con un guion que parece un dato. */
+.tarjeta__falta { color: var(--tinta-3); font-style: italic; }
+/* Vencida: la fecha sube de peso y de tinta. Sigue sin ser un estado. */
+.tarjeta__vencida { color: var(--bloqueo-tinta); font-weight: 600; }
+
+/* CANAL 3 · BLOQUEO en la tarjeta: aquí sí cabe el motivo entero. */
+.tira-bloqueo {
+  display: flex; align-items: center; gap: 6px;
+  margin: 7px 0 0 21px; padding: 4px 7px;
+  border-radius: 4px;
+  background: var(--bloqueo-fondo);
+  color: var(--bloqueo-tinta);
+  font-size: 11px;
+}
+.tira-bloqueo svg { flex: 0 0 auto; }
+.tira-bloqueo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

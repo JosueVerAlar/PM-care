@@ -1,0 +1,81 @@
+/* ═══════════════════════════════════════════════════════════════
+   BARRA LATERAL — vistas globales y proyectos.
+   Colapsa a un rail de 48 px por botón o por ventana estrecha.
+   ═══════════════════════════════════════════════════════════════ */
+
+.lateral {
+  background: var(--fondo-lateral);
+  border-right: 1px solid var(--hairline);
+  overflow-y: auto;
+  padding: 8px 0 16px;
+  min-width: 0;
+}
+
+.lat-grupo { padding: 0 8px; }
+
+.lat-titulo {
+  padding: 14px 8px 5px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tinta-3);
+}
+
+.lat-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; height: 27px; padding: 0 8px;
+  border-radius: 5px;
+  color: var(--tinta-1); text-align: left;
+}
+.lat-item:hover { background: var(--hover); }
+.lat-item[aria-current="true"] { background: var(--seleccion); font-weight: 500; }
+.lat-item__icono { flex: 0 0 16px; display: flex; color: var(--tinta-2); }
+.lat-item__texto {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.lat-vacio { padding: 4px 8px; font-size: 11.5px; color: var(--tinta-3); }
+
+.lat-sep { display: none; }
+.lat-inicial { display: none; }
+
+/* ── rail de 48 px ────────────────────────────────────────────── */
+/* Se activa por el botón (`.app--rail`) o por ventana estrecha (media query de
+   `base.css`). Las dos rutas comparten estas reglas para que el rail se vea
+   igual venga de donde venga. */
+
+.app--rail .lat-item__texto,
+.app--rail .lat-titulo { display: none; }
+.app--rail .lat-item { justify-content: center; padding: 0; position: relative; }
+.app--rail .lat-grupo { padding: 0 6px; }
+.app--rail .lat-sep { display: block; margin: 10px 6px; height: 1px; background: var(--hairline); }
+.app--rail .lat-inicial {
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 5px;
+  background: var(--chip-fondo); color: var(--chip-tinta);
+  font-size: 10px; font-weight: 600; letter-spacing: .02em;
+}
+/* La insignia se acota a la lateral: en el árbol el contador conserva su forma. */
+.app--rail .lat-item .contador {
+  position: absolute; transform: translate(11px, -9px);
+  font-size: 9.5px;
+}
+.app--rail .lat-item .contador svg { display: none; }
+
+@media (max-width: 1040px) {
+  .lat-item__texto,
+  .lat-titulo { display: none; }
+  .lat-item { justify-content: center; padding: 0; position: relative; }
+  .lat-grupo { padding: 0 6px; }
+  .lat-sep { display: block; margin: 10px 6px; height: 1px; background: var(--hairline); }
+  .lat-inicial {
+    display: flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 5px;
+    background: var(--chip-fondo); color: var(--chip-tinta);
+    font-size: 10px; font-weight: 600; letter-spacing: .02em;
+  }
+  .lat-item .contador {
+    position: absolute; transform: translate(11px, -9px);
+    font-size: 9.5px;
+  }
+  .lat-item .contador svg { display: none; }
+}

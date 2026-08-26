@@ -23,6 +23,7 @@ import {
   EsquemaItemSprint,
   EsquemaMiembroEquipo,
   EsquemaPrioridad,
+  EsquemaProyecto,
   EsquemaTipoBloqueo,
 } from '../../compartido/modelo/esquema';
 
@@ -32,10 +33,138 @@ const Descripcion = z.string().nullable();
 const Responsable = z.string().nullable();
 
 /**
+ * Clave de proyecto. Se toma del esquema del documento por la misma razón que
+ * `FechaLimite`: un segundo patrón de clave mantenido aquí divergiría del de allá, y el
+ * día que divergiera esta capa aceptaría claves que el documento rechaza.
+ */
+const Clave = EsquemaProyecto.shape.clave;
+
+/**
+ * Claves de los proyectos a los que una persona está dedicada.
+ *
+ * Un "equipo" no es una entidad con identidad propia: ES la lista de miembros de un
+ * proyecto (ver `EsquemaMiembroEquipo`). Así que "los equipos de una persona" son las
+ * claves de los proyectos donde aparece, y esta lista es la relación vista desde el otro
+ * extremo que `editarEquipo`.
+ *
+ * Es la lista COMPLETA, no un delta: ausente = no tocar sus equipos, `[]` = sacarla de
+ * todos. Mismo criterio que el resto de comandos de edición.
+ */
+const Equipos = z.array(Clave);
+
+/**
  * Se toma del esquema del documento en vez de repetir el patrón `YYYY-MM-DD`: dos
  * validadores de fecha mantenidos en paralelo divergen igual que un tipo y su esquema.
  */
 const FechaLimite = EsquemaItemSprint.shape.fecha_limite;
+
+// --- proyectos --------------------------------------------------------------
+
+/**
+ * La clave la elige el usuario y es lo único del proyecto que jamás cambia: es el
+ * prefijo de todos sus ids (`SICOE-T14`), así que renombrarla dejaría cada id, cada item
+ * de sprint y cada línea del historial apuntando a un proyecto que ya no se llama así.
+ * Por eso se valida el formato aquí y la unicidad en el reductor, que es quien ve el
+ * documento entero.
+ */
+const CrearProyecto = z
+  .object({
+    comando: z.literal('crearProyecto'),
+    clave: Clave,
+    nombre: Titulo,
+    descripcion: Descripcion.optional(),
+    prioridad: EsquemaPrioridad.nullable().optional(),
+  })
+  .strict();
+
+/**
+ * `clave` identifica el proyecto; **no existe un campo para cambiarla**. No es un olvido:
+ * es la garantía estructural de la inmutabilidad. Si algún día alguien quiere renombrar
+ * un proyecto, el campo que edita es `nombre`.
+ */
+const EditarProyecto = z
+  .object({
+    comando: z.literal('editarProyecto'),
+    clave: Clave,
+    nombre: Titulo.optional(),
+    descripcion: Descripcion.optional(),
+    prioridad: EsquemaPrioridad.nullable().optional(),
+  })
+  .strict();
+
+/** Concluido. Conserva absolutamente todo; solo sale de la vista diaria. */
+const CerrarProyecto = z.object({ comando: z.literal('cerrarProyecto'), clave: Clave }).strict();
+
+const ReabrirProyecto = z.object({ comando: z.literal('reabrirProyecto'), clave: Clave }).strict();
+
+/**
+ * Borra el proyecto y todo su árbol. Es la única operación de la app que destruye trabajo
+ * en bloque, así que pide la clave DOS veces: `confirmacion` tiene que ser idéntica a
+ * `clave`.
+ *
+ * No es ceremonia de interfaz metida en el contrato por gusto. El reductor es la última
+ * capa antes del disco, y aquí un `eliminarProyecto` disparado por un bug de la vista
+ * —una tecla en la fila equivocada, un id mal enlazado— no puede llevarse un año de
+ * capturas. Un comando que borra 200 tareas tiene que ser imposible de emitir por
+ * accidente, no solo difícil de pulsar.
+ */
+const EliminarProyecto = z
+  .object({
+    comando: z.literal('eliminarProyecto'),
+    clave: Clave,
+    /** Debe coincidir exactamente con `clave`. */
+    confirmacion: z.string().min(1),
+  })
+  .strict();
+
+// --- personas ---------------------------------------------------------------
+
+/**
+ * Alta sin ceremonia: el nombre y nada más. El id legible (`ana-garcia`) lo deriva el
+ * reductor del nombre, y si choca con uno existente lo resuelve solo — no se le pregunta
+ * al usuario por un identificador que no le importa.
+ */
+const CrearPersona = z
+  .object({
+    comando: z.literal('crearPersona'),
+    nombre: Titulo,
+    /** Opcional: darla de alta ya dedicada a unos proyectos, sin un segundo comando. */
+    equipos: Equipos.optional(),
+  })
+  .strict();
+
+/**
+ * `id` identifica; tampoco hay campo para cambiarlo. El id de la persona es la referencia
+ * que guardan `tarea.responsable` y el `responsable` de cada item de sprint —incluidos
+ * los de los sprints CERRADOS (regla 8)—, así que renombrarlo reescribiría de quién fue
+ * el trabajo del mes pasado. Se corrige el `nombre`, que es lo que se muestra.
+ */
+const EditarPersona = z
+  .object({
+    comando: z.literal('editarPersona'),
+    id: Id,
+    nombre: Titulo.optional(),
+    equipos: Equipos.optional(),
+  })
+  .strict();
+
+/** Sigue en el documento y en toda su historia; deja de recibir asignaciones nuevas. */
+const DesactivarPersona = z
+  .object({ comando: z.literal('desactivarPersona'), id: Id })
+  .strict();
+
+/**
+ * El inverso de `desactivarPersona`, igual que `reabrirProyecto` lo es de `cerrarProyecto`.
+ * No estaba en el encargo; se añade porque sin él una desactivación por error solo se
+ * revierte editando el JSON a mano, y `deshacer` es una pila en memoria que no sobrevive
+ * a cerrar la app.
+ */
+const ReactivarPersona = z
+  .object({ comando: z.literal('reactivarPersona'), id: Id })
+  .strict();
+
+/** Solo si no tiene NADA asignado, ni en el presente ni en la historia. Ver el reductor. */
+const EliminarPersona = z.object({ comando: z.literal('eliminarPersona'), id: Id }).strict();
 
 // --- árbol: épicas ----------------------------------------------------------
 
@@ -158,6 +287,12 @@ const Desbloquear = z.object({ comando: z.literal('desbloquear'), tareaId: Id })
  * Reemplaza la lista completa del equipo de un proyecto. Un equipo son cuatro personas:
  * mandar la lista entera es más simple y más fácil de deshacer que tres comandos de alta,
  * baja y cambio de rol, y sigue sin ser «mandar el documento».
+ *
+ * Con esto ya se cubre «crear un equipo y a qué proyecto está dedicado»: un equipo no es
+ * una entidad que se cree, es la lista de miembros de un proyecto, así que crearlo es
+ * mandar este comando sobre un proyecto que todavía no tiene ninguno. No hace falta un
+ * `crearEquipo`; lo que faltaba era la relación vista desde la persona, y eso lo añade
+ * el campo `equipos` de `crearPersona` / `editarPersona`.
  */
 const EditarEquipo = z
   .object({
@@ -170,6 +305,16 @@ const EditarEquipo = z
 // --- la unión ---------------------------------------------------------------
 
 export const EsquemaComando = z.discriminatedUnion('comando', [
+  CrearProyecto,
+  EditarProyecto,
+  CerrarProyecto,
+  ReabrirProyecto,
+  EliminarProyecto,
+  CrearPersona,
+  EditarPersona,
+  DesactivarPersona,
+  ReactivarPersona,
+  EliminarPersona,
   CrearEpica,
   EditarEpica,
   EliminarEpica,
@@ -210,6 +355,17 @@ const INMEDIATOS = new Set<NombreComando>([
   'eliminarTarea',
   'cerrarSprint',
   'activarSprint',
+  // Altas, bajas y cambios de ciclo de vida: todas son acciones tras las que el usuario
+  // da por hecho que quedó guardado y se va. `editarProyecto` y `editarPersona` no están
+  // porque son tecleo de un nombre, igual que editar un título.
+  'crearProyecto',
+  'cerrarProyecto',
+  'reabrirProyecto',
+  'eliminarProyecto',
+  'crearPersona',
+  'desactivarPersona',
+  'reactivarPersona',
+  'eliminarPersona',
 ]);
 
 export function requiereFlushInmediato(comando: Comando): boolean {

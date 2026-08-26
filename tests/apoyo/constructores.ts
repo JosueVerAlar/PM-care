@@ -107,6 +107,7 @@ export function unProyecto(over: Partial<Proyecto> = {}): Proyecto {
     descripcion: null,
     prioridad: null,
     archivado: false,
+    cerrado_en: null,
     planeacion_cerrada_en: null,
     contadores: { ...maximosUsados({ clave, contadores: { epicas: 0, historias: 0, tareas: 0 }, epicas }) },
     equipo: [],

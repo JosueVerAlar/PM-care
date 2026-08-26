@@ -1,0 +1,2218 @@
+<!DOCTYPE html>
+<html lang="es" data-tema="sistema">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PM-care · maqueta E0 · vistas globales y cierre de sprint</title>
+<!--
+  ══════════════════════════════════════════════════════════════════════════
+  MAQUETA ESTÁTICA — etapa E0. NO es la app.
+  Complemento de `maqueta/index.html` (vista de proyecto). Este archivo cubre
+  las SIETE pantallas que aún nadie había visto:
+     1 Panorama · 2 Sprint global · 3 Bloqueos · 4 Terminadas
+     5 Carga por persona · 6 Cierre de sprint · 7 Equipos
+  Sin dependencias, sin fuentes externas, sin red. Se abre con doble clic.
+  ══════════════════════════════════════════════════════════════════════════
+
+  SISTEMA HEREDADO DE index.html, SIN CAMBIOS:
+    · paleta validada (los mismos tokens, ambos temas)
+    · escala tipográfica 13/18 con metadatos a 11
+    · barra lateral de 216px con rail de 48px
+    · glifos de estado (forma, no solo color) y sus nombres
+    · banda de procedencia de 3px al borde izquierdo
+    · chips, medidor con conteo crudo, tira de bloqueo, interruptor de tema
+
+  LO ÚNICO NUEVO EN COLOR: dos tonos neutros para segmentar la barra de
+  reparto de la vista de Carga. Verificados contra la superficie:
+    claro   #6E6E76 5.05:1 · #8A8A92 3.43:1
+    oscuro  #8E8E98 5.24:1 · #6A6A73 3.18:1
+  No codifican identidad — la identidad la lleva la etiqueta directa debajo
+  de cada segmento. El tono solo separa un tramo del siguiente.
+
+  ── DE DÓNDE SALEN LOS DATOS ─────────────────────────────────────────────
+  REAL, de `datos/ejemplo.json`: proyectos SICOE / Infraestructura / PED,
+  su árbol de épicas-historias-tareas, los cuatro sprints (31, 32 y 33
+  cerrados; 34 activo, 24 ago–4 sep), los equipos con sus roles, y el bloqueo
+  abierto de SICOE-56 (decisión sobre el SMTP, desde el 18 de agosto).
+  REAL, de la carga de hoy en Jira: Josué 29 · Jesús 12 · Mario 8 ·
+  Miguel 8 · José Praxedes 5.
+  REAL, de `docs/datos-reales-sicoe.md`: claves y títulos de las tareas.
+
+  DE AUTORÍA DE LA MAQUETA, para que las pantallas se vean a densidad real
+  (todo marcado con «maqueta» en el comentario de su bloque):
+    · las HISTORIAS (Jira no tiene ese nivel)
+    · 8 de los 9 bloqueos abiertos y sus notas — solo SICOE-56 es real.
+      Se conservó el reparto que ya prometía index.html: SICOE 3, IN 4, PED 2.
+    · el responsable de dos ítems del Sprint 34 que en el JSON venían en null
+    · los conteos de SIEST (8 abiertas de Mario), que el JSON no incluye
+
+  DISCREPANCIAS QUE NO RESOLVÍ SOLO — están en la nota de entrega:
+    · PED: el JSON dice «Plataforma de educación a distancia»; la lista de
+      proyectos reales dice «Plataforma Eventos Deportivos». Aquí manda la
+      lista de proyectos.
+    · SICOE: index.html mostraba 26/45 con el árbol parcial; con las 40
+      abiertas de hoy el total contado es 66. Aquí manda la carga de hoy.
+    · index.html marcaba SICOE-81 como bloqueada; en el JSON está CANCELADA.
+      Se retiró: una tarea cancelada no puede estar bloqueada.
+-->
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   1. TOKENS — todo el color vive aquí. Nada de hex fuera de esta sección.
+      Copiados literalmente de index.html; solo se añade el par --reparto.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* superficies */
+  --fondo-app:      #FFFFFF;
+  --fondo-lateral:  #F5F5F7;
+  --fondo-panel:    #FFFFFF;
+  --fondo-cabecera: #FAFAFB;
+  --hairline:       #DCDCE0;
+
+  /* tinta */
+  --tinta-1: #1D1D1F;   /* 16.8:1 sobre panel */
+  --tinta-2: #55555C;   /*  7.4:1 */
+  --tinta-3: #86868B;   /*  3.6:1 — solo metadatos */
+
+  /* interacción — NEUTRA a propósito: el azul compite con «en curso» */
+  --hover:     #F0F0F3;
+  --seleccion: #E4E4E8;
+
+  /* CANAL 1 · estado */
+  --estado-hecha:     #047857;
+  --estado-curso:     #1D4ED8;
+  --estado-pendiente: #86868B;
+  --estado-cancelada: #86868B;
+  --estado-sindesglosar: #A1A1A6;
+
+  /* CANAL 2 · procedencia */
+  --nuevo-banda:  #CA8A04;
+  --nuevo-fondo:  #FDF0CC;
+  --nuevo-tinta:  #713F12;
+
+  /* CANAL 3 · bloqueo */
+  --bloqueo-banda: #B91C1C;
+  --bloqueo-fondo: #FDF0F0;
+  --bloqueo-tinta: #991B1B;
+
+  /* chips neutros */
+  --chip-fondo: #ECECF0;
+  --chip-tinta: #4B5563;
+
+  /* medidor — relleno NEUTRO: el verde está reservado para «hecha» */
+  --medidor-pista:   #E4E4E8;
+  --medidor-relleno: #6E6E76;
+
+  /* NUEVO · reparto de carga. Dos neutros que solo separan tramos.
+     No son categóricos: el proyecto lo dice la etiqueta, no el tono. */
+  --reparto-a: #6E6E76;   /* 5.05:1 sobre panel */
+  --reparto-b: #8A8A92;   /* 3.43:1 sobre panel */
+
+  /* NUEVO · botón sólido de consecuencia (cierre de sprint).
+     Neutro a propósito: un azul aquí se leería como «en curso». */
+  --solido-fondo: #1D1D1F;
+  --solido-tinta: #FFFFFF;   /* 16.8:1 */
+
+  /* métrica */
+  --alto-fila: 30px;
+  --ancho-lateral: 216px;
+  --ancho-rail: 48px;
+  /* medida de lectura: en un panel único de 1440px, dejar que el título y su
+     clave se separen 1200px vuelve la fila ilegible. El hover sigue llegando
+     al borde; lo que se limita es el CONTENIDO. */
+  --medida: 1040px;
+}
+
+/* Oscuro por preferencia del sistema (cuando no hay elección explícita) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    --fondo-app:      #1C1C1E;
+    --fondo-lateral:  #232326;
+    --fondo-panel:    #1C1C1E;
+    --fondo-cabecera: #202023;
+    --hairline:       #3A3A3F;
+
+    --tinta-1: #F2F2F5;
+    --tinta-2: #A9A9B2;
+    --tinta-3: #7C7C85;
+
+    --hover:     #2A2A2E;
+    --seleccion: #3A3A40;
+
+    --estado-hecha:     #0FA97A;
+    --estado-curso:     #4C8DF6;
+    --estado-pendiente: #7C7C85;
+    --estado-cancelada: #7C7C85;
+    --estado-sindesglosar: #6A6A73;
+
+    --nuevo-banda:  #D9A441;
+    --nuevo-fondo:  #3A2D0F;
+    --nuevo-tinta:  #F0CE7E;
+
+    --bloqueo-banda: #EF4444;
+    --bloqueo-fondo: #3A1A1A;
+    --bloqueo-tinta: #FCA5A5;
+
+    --chip-fondo: #2E2E33;
+    --chip-tinta: #B0B0BA;
+
+    --medidor-pista:   #3A3A40;
+    --medidor-relleno: #8E8E98;
+
+    --reparto-a: #8E8E98;   /* 5.24:1 */
+    --reparto-b: #6A6A73;   /* 3.18:1 */
+
+    --solido-fondo: #F2F2F5;
+    --solido-tinta: #1C1C1E;   /* 15.2:1 */
+  }
+}
+
+/* Oscuro por elección explícita — gana sobre el sistema en ambos sentidos */
+:root[data-tema="oscuro"] {
+  --fondo-app:      #1C1C1E;
+  --fondo-lateral:  #232326;
+  --fondo-panel:    #1C1C1E;
+  --fondo-cabecera: #202023;
+  --hairline:       #3A3A3F;
+
+  --tinta-1: #F2F2F5;
+  --tinta-2: #A9A9B2;
+  --tinta-3: #7C7C85;
+
+  --hover:     #2A2A2E;
+  --seleccion: #3A3A40;
+
+  --estado-hecha:     #0FA97A;
+  --estado-curso:     #4C8DF6;
+  --estado-pendiente: #7C7C85;
+  --estado-cancelada: #7C7C85;
+  --estado-sindesglosar: #6A6A73;
+
+  --nuevo-banda:  #D9A441;
+  --nuevo-fondo:  #3A2D0F;
+  --nuevo-tinta:  #F0CE7E;
+
+  --bloqueo-banda: #EF4444;
+  --bloqueo-fondo: #3A1A1A;
+  --bloqueo-tinta: #FCA5A5;
+
+  --chip-fondo: #2E2E33;
+  --chip-tinta: #B0B0BA;
+
+  --medidor-pista:   #3A3A40;
+  --medidor-relleno: #8E8E98;
+
+  --reparto-a: #8E8E98;
+  --reparto-b: #6A6A73;
+
+  --solido-fondo: #F2F2F5;
+  --solido-tinta: #1C1C1E;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2. BASE
+   ═══════════════════════════════════════════════════════════════ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--tinta-1);
+  background: var(--fondo-app);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.crece { flex: 1; }
+
+/* números siempre tabulares: las columnas de conteo no deben bailar */
+.tabular, .medidor__conteo, .clave, .contador, .cifra { font-variant-numeric: tabular-nums; }
+
+.oculto { display: none !important; }
+
+/* ═══════════════════════════════════════════════════════════════
+   3. ARMAZÓN
+      Fila extra arriba SOLO PARA LA MAQUETA: el conmutador de pantallas.
+      En la app esa fila no existe; la navegación es la barra lateral.
+   ═══════════════════════════════════════════════════════════════ */
+
+.app {
+  display: grid;
+  grid-template-rows: 34px 44px 1fr;
+  height: 100vh;
+}
+
+.cuerpo {
+  display: grid;
+  grid-template-columns: var(--ancho-lateral) 1fr;
+  min-height: 0;
+}
+:is(.app.rail, .app.estrecho) .cuerpo { grid-template-columns: var(--ancho-rail) 1fr; }
+
+.panel { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--fondo-panel); }
+
+/* ── barra de maqueta (andamio, no producto) ────────────────── */
+.maqueta-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 12px;
+  background: var(--chip-fondo);
+  border-bottom: 1px solid var(--hairline);
+  overflow-x: auto;
+}
+.maqueta-bar__sello {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--chip-tinta);
+  padding-right: 10px; margin-right: 2px;
+  border-right: 1px solid var(--hairline);
+  height: 18px;
+}
+.maqueta-bar__sello::before {
+  content: ""; width: 8px; height: 8px; border-radius: 2px;
+  background: repeating-linear-gradient(45deg, var(--chip-tinta) 0 2px, transparent 2px 4px);
+}
+.pestana {
+  flex: 0 0 auto;
+  height: 22px; padding: 0 9px; border-radius: 4px;
+  font-size: 11.5px; color: var(--chip-tinta); white-space: nowrap;
+}
+.pestana:hover { background: var(--hover); color: var(--tinta-1); }
+.pestana[aria-current="true"] {
+  background: var(--fondo-panel); color: var(--tinta-1); font-weight: 600;
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+.pestana__num { color: var(--tinta-3); margin-right: 4px; font-weight: 400; }
+.pestana[aria-current="true"] .pestana__num { color: var(--tinta-2); }
+
+/* ── barra de herramientas (idéntica a index.html) ──────────── */
+.toolbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 12px;
+  background: var(--fondo-lateral);
+  border-bottom: 1px solid var(--hairline);
+}
+.tb-boton {
+  display: flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 9px; border-radius: 5px;
+  color: var(--tinta-2);
+}
+.tb-boton:hover { background: var(--hover); color: var(--tinta-1); }
+
+.tb-titulo { font-weight: 600; color: var(--tinta-1); }
+.tb-sub { font-size: 11.5px; color: var(--tinta-3); }
+
+.tb-primario {
+  height: 26px; padding: 0 11px; border-radius: 5px;
+  border: 1px solid var(--hairline);
+  background: var(--fondo-panel);
+  color: var(--tinta-1); font-weight: 500;
+}
+.tb-primario:hover { background: var(--hover); }
+
+/* interruptor de tema — SOLO PARA LA MAQUETA */
+.tema { display: flex; align-items: center; gap: 8px; padding-left: 12px; border-left: 1px solid var(--hairline); }
+.tema__etiqueta { font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--tinta-3); }
+.tema__grupo { display: flex; padding: 2px; background: var(--chip-fondo); border-radius: 6px; }
+.tema__op { padding: 3px 9px; border-radius: 4px; font-size: 12px; color: var(--tinta-2); }
+.tema__op[aria-pressed="true"] {
+  background: var(--fondo-panel); color: var(--tinta-1); font-weight: 500;
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   4. BARRA LATERAL — misma métrica y mismo comportamiento de rail
+   ═══════════════════════════════════════════════════════════════ */
+
+.lateral {
+  background: var(--fondo-lateral);
+  border-right: 1px solid var(--hairline);
+  overflow-y: auto;
+  padding: 8px 0 16px;
+}
+.lat-grupo { padding: 0 8px; }
+.lat-titulo {
+  padding: 14px 8px 5px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tinta-3);
+}
+.lat-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; height: 27px; padding: 0 8px; border-radius: 5px;
+  color: var(--tinta-1); text-align: left;
+}
+.lat-item:hover { background: var(--hover); }
+.lat-item[aria-current="true"] { background: var(--seleccion); font-weight: 500; }
+.lat-item__icono { flex: 0 0 16px; display: flex; color: var(--tinta-2); }
+.lat-item__texto { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* proyecto sin nada capturado: se atenúa, no se esconde */
+.lat-item--vacio .lat-item__texto { color: var(--tinta-3); }
+
+/* contador de bloqueos: cuadrado + número. Nunca el color solo. */
+.contador { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--bloqueo-banda); }
+.contador svg { flex: 0 0 auto; }
+
+/* rail de 48px */
+:is(.app.rail, .app.estrecho) .lat-item__texto,
+:is(.app.rail, .app.estrecho) .lat-titulo { display: none; }
+:is(.app.rail, .app.estrecho) .lat-item { justify-content: center; padding: 0; position: relative; }
+:is(.app.rail, .app.estrecho) .lat-grupo { padding: 0 6px; }
+:is(.app.rail, .app.estrecho) .lat-item .contador {
+  position: absolute; transform: translate(11px, -9px); font-size: 9.5px;
+}
+:is(.app.rail, .app.estrecho) .lat-item .contador svg { display: none; }
+:is(.app.rail, .app.estrecho) .lat-sep { margin: 10px 6px; height: 1px; background: var(--hairline); }
+.lat-sep { display: none; }
+:is(.app.rail, .app.estrecho) .lat-inicial {
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 5px;
+  background: var(--chip-fondo); color: var(--chip-tinta);
+  font-size: 10px; font-weight: 600; letter-spacing: .02em;
+}
+.lat-inicial { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════
+   5. CABECERA DE PANEL Y CONTROLES
+   ═══════════════════════════════════════════════════════════════ */
+
+.cab {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 38px; padding: 0 16px;
+  background: var(--fondo-cabecera);
+  border-bottom: 1px solid var(--hairline);
+  flex: 0 0 auto;
+}
+.cab__titulo {
+  font-size: 12px; font-weight: 600; letter-spacing: .055em;
+  text-transform: uppercase; color: var(--tinta-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cab__accion { font-size: 11.5px; color: var(--tinta-3); padding: 3px 7px; border-radius: 4px; white-space: nowrap; }
+.cab__accion:hover { background: var(--hover); color: var(--tinta-1); }
+
+.alternador { display: flex; padding: 2px; background: var(--chip-fondo); border-radius: 5px; flex: 0 0 auto; }
+.alternador button { padding: 2px 8px; border-radius: 3px; font-size: 11.5px; color: var(--tinta-2); white-space: nowrap; }
+.alternador button[aria-pressed="true"] {
+  background: var(--fondo-panel); color: var(--tinta-1); font-weight: 500;
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+.alternador__n { font-variant-numeric: tabular-nums; color: var(--tinta-3); }
+.alternador button[aria-pressed="true"] .alternador__n { color: var(--tinta-2); }
+
+/* etiqueta de la regla de orden: un orden no explicado es peor que alfabético */
+.regla-orden {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 11.5px; color: var(--tinta-3);
+}
+
+.lienzo { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* ═══════════════════════════════════════════════════════════════
+   6. PIEZAS COMPARTIDAS — medidor, glifos, chips (de index.html)
+   ═══════════════════════════════════════════════════════════════ */
+
+.medidor { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.medidor__pista { width: 56px; height: 4px; border-radius: 2px; background: var(--medidor-pista); overflow: hidden; }
+.medidor__relleno { display: block; height: 100%; border-radius: 2px; background: var(--medidor-relleno); }
+.medidor__conteo { font-size: 11px; color: var(--tinta-2); min-width: 38px; }
+
+/* contenedor sin hojas: ni medidor ni 0 % — se dice lo que pasa (regla 2) */
+.sin-desglosar { font-size: 11px; color: var(--tinta-3); white-space: nowrap; }
+
+.glifo { flex: 0 0 14px; display: flex; align-items: center; justify-content: center; }
+.glifo--pendiente { color: var(--estado-pendiente); }
+.glifo--curso     { color: var(--estado-curso); }
+.glifo--hecha     { color: var(--estado-hecha); }
+.glifo--cancelada { color: var(--estado-cancelada); }
+.glifo--sindesglosar { color: var(--estado-sindesglosar); }
+
+.clave { flex: 0 0 auto; font-size: 11px; color: var(--tinta-3); letter-spacing: .02em; }
+
+.chip {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center;
+  height: 15px; padding: 0 5px; border-radius: 3px;
+  font-size: 10px; font-weight: 600; letter-spacing: .025em;
+  white-space: nowrap;
+}
+.chip--nuevo    { background: var(--nuevo-fondo); color: var(--nuevo-tinta); }
+.chip--bloqueo  { background: var(--bloqueo-fondo); color: var(--bloqueo-tinta); gap: 4px; }
+.chip--neutro   { background: var(--chip-fondo);  color: var(--chip-tinta); font-weight: 500; }
+.chip--arrastre { background: var(--chip-fondo);  color: var(--chip-tinta); }
+
+.tira-bloqueo {
+  display: flex; align-items: flex-start; gap: 6px;
+  padding: 4px 7px; border-radius: 4px;
+  background: var(--bloqueo-fondo); color: var(--bloqueo-tinta);
+  font-size: 11px; line-height: 16px;
+}
+.tira-bloqueo svg { flex: 0 0 auto; margin-top: 4px; }
+
+/* nota al pie de una vista: dice de qué NO habla la vista */
+.nota-pie {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border-top: 1px solid var(--hairline);
+  background: var(--fondo-cabecera);
+  font-size: 11px; color: var(--tinta-3);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   7. PANORAMA
+   ═══════════════════════════════════════════════════════════════ */
+
+/* franja de bloqueos: ocupa el mejor espacio SOLO si hay bloqueos.
+   Si no hay, no se pinta nada — nada de estados vacíos celebratorios. */
+.franja {
+  flex: 0 0 auto;
+  padding: 12px 16px 14px;
+  background: var(--fondo-panel);
+  border-bottom: 2px solid var(--hairline);
+}
+.franja__cab {
+  display: flex; align-items: baseline; gap: 8px;
+  margin-bottom: 9px;
+  color: var(--bloqueo-tinta);
+}
+.franja__cab svg { align-self: center; }
+.franja__titulo { font-size: 13px; font-weight: 600; }
+.franja__detalle { font-size: 11.5px; opacity: .9; }
+.franja__rejilla {
+  display: grid; gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+.franja__item {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 6px 9px; border-radius: 5px;
+  background: var(--fondo-cabecera);
+  border: 1px solid var(--hairline);
+  text-align: left; width: 100%; min-width: 0;
+}
+.franja__item:hover { background: var(--hover); }
+.franja__dias {
+  flex: 0 0 auto; font-size: 15px; font-weight: 600;
+  color: var(--bloqueo-tinta); font-variant-numeric: tabular-nums;
+}
+.franja__dias small { font-size: 10px; font-weight: 500; margin-left: 1px; }
+.franja__texto { flex: 1 1 auto; min-width: 0; display: block; overflow: hidden; }
+.franja__tarea {
+  display: block;   /* como span inline tomaba el ancho del texto y el ellipsis nunca entraba */
+  font-size: 12px; color: var(--tinta-1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.franja__proy { display: block; font-size: 10.5px; color: var(--tinta-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.franja__mas {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  padding: 6px 9px; border-radius: 5px;
+  font-size: 11.5px; color: var(--tinta-2); font-weight: 500;
+  border: 1px solid var(--hairline); background: var(--fondo-panel);
+}
+.franja__mas:hover { background: var(--hover); color: var(--tinta-1); }
+
+.seccion { padding: 14px 16px 4px; }
+.seccion__titulo {
+  display: flex; align-items: baseline; gap: 7px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tinta-3);
+  margin-bottom: 9px;
+}
+.seccion__n { font-size: 11px; letter-spacing: 0; text-transform: none; font-weight: 400; }
+
+.rejilla {
+  display: grid; gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+}
+
+.tarjeta-proy {
+  position: relative;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 11px 13px 12px;
+  border: 1px solid var(--hairline); border-radius: 7px;
+  background: var(--fondo-panel);
+  text-align: left; min-width: 0;
+}
+.tarjeta-proy:hover { background: var(--hover); }
+.tarjeta-proy__cab { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.tarjeta-proy__nombre {
+  flex: 1; min-width: 0; font-weight: 600; font-size: 13px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tarjeta-proy__avance { display: flex; align-items: center; gap: 8px; }
+.tarjeta-proy__pie {
+  display: flex; flex-direction: column; gap: 2px;
+  font-size: 11.5px; color: var(--tinta-2);
+}
+.tarjeta-proy__sep { color: var(--tinta-3); }
+/* el dato que manda en el orden va en tinta plena; el resto es metadato */
+.tarjeta-proy__quieto { color: var(--tinta-2); }
+.tarjeta-proy__quieto--largo { color: var(--tinta-1); font-weight: 500; }
+
+/* proyectos sin nada capturado: fichas, no tarjetas. No merecen el espacio. */
+.fichas { display: flex; flex-wrap: wrap; gap: 6px; }
+.ficha {
+  display: flex; align-items: center; gap: 7px;
+  height: 28px; padding: 0 10px; border-radius: 5px;
+  border: 1px dashed var(--hairline);
+  color: var(--tinta-2); font-size: 12px;
+}
+.ficha:hover { background: var(--hover); color: var(--tinta-1); border-style: solid; }
+.ficha__clave { font-size: 10px; font-weight: 600; color: var(--tinta-3); letter-spacing: .04em; }
+
+/* ═══════════════════════════════════════════════════════════════
+   8. SPRINT GLOBAL — tarjetas planas separadas por hairline
+   ═══════════════════════════════════════════════════════════════ */
+
+.corte {
+  display: flex; align-items: center; gap: 7px;
+  width: 100%; padding: 11px 16px;
+  color: var(--tinta-2); font-size: 12px; text-align: left;
+  background: var(--fondo-cabecera);
+  border-bottom: 1px solid var(--hairline);
+}
+.corte:hover { background: var(--hover); color: var(--tinta-1); }
+.corte b { font-weight: 600; }
+
+.resumen {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 11.5px; color: var(--tinta-2);
+  flex: 0 0 auto;
+}
+
+.tarjeta {
+  position: relative;
+  padding: 9px 16px 10px;
+  border-bottom: 1px solid var(--hairline);
+}
+.tarjeta:hover { background: var(--hover); }
+
+/* PROCEDENCIA: banda de 3px al borde izquierdo. Canal independiente del estado. */
+.tarjeta--nuevo::before,
+.fila-bloqueo--nuevo::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--nuevo-banda);
+}
+
+/* la clave no debe alejarse 1200px del título: se limita el CUERPO,
+   no la tarjeta — el hover y el hairline siguen llegando al borde */
+.tarjeta__cuerpo { max-width: var(--medida); }
+.tarjeta__cab { display: flex; align-items: flex-start; gap: 7px; }
+.tarjeta__titulo { flex: 1; min-width: 0; line-height: 18px; }
+.tarjeta__cab .glifo { height: 18px; }
+.tarjeta__cab .clave { line-height: 18px; }
+
+/* migaja: proyecto en tinta-2, resto del camino en tinta-3.
+   Con tareas de varios proyectos mezcladas, el proyecto es lo primero que
+   hay que poder saltar con la vista. */
+.tarjeta__ruta {
+  margin: 2px 0 0 21px;
+  font-size: 11px; color: var(--tinta-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tarjeta__proy { color: var(--tinta-2); font-weight: 600; }
+
+.tarjeta__pie {
+  display: flex; align-items: center; gap: 6px;
+  margin: 5px 0 0 21px;
+  font-size: 11.5px; color: var(--tinta-2);
+  min-width: 0;
+}
+.tarjeta__persona { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tarjeta__sep { color: var(--tinta-3); }
+.tarjeta__falta { color: var(--tinta-3); font-style: italic; }
+/* vencida: la palabra, no solo el color */
+.tarjeta__vencida { color: var(--bloqueo-tinta); font-weight: 600; }
+.tarjeta .tira-bloqueo { margin: 7px 0 0 21px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   9. BLOQUEOS — agrupados por TIPO: lo que se destraba con el mismo
+      movimiento queda junto. Agrupar por proyecto daría grupos de una fila.
+   ═══════════════════════════════════════════════════════════════ */
+
+.grupo-bloqueo { border-bottom: 1px solid var(--hairline); }
+.grupo-bloqueo__cab {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; padding: 9px 16px;
+  background: var(--fondo-cabecera);
+  text-align: left;
+}
+.grupo-bloqueo__cab:hover { background: var(--hover); }
+.grupo-bloqueo__titulo { font-weight: 600; font-size: 12.5px; }
+.grupo-bloqueo__n { font-size: 11.5px; color: var(--tinta-3); }
+/* el movimiento que destraba TODO el grupo: es el motivo de agrupar así */
+.grupo-bloqueo__salida {
+  font-size: 11.5px; color: var(--tinta-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.fila-bloqueo {
+  position: relative;
+  display: grid;
+  grid-template-columns: 62px minmax(0, var(--medida));
+  gap: 0 12px;
+  padding: 10px 16px 11px;
+  border-top: 1px solid var(--hairline);
+}
+.fila-bloqueo:hover { background: var(--hover); }
+.fila-bloqueo__dias {
+  grid-row: 1 / span 3;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.fila-bloqueo__cifra { font-size: 17px; font-weight: 600; color: var(--bloqueo-tinta); line-height: 20px; }
+.fila-bloqueo__unidad { font-size: 10px; color: var(--tinta-3); display: block; letter-spacing: .04em; }
+.fila-bloqueo__cab { display: flex; align-items: flex-start; gap: 7px; min-width: 0; }
+.fila-bloqueo__titulo { flex: 1; min-width: 0; line-height: 18px; }
+.fila-bloqueo__ruta { font-size: 11px; color: var(--tinta-3); margin-top: 1px; }
+/* la nota es la razón de existir de esta vista: va en tinta legible, no en gris */
+.fila-bloqueo__nota {
+  margin-top: 5px;
+  font-size: 12px; color: var(--tinta-1);
+  border-left: 2px solid var(--bloqueo-banda);
+  padding-left: 8px;
+}
+.fila-bloqueo__acciones { display: flex; gap: 6px; margin-top: 7px; }
+.mini {
+  height: 22px; padding: 0 8px; border-radius: 4px;
+  border: 1px solid var(--hairline); background: var(--fondo-panel);
+  font-size: 11.5px; color: var(--tinta-2);
+}
+.mini:hover { background: var(--hover); color: var(--tinta-1); }
+.mini--fuerte { color: var(--tinta-1); font-weight: 500; }
+
+/* ═══════════════════════════════════════════════════════════════
+   10. TERMINADAS — registro por sprint cerrado, no lista infinita
+   ═══════════════════════════════════════════════════════════════ */
+
+.sprint-bloque { border-bottom: 1px solid var(--hairline); }
+.sprint-bloque__cab {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 16px;
+  background: var(--fondo-cabecera);
+  text-align: left;
+}
+.sprint-bloque__cab:hover { background: var(--hover); }
+.sprint-bloque__nombre { font-weight: 600; font-size: 13px; }
+.sprint-bloque__fechas { font-size: 11.5px; color: var(--tinta-3); }
+/* la cifra del sprint: es la serie que el usuario llama «avance real».
+   Va como número, no como gráfica: sin estimaciones, una curva mentiría. */
+.sprint-bloque__cifra {
+  display: flex; align-items: baseline; gap: 4px;
+  font-size: 15px; font-weight: 600; color: var(--tinta-1);
+  font-variant-numeric: tabular-nums;
+}
+.sprint-bloque__cifra small { font-size: 11px; font-weight: 400; color: var(--tinta-2); }
+
+.subgrupo { padding: 4px 0 8px; }
+.subgrupo__titulo {
+  display: flex; align-items: baseline; gap: 7px;
+  padding: 7px 16px 3px 16px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tinta-3);
+}
+.fila-hecha {
+  display: flex; align-items: center; gap: 8px;
+  padding: 3px 16px; min-height: 24px;
+  max-width: calc(var(--medida) + 32px);
+}
+.fila-hecha:hover { background: var(--hover); }
+.fila-hecha__titulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fila-hecha__fecha { flex: 0 0 62px; text-align: right; font-size: 11px; color: var(--tinta-3); font-variant-numeric: tabular-nums; }
+.fila-hecha .clave { flex: 0 0 78px; text-align: right; }
+
+/* aviso de copiado */
+.copiar {
+  display: inline-flex; align-items: center;
+  height: 22px; padding: 0 9px; border-radius: 4px;
+  border: 1px solid var(--hairline); background: var(--fondo-panel);
+  font-size: 11.5px; color: var(--tinta-1); font-weight: 500;
+}
+.copiar:hover { background: var(--hover); }
+
+.aviso-copia {
+  font-size: 11.5px; color: var(--estado-hecha); font-weight: 500;
+  opacity: 0; transition: opacity .15s ease;
+}
+.aviso-copia--visible { opacity: 1; }
+
+/* ═══════════════════════════════════════════════════════════════
+   11. CARGA POR PERSONA
+       DECISIÓN DE HONESTIDAD, no una nota al pie:
+       · no hay pista de fondo detrás de la barra. Una pista es un techo, y
+         un techo implica una capacidad que esta app NO conoce.
+       · la barra mide contra la persona con más carga, no contra un máximo
+         inventado. Compara personas entre sí; no dice «va al 80 %».
+       · ningún semáforo. Los únicos colores son los que ya significan algo:
+         el rojo de bloqueo y el rojo de vencida.
+   ═══════════════════════════════════════════════════════════════ */
+
+.aviso-honestidad {
+  flex: 0 0 auto;
+  display: flex; gap: 10px;
+  margin: 14px 16px 4px;
+  padding: 11px 13px;
+  border: 1px solid var(--hairline); border-radius: 7px;
+  background: var(--fondo-cabecera);
+}
+.aviso-honestidad__marca { flex: 0 0 3px; border-radius: 2px; background: var(--medidor-relleno); }
+.aviso-honestidad__texto { font-size: 12px; line-height: 17px; color: var(--tinta-2); max-width: 68ch; }
+.aviso-honestidad__texto b { color: var(--tinta-1); font-weight: 600; }
+
+.persona {
+  display: grid;
+  grid-template-columns: minmax(0, 330px) minmax(0, 440px);
+  justify-content: start;
+  gap: 4px 28px;
+  padding: 12px 16px 13px;
+  border-bottom: 1px solid var(--hairline);
+  align-items: start;
+}
+/* encabezado de columna: dice qué mide la barra ANTES de verla */
+.carga-cab {
+  display: grid;
+  grid-template-columns: minmax(0, 330px) minmax(0, 440px);
+  justify-content: start;
+  gap: 28px;
+  padding: 10px 16px 7px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tinta-3);
+}
+.carga-cab__nota {
+  letter-spacing: 0; text-transform: none; font-weight: 400; font-size: 11px;
+}
+.persona:hover { background: var(--hover); }
+.persona__cab { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.persona__nombre {
+  font-weight: 600; font-size: 13px; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.persona__yo { font-size: 10px; font-weight: 600; letter-spacing: .04em; color: var(--tinta-3); }
+.persona__total { display: flex; align-items: baseline; gap: 5px; margin-top: 3px; }
+.persona__cifra { font-size: 22px; font-weight: 600; line-height: 24px; font-variant-numeric: tabular-nums; }
+.persona__unidad { font-size: 11.5px; color: var(--tinta-2); }
+.persona__disp { font-size: 11.5px; color: var(--tinta-3); margin-left: 2px; }
+
+/* barra de reparto: SIN pista. Largo = carga; tramos = proyectos. */
+.reparto { padding-top: 4px; min-width: 0; }
+.reparto__barra { display: flex; gap: 2px; height: 10px; margin-bottom: 7px; }
+.reparto__tramo { height: 100%; border-radius: 2px; min-width: 5px; }
+.reparto__tramo:nth-child(odd)  { background: var(--reparto-a); }
+.reparto__tramo:nth-child(even) { background: var(--reparto-b); }
+.reparto__etiquetas { display: flex; flex-wrap: wrap; gap: 3px 12px; font-size: 11.5px; color: var(--tinta-2); }
+.reparto__etq { display: flex; align-items: baseline; gap: 5px; }
+.reparto__n { font-variant-numeric: tabular-nums; color: var(--tinta-1); font-weight: 600; }
+.reparto__vacio { font-size: 11.5px; color: var(--tinta-3); }
+
+.persona__marcas { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; font-size: 11.5px; }
+.marca { display: flex; align-items: center; gap: 5px; color: var(--tinta-2); }
+.marca--bloq { color: var(--bloqueo-tinta); font-weight: 500; }
+.marca--cero { color: var(--tinta-3); }
+
+/* ═══════════════════════════════════════════════════════════════
+   12. CIERRE DE SPRINT — vista completa, no una ventanita
+   ═══════════════════════════════════════════════════════════════ */
+
+.cierre { padding-bottom: 20px; }
+.cierre__bloque { border-bottom: 1px solid var(--hairline); }
+.cierre__cab {
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 16px 10px;
+  background: var(--fondo-cabecera);
+  border-bottom: 1px solid var(--hairline);
+}
+.cierre__titulo { font-weight: 600; font-size: 13px; }
+.cierre__n { font-size: 11.5px; color: var(--tinta-3); }
+.cierre__pregunta { font-size: 11.5px; color: var(--tinta-2); }
+
+.item-cierre {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 18px;
+  align-items: start;
+  padding: 9px 16px 10px;
+  max-width: calc(var(--medida) + 320px);
+  border-bottom: 1px solid var(--hairline);
+}
+.item-cierre > :not(.item-cierre__control) { grid-column: 1; }
+.item-cierre:last-child { border-bottom: 0; }
+.item-cierre:hover { background: var(--hover); }
+.item-cierre__cab { display: flex; align-items: flex-start; gap: 7px; min-width: 0; }
+.item-cierre__titulo { flex: 1; min-width: 0; line-height: 18px; }
+.item-cierre__ruta { font-size: 11px; color: var(--tinta-3); margin: 1px 0 0 21px; }
+.item-cierre__pie { display: flex; align-items: center; gap: 6px; margin: 3px 0 0 21px; font-size: 11.5px; color: var(--tinta-2); }
+.item-cierre .tira-bloqueo { margin: 5px 0 0 21px; }
+.item-cierre__control { grid-column: 2; grid-row: 1 / -1; align-self: center; }
+
+/* segmentado de destino: la opción por omisión ya viene marcada */
+.destino { display: flex; padding: 2px; background: var(--chip-fondo); border-radius: 5px; }
+.destino button { padding: 3px 9px; border-radius: 3px; font-size: 11.5px; color: var(--tinta-2); white-space: nowrap; }
+.destino button[aria-pressed="true"] {
+  background: var(--fondo-panel); color: var(--tinta-1); font-weight: 500;
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+
+/* barra de acción anclada: la consecuencia siempre a la vista */
+.barra-accion {
+  flex: 0 0 auto;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--hairline);
+  background: var(--fondo-cabecera);
+}
+.boton-solido {
+  height: 30px; padding: 0 14px; border-radius: 6px;
+  background: var(--solido-fondo); color: var(--solido-tinta);
+  font-weight: 600; font-size: 12.5px;
+}
+.boton-solido:hover { opacity: .88; }
+.boton-texto { height: 30px; padding: 0 10px; border-radius: 6px; color: var(--tinta-2); font-size: 12.5px; }
+.boton-texto:hover { background: var(--hover); color: var(--tinta-1); }
+
+.aviso-falta {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 9px; border-radius: 5px;
+  background: var(--nuevo-fondo); color: var(--nuevo-tinta);
+  font-size: 11.5px; font-weight: 500;
+}
+.aviso-falta svg { flex: 0 0 auto; }
+
+/* ═══════════════════════════════════════════════════════════════
+   13. EQUIPOS
+   ═══════════════════════════════════════════════════════════════ */
+
+.equipo {
+  border: 1px solid var(--hairline); border-radius: 7px;
+  background: var(--fondo-panel);
+  overflow: hidden;
+}
+.equipo__cab {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 10px 12px 9px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--fondo-cabecera);
+}
+.equipo__nombre { flex: 1; min-width: 0; font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.equipo__n { font-size: 11px; color: var(--tinta-3); }
+.miembro {
+  display: flex; align-items: center; gap: 9px;
+  padding: 5px 12px; min-height: 34px;
+  border-bottom: 1px solid var(--hairline);
+}
+.miembro:hover { background: var(--hover); }
+.miembro__inicial {
+  flex: 0 0 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; background: var(--chip-fondo); color: var(--chip-tinta);
+  font-size: 10px; font-weight: 600;
+}
+.miembro__datos { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 15px; }
+.miembro__nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
+.miembro__rol { font-size: 11px; color: var(--tinta-3); }
+.miembro__carga { flex: 0 0 58px; text-align: right; font-size: 11px; color: var(--tinta-2); font-variant-numeric: tabular-nums; }
+.miembro__quitar {
+  flex: 0 0 auto; width: 20px; height: 20px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--tinta-3); opacity: 0;
+}
+.miembro:hover .miembro__quitar { opacity: 1; }
+.miembro__quitar:hover { background: var(--seleccion); color: var(--tinta-1); }
+.equipo__agregar {
+  display: flex; align-items: center; gap: 7px;
+  width: 100%; padding: 8px 12px;
+  color: var(--tinta-2); font-size: 12px; text-align: left;
+}
+.equipo__agregar:hover { background: var(--hover); color: var(--tinta-1); }
+
+/* ═══════════════════════════════════════════════════════════════
+   14. ANCHOS
+       Umbral duro: por debajo de 1040px la lateral se va a rail y las
+       columnas anchas (reparto de carga) se apilan bajo su fila.
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 1040px) {
+  .cuerpo { grid-template-columns: var(--ancho-rail) 1fr; }
+  .persona { grid-template-columns: 1fr; gap: 8px; }
+  /* la barra conserva su escala: si se estirara con la ventana, la persona
+     con más carga tocaría siempre el borde y se leería como «al 100 %» */
+  .reparto { grid-row: auto; padding-top: 0; max-width: 440px; }
+  .carga-cab { grid-template-columns: 1fr; }
+  .carga-cab > :first-child { display: none; }
+  .item-cierre__control { margin-left: 21px; flex-basis: 100%; }
+  .destino { align-self: flex-start; width: fit-content; }
+}
+@media (max-width: 760px) {
+  .rejilla { grid-template-columns: 1fr; }
+  .fila-bloqueo { grid-template-columns: 46px 1fr; gap: 0 10px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ══ conmutador de pantallas — ANDAMIO DE MAQUETA, no va en la app ══ -->
+  <div class="maqueta-bar" role="tablist" aria-label="Pantallas de la maqueta">
+    <span class="maqueta-bar__sello">Maqueta</span>
+    <span id="pestanas" style="display:flex;gap:4px"></span>
+  </div>
+
+  <!-- ── barra de herramientas (la de la app) ─────────────── -->
+  <header class="toolbar">
+    <button class="tb-boton" id="btn-rail" title="Colapsar la barra lateral">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+        <rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="M6 2.5v11"/>
+      </svg>
+    </button>
+    <span class="tb-titulo" id="tb-titulo">Panorama</span>
+    <span class="tb-sub" id="tb-sub">miércoles 26 de agosto de 2026</span>
+    <span class="crece"></span>
+    <button class="tb-primario">Capturar</button>
+
+    <!-- SOLO EN LA MAQUETA -->
+    <div class="tema">
+      <span class="tema__etiqueta">tema</span>
+      <div class="tema__grupo" role="group" aria-label="Tema">
+        <button class="tema__op" data-tema-op="claro"   aria-pressed="false">Claro</button>
+        <button class="tema__op" data-tema-op="oscuro"  aria-pressed="false">Oscuro</button>
+        <button class="tema__op" data-tema-op="sistema" aria-pressed="true">Sistema</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="cuerpo">
+    <!-- ── barra lateral: la navegación REAL de la app ─────── -->
+    <nav class="lateral">
+      <div class="lat-grupo" id="vistas"></div>
+      <div class="lat-sep"></div>
+      <div class="lat-titulo">Proyectos</div>
+      <div class="lat-grupo" id="proyectos"></div>
+    </nav>
+
+    <!-- ── panel único: aquí se monta cada pantalla ─────────── -->
+    <section class="panel" id="panel"></section>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   GLIFOS — el ESTADO vive en la FORMA, no solo en el color.
+   Idénticos a index.html.
+   ═══════════════════════════════════════════════════════════════ */
+const GLIFOS = {
+  pendiente:    '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="4.4"/></svg>',
+  curso:        '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="4.4" stroke="currentColor" stroke-width="1.4"/><path d="M7 2.6a4.4 4.4 0 010 8.8z" fill="currentColor"/></svg>',
+  hecha:        '<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="currentColor"/><path d="M4.5 7.1 6.2 8.8 9.5 5.4" fill="none" stroke="var(--fondo-panel)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  cancelada:    '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="4.4"/><path d="M4.2 9.8 9.8 4.2" stroke-linecap="round"/></svg>',
+  sindesglosar: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2.2 2.2"><circle cx="7" cy="7" r="4.4"/></svg>'
+};
+const NOMBRE_ESTADO = {
+  pendiente: 'Pendiente', curso: 'En curso', hecha: 'Hecha',
+  cancelada: 'Cancelada', sindesglosar: 'Sin desglosar'
+};
+const CUADRO   = '<svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.2" fill="currentColor"/></svg>';
+const TRIANGULO= '<svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 .8 9.6 8.8H.4z" fill="currentColor"/></svg>';
+const CHEVRON  = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 2 6.8 5 3.5 8"/></svg>';
+const EQUIS    = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2.4 2.4l5.2 5.2M7.6 2.4 2.4 7.6"/></svg>';
+const MAS      = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M6 2.5v7M2.5 6h7"/></svg>';
+
+const ICO = {
+  panorama: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>',
+  sprint:   '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.8v2.4M10.5 1.8v2.4"/></svg>',
+  bloqueos: '<svg width="15" height="15" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="1.6" fill="currentColor"/></svg>',
+  hechas:   '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.4 6 11.9 13.5 4.4"/></svg>',
+  backlog:  '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M2.5 4h11M2.5 8h11M2.5 12h7"/></svg>',
+  carga:    '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 13V7M8 13V3M13 13v-4"/></svg>',
+  equipos:  '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="6" cy="5.5" r="2.4"/><path d="M1.8 13.2c0-2.2 1.9-3.6 4.2-3.6s4.2 1.4 4.2 3.6"/><path d="M11 3.4a2.4 2.4 0 010 4.4M12.2 9.9c1.3.5 2.1 1.6 2.1 3.3"/></svg>',
+  cierre:   '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M5 8.6 7 10.6l4-4.4"/></svg>'
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   DATOS
+   Hoy = 26 de agosto de 2026. Sprint 34 corre del 24 ago al 4 sep.
+   Procedencia de cada bloque anotada arriba de él.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* REAL · datos/ejemplo.json + carga de hoy en Jira.
+   `abierta`  = pendiente + en curso
+   `hechas`   = terminadas contadas (las canceladas quedan fuera, regla 3)
+   `quieto`   = días sin ningún cambio de estado ni alta de tarea
+   `capturado`= si PM-care tiene su árbol. Si no, no se inventa avance. */
+const PROYECTOS = [
+  { clave: 'SICOE', ini: 'SIC', nombre: 'SICOE',
+    largo: 'SICOE — Control escolar',
+    capturado: true, abiertas: 40, hechas: 26, canceladas: 1, quieto: 6,
+    bloqueos: 3, bloqueoViejo: 8 },
+
+  { clave: 'IN', ini: 'IN', nombre: 'Infraestructura',
+    largo: 'Infraestructura',
+    capturado: true, abiertas: 11, hechas: 1, canceladas: 0, quieto: 2,
+    bloqueos: 4, bloqueoViejo: 14 },
+
+  /* El JSON lo nombra «Plataforma de educación a distancia»; la lista de
+     proyectos reales dice «Plataforma Eventos Deportivos». Manda la lista. */
+  { clave: 'PED', ini: 'PED', nombre: 'PED',
+    largo: 'PED — Plataforma Eventos Deportivos',
+    capturado: true, abiertas: 3, hechas: 0, canceladas: 0, quieto: 43,
+    bloqueos: 2, bloqueoViejo: 21 },
+
+  /* maqueta: el JSON no trae SIEST. Las 8 abiertas sí son reales (Mario). */
+  { clave: 'SIEST', ini: 'SIE', nombre: 'SIEST',
+    largo: 'SIEST',
+    capturado: true, abiertas: 8, hechas: 0, canceladas: 0, quieto: 12,
+    bloqueos: 0, bloqueoViejo: 0 },
+
+  /* Sin nada capturado en PM-care. NO significa que no pase nada en ellos:
+     significa que la app no sabe. Se dice así, no con un 0 %. */
+  { clave: 'DW',     ini: 'DW',  nombre: 'DGETI web', largo: 'DGETI web',           capturado: false },
+  { clave: 'IDCE',   ini: 'IDC', nombre: 'IDCE',      largo: 'IDCE',                capturado: false },
+  { clave: 'INDICA', ini: 'IND', nombre: 'INDICA',    largo: 'INDICA',              capturado: false },
+  { clave: 'PULSO',  ini: 'PUL', nombre: 'PULSO',     largo: 'PULSO',               capturado: false },
+  { clave: 'REDOC',  ini: 'RED', nombre: 'REDOC',     largo: 'REDOC',               capturado: false },
+  { clave: 'RENAC',  ini: 'REN', nombre: 'RENAC',     largo: 'RENAC',               capturado: false },
+  { clave: 'SISEC',  ini: 'SIS', nombre: 'SISEC',     largo: 'SISEC',               capturado: false }
+];
+
+/* REAL · personas de datos/ejemplo.json */
+const PERSONAS = {
+  'roberto-cortes': 'Roberto Carlos Cortés Ramírez',
+  'jesus-castillo': 'Jesús Alberto Castillo Hernández',
+  'josue-vergara':  'Josué Vergara',
+  'jose-dominguez': 'José Praxedes Domínguez Acosta',
+  'miguel-medina':  'Miguel Medina',
+  'mario':          'Mario'    /* maqueta: aparece en la carga real de SIEST */
+};
+const YO = 'roberto-cortes';
+
+/* ── BLOQUEOS ABIERTOS ──────────────────────────────────────────
+   Nueve, el reparto que ya prometía index.html: SICOE 3 · IN 4 · PED 2.
+   REAL: SICOE-56 (tipo decisión, bloqueada el 18 de agosto).
+   maqueta: los otros ocho, con notas escritas para esta maqueta pero
+   colgadas de tareas reales del JSON.
+   El TIPO es la clave de agrupación: junta lo que se destraba con el
+   mismo movimiento. */
+const TIPOS_BLOQUEO = {
+  informacion: { nombre: 'Falta información',   salida: 'Se destraba pidiendo el dato a quien lo tiene' },
+  decision:    { nombre: 'Decisión pendiente',  salida: 'Se destraba en una sola reunión de decisión' },
+  acceso:      { nombre: 'Acceso o permisos',   salida: 'Se destraba con una petición a Dirección de Sistemas' },
+  tercero:     { nombre: 'Tercero externo',     salida: 'No depende de nadie del equipo: solo se puede dar seguimiento' },
+  dependencia: { nombre: 'Depende de otra tarea', salida: 'Se destraba terminando la tarea de la que cuelga' }
+};
+
+const BLOQUEOS = [
+  { tarea: 'PED-T1', clave: 'PED-T1', proy: 'PED', tipo: 'informacion', dias: 21,
+    titulo: 'Sincronizar padrón de alumnos con la plataforma',
+    ruta: 'Aulas virtuales › Acceso de alumnos y docentes',
+    estado: 'curso', quien: 'miguel-medina',
+    nota: 'Control Escolar no ha entregado el padrón depurado; el que hay trae duplicados de CURP.' },
+
+  { tarea: 'INFRA-T3', clave: 'INFRA-T3', proy: 'IN', tipo: 'tercero', dias: 14,
+    titulo: 'Renovación de certificados TLS del portal de servicios',
+    ruta: 'Operación continua de servidores › Certificados y acceso',
+    estado: 'pendiente', quien: 'jesus-castillo',
+    nota: 'El proveedor no ha emitido el certificado comodín. Pedido el 12 de agosto, sin respuesta.' },
+
+  { tarea: 'INFRA-T2', clave: 'INFRA-T2', proy: 'IN', tipo: 'acceso', dias: 11,
+    titulo: 'Alertas de espacio en disco en los servidores de aplicación',
+    ruta: 'Operación continua de servidores › Respaldos y monitoreo',
+    estado: 'pendiente', quien: 'miguel-medina',
+    nota: 'Sin credenciales de solo lectura en los servidores de aplicación. Se pidieron a Dirección de Sistemas.' },
+
+  { tarea: 'SICOE-T15', clave: 'SICOE-85', proy: 'SICOE', tipo: 'decision', dias: 6,
+    titulo: 'Manejo de usuarios (definición)',
+    ruta: 'Módulo de usuarios › Datos y contraseña del usuario',
+    estado: 'pendiente', quien: 'jose-dominguez', nuevo: true,
+    nota: 'Falta la definición funcional. Llegó de Dirección después de cerrar la planeación y nadie la ha escrito.' },
+
+  /* ── el único bloqueo REAL del JSON ── */
+  { tarea: 'SICOE-T14', clave: 'SICOE-56', proy: 'SICOE', tipo: 'decision', dias: 8,
+    titulo: 'Endpoint Restablecimiento de contraseñas',
+    ruta: 'Módulo de usuarios › Datos y contraseña del usuario',
+    estado: 'curso', quien: 'jesus-castillo',
+    nota: 'Falta decidir si el correo de restablecimiento sale por el SMTP institucional o por un proveedor externo.' },
+
+  { tarea: 'PED-T2', clave: 'PED-T2', proy: 'PED', tipo: 'decision', dias: 9,
+    titulo: 'Alta masiva de docentes por plantel',
+    ruta: 'Aulas virtuales › Acceso de alumnos y docentes',
+    estado: 'pendiente', quien: 'miguel-medina',
+    nota: 'Sin definir quién autoriza el alta de un docente: ¿el plantel o la Dirección Académica?' },
+
+  { tarea: 'INFRA-T4', clave: 'INFRA-T4', proy: 'IN', tipo: 'acceso', dias: 5,
+    titulo: 'Rotación de llaves SSH de los servidores de despliegue',
+    ruta: 'Operación continua de servidores › Certificados y acceso',
+    estado: 'pendiente', quien: 'miguel-medina',
+    nota: 'Falta la autorización para reiniciar los servidores fuera de horario hábil.' },
+
+  { tarea: 'SICOE-T9', clave: 'SICOE-103', proy: 'SICOE', tipo: 'informacion', dias: 4,
+    titulo: 'Endpoint de cambio de carrera con revalidación y auditoría',
+    ruta: 'Movimientos de alumno y auditoría › Cambio de carrera con revalidación',
+    estado: 'pendiente', quien: 'josue-vergara',
+    nota: 'Falta el criterio de revalidación de Control Escolar: qué materias se convalidan al cambiar de carrera.' },
+
+  { tarea: 'INFRA-T1', clave: 'INFRA-T1', proy: 'IN', tipo: 'dependencia', dias: 3,
+    titulo: 'Respaldos automáticos de la base de SICOE con verificación de restauración',
+    ruta: 'Operación continua de servidores › Respaldos y monitoreo',
+    estado: 'curso', quien: 'roberto-cortes',
+    nota: 'Espera el inventario de bases de SICOE para saber qué esquemas entran al respaldo.' }
+];
+
+/* ── SPRINT 34 (activo) ─────────────────────────────────────────
+   REAL: los diez ítems del JSON, con sus fechas límite y prioridades.
+   maqueta: (a) se añadió SICOE-T15, no planeada y bloqueada — es lo que
+   el líder necesita ver en su semana; (b) dos ítems que traían
+   `responsable: null` se llenaron con Roberto («tú»), para que el
+   conmutador «Solo lo mío» tenga algo que enseñar. */
+const SPRINT = {
+  nombre: 'Sprint 34', rango: '24 ago – 4 sep', dia: 3, dias: 10,
+  items: [
+    { clave: 'SICOE-76', tarea: 'SICOE-T22', proy: 'SICOE', estado: 'curso',
+      titulo: 'POST aceptar solicitud (3 casos de uso)',
+      ruta: 'Portabilidad interna › Alta y aceptación de solicitudes',
+      quien: 'jesus-castillo', vence: '28 ago', arrastre: '3er sprint' },
+
+    { clave: 'SICOE-56', tarea: 'SICOE-T14', proy: 'SICOE', estado: 'curso',
+      titulo: 'Endpoint Restablecimiento de contraseñas',
+      ruta: 'Módulo de usuarios › Datos y contraseña del usuario',
+      quien: 'jesus-castillo', vence: '25 ago', vencida: true,
+      bloqueo: { dias: 8, nota: 'Falta decidir si el correo de restablecimiento sale por el SMTP institucional o por un proveedor externo.' } },
+
+    { clave: 'SICOE-100', tarea: 'SICOE-T6', proy: 'SICOE', estado: 'curso',
+      titulo: 'Sembrar catálogo de motivos y alinear enums de estatus del alumno',
+      ruta: 'Movimientos de alumno y auditoría › Registro auditable de movimientos',
+      quien: 'jesus-castillo', vence: '2 sep' },
+
+    { clave: 'SICOE-104', tarea: 'SICOE-T1', proy: 'SICOE', estado: 'pendiente',
+      titulo: 'Contrato y mock de la API de grupos de regularización',
+      ruta: 'Módulo de regularización › Grupos de regularización y recursamiento',
+      quien: 'roberto-cortes', mio: true, vence: '28 ago' },
+
+    { clave: 'SICOE-105', tarea: 'SICOE-T2', proy: 'SICOE', estado: 'pendiente',
+      titulo: 'Backend de grupos de recursamiento con flujo de aprobación',
+      ruta: 'Módulo de regularización › Grupos de regularización y recursamiento',
+      quien: 'josue-vergara', vence: '4 sep' },
+
+    { clave: 'SICOE-78', tarea: 'SICOE-T26', proy: 'SICOE', estado: 'pendiente',
+      titulo: 'JOB expiración de solicitud',
+      ruta: 'Portabilidad interna › Rechazo, cancelación y expiración',
+      incompleta: 'Falta quién y para cuándo', arrastre: '2º' },
+
+    { clave: 'SICOE-44', tarea: 'SICOE-T13', proy: 'SICOE', estado: 'pendiente',
+      titulo: 'Vista Datos Usuario',
+      ruta: 'Módulo de usuarios › Datos y contraseña del usuario',
+      quien: 'jose-dominguez', vence: '31 ago' },
+
+    { clave: 'SICOE-85', tarea: 'SICOE-T15', proy: 'SICOE', estado: 'pendiente', nuevo: true,
+      titulo: 'Manejo de usuarios (definición)',
+      ruta: 'Módulo de usuarios › Datos y contraseña del usuario',
+      quien: 'jose-dominguez', sinFecha: true,
+      bloqueo: { dias: 6, nota: 'Falta la definición funcional. Llegó de Dirección después de cerrar la planeación.' } },
+
+    { clave: 'INFRA-T1', tarea: 'INFRA-T1', proy: 'IN', estado: 'curso',
+      titulo: 'Respaldos automáticos de la base de SICOE con verificación de restauración',
+      ruta: 'Operación continua de servidores › Respaldos y monitoreo',
+      quien: 'roberto-cortes', mio: true, vence: '28 ago',
+      bloqueo: { dias: 3, nota: 'Espera el inventario de bases de SICOE para saber qué esquemas entran al respaldo.' } },
+
+    { clave: 'INFRA-T3', tarea: 'INFRA-T3', proy: 'IN', estado: 'pendiente',
+      titulo: 'Renovación de certificados TLS del portal de servicios',
+      ruta: 'Operación continua de servidores › Certificados y acceso',
+      quien: 'jesus-castillo', vence: '1 sep',
+      bloqueo: { dias: 14, nota: 'El proveedor no ha emitido el certificado comodín. Pedido el 12 de agosto.' } },
+
+    { clave: 'PED-T1', tarea: 'PED-T1', proy: 'PED', estado: 'curso',
+      titulo: 'Sincronizar padrón de alumnos con la plataforma',
+      ruta: 'Aulas virtuales › Acceso de alumnos y docentes',
+      quien: 'miguel-medina', vence: '4 sep',
+      bloqueo: { dias: 21, nota: 'Control Escolar no ha entregado el padrón depurado; el que hay trae duplicados de CURP.' } }
+  ]
+};
+
+/* ── SPRINTS CERRADOS ───────────────────────────────────────────
+   REAL, tal cual el JSON. La serie 2 · 4 · 5 es lo que el usuario
+   llama «avance real». Va como cifra, NO como gráfica: sin estimaciones
+   una curva de velocidad sería inventar (regla de «métricas de adorno»). */
+const CERRADOS = [
+  { id: 'S-2026-33', nombre: 'Sprint 33', rango: '10 – 21 ago', total: 5, proyectos: [
+      { proy: 'SICOE', nombre: 'SICOE', tareas: [
+        { clave: 'SICOE-69', titulo: 'POST Crear solicitud con captura',              fecha: '13 ago' },
+        { clave: 'SICOE-70', titulo: 'POST Crear solicitud de alumno previamente registrado', fecha: '14 ago' },
+        { clave: 'SICOE-75', titulo: 'GET calificaciones del alumno',                 fecha: '19 ago' },
+        { clave: 'SICOE-77', titulo: 'POST rechazar y cancelar solicitud',            fecha: '20 ago' }
+      ]},
+      { proy: 'IN', nombre: 'Infraestructura', tareas: [
+        { clave: 'INFRA-T5', titulo: 'Inventario de servicios y dependencias por servidor', fecha: '18 ago' }
+      ]}
+    ],
+    noTerminada: 'SICOE-76 quedó sin terminar y pasó al Sprint 34.' },
+
+  { id: 'S-2026-32', nombre: 'Sprint 32', rango: '27 jul – 7 ago', total: 4, proyectos: [
+      { proy: 'SICOE', nombre: 'SICOE', tareas: [
+        { clave: 'SICOE-72', titulo: 'GET alumnos por curp',                    fecha: '29 jul' },
+        { clave: 'SICOE-73', titulo: 'GET carreras',                            fecha: '29 jul' },
+        { clave: 'SICOE-74', titulo: 'GET materias/carrera/{carrera_id}/semestre', fecha: '4 ago' },
+        { clave: 'SICOE-53', titulo: 'Endpoint consulta y filtrado de usuarios', fecha: '5 ago' }
+      ]}
+    ] },
+
+  { id: 'S-2026-31', nombre: 'Sprint 31', rango: '13 – 24 jul', total: 2, proyectos: [
+      { proy: 'SICOE', nombre: 'SICOE', tareas: [
+        { clave: 'SICOE-54', titulo: 'Endpoints Creación de usuarios con contraseña y validación', fecha: '22 jul' },
+        { clave: 'SICOE-55', titulo: 'Vista Creación Usuarios',                 fecha: '23 jul' }
+      ]}
+    ],
+    noTerminada: 'SICOE-78 quedó sin terminar y volvió al backlog.' }
+];
+
+/* 26 terminadas en SICOE, 11 pasaron por un sprint de PM-care.
+   Las otras 15 se capturaron ya hechas. Se dice, no se esconde:
+   si no, la serie por sprint parecería contradecir el 26/66 del panorama. */
+const FUERA_DE_SPRINT = 15;
+
+/* ── CARGA ──────────────────────────────────────────────────────
+   REAL: los totales y el reparto por proyecto son la carga abierta de hoy
+   en Jira. `bloqueadas` sale de la lista BLOQUEOS de arriba.
+   `vencidas` solo puede contarse sobre tareas del sprint: fuera del sprint
+   no hay fecha límite que vencer, y eso se dice al pie.
+   `cerradas` = las que cerró en los tres sprints cerrados. */
+const CARGA = [
+  { id: 'josue-vergara',  reparto: [{ proy:'SICOE', nombre:'SICOE', n:29 }],
+    bloqueadas: 1, vencidas: 0, cerradas: 1 },
+  { id: 'jesus-castillo', reparto: [{ proy:'SICOE', nombre:'SICOE', n:6 }, { proy:'IN', nombre:'Infraestructura', n:6 }],
+    bloqueadas: 2, vencidas: 1, cerradas: 7 },
+  { id: 'mario',          reparto: [{ proy:'SIEST', nombre:'SIEST', n:8 }],
+    bloqueadas: 0, vencidas: 0, cerradas: 0 },
+  { id: 'miguel-medina',  reparto: [{ proy:'IN', nombre:'Infraestructura', n:5 }, { proy:'PED', nombre:'PED', n:3 }],
+    bloqueadas: 4, vencidas: 0, cerradas: 0 },
+  { id: 'jose-dominguez', reparto: [{ proy:'SICOE', nombre:'SICOE', n:5 }],
+    bloqueadas: 1, vencidas: 0, cerradas: 1 },
+  { id: 'roberto-cortes', reparto: [{ proy:'SICOE', nombre:'SICOE', n:1 }, { proy:'IN', nombre:'Infraestructura', n:1 }],
+    bloqueadas: 1, vencidas: 0, cerradas: 2, yo: true }
+];
+
+/* ── EQUIPOS ────────────────────────────────────────────────────
+   REAL: los equipos y roles vienen tal cual del JSON. SIEST es de maqueta. */
+const EQUIPOS = [
+  { proy: 'SICOE', nombre: 'SICOE', miembros: [
+    { id: 'roberto-cortes', rol: 'líder técnico' },
+    { id: 'jesus-castillo', rol: 'backend' },
+    { id: 'josue-vergara',  rol: 'backend y QA' },
+    { id: 'jose-dominguez', rol: 'vistas' }
+  ]},
+  { proy: 'IN', nombre: 'Infraestructura', miembros: [
+    { id: 'roberto-cortes', rol: 'líder técnico' },
+    { id: 'miguel-medina',  rol: 'servidores' },
+    { id: 'jesus-castillo', rol: 'backend' }
+  ]},
+  { proy: 'PED', nombre: 'PED — Plataforma Eventos Deportivos', miembros: [
+    { id: 'roberto-cortes', rol: 'líder técnico' },
+    { id: 'miguel-medina',  rol: 'integraciones' }
+  ]},
+  { proy: 'SIEST', nombre: 'SIEST', miembros: [
+    { id: 'roberto-cortes', rol: 'líder técnico' },
+    { id: 'mario',          rol: 'desarrollo' }
+  ]}
+];
+
+/* ── CIERRE DEL SPRINT 34 ───────────────────────────────────────
+   Los mismos once ítems del sprint, repartidos en los tres bloques.
+   maqueta: cuáles quedaron terminadas al cerrar. */
+const CIERRE = {
+  terminadas: [
+    { clave:'SICOE-76',  proy:'SICOE', titulo:'POST aceptar solicitud (3 casos de uso)',
+      ruta:'Portabilidad interna › Alta y aceptación de solicitudes', quien:'jesus-castillo', arrastre:'3er sprint' },
+    { clave:'SICOE-100', proy:'SICOE', titulo:'Sembrar catálogo de motivos y alinear enums de estatus del alumno',
+      ruta:'Movimientos de alumno y auditoría › Registro auditable', quien:'jesus-castillo' },
+    { clave:'SICOE-104', proy:'SICOE', titulo:'Contrato y mock de la API de grupos de regularización',
+      ruta:'Módulo de regularización › Grupos de regularización', quien:'roberto-cortes' },
+    { clave:'SICOE-78',  proy:'SICOE', titulo:'JOB expiración de solicitud',
+      ruta:'Portabilidad interna › Rechazo, cancelación y expiración', quien:'jesus-castillo', arrastre:'2º' }
+  ],
+  sinTerminar: [
+    { clave:'SICOE-105', proy:'SICOE', titulo:'Backend de grupos de recursamiento con flujo de aprobación',
+      ruta:'Módulo de regularización › Grupos de regularización', quien:'josue-vergara', estado:'pendiente' },
+    { clave:'SICOE-44',  proy:'SICOE', titulo:'Vista Datos Usuario',
+      ruta:'Módulo de usuarios › Datos y contraseña del usuario', quien:null, estado:'pendiente' }
+  ],
+  bloqueadas: [
+    { clave:'PED-T1',    proy:'PED', titulo:'Sincronizar padrón de alumnos con la plataforma',
+      ruta:'Aulas virtuales › Acceso de alumnos y docentes', quien:'miguel-medina', estado:'curso',
+      dias:21, nota:'Control Escolar no ha entregado el padrón depurado; el que hay trae duplicados de CURP.' },
+    { clave:'INFRA-T3',  proy:'IN', titulo:'Renovación de certificados TLS del portal de servicios',
+      ruta:'Operación continua de servidores › Certificados y acceso', quien:'jesus-castillo', estado:'pendiente',
+      dias:14, nota:'El proveedor no ha emitido el certificado comodín. Pedido el 12 de agosto.' },
+    { clave:'SICOE-56',  proy:'SICOE', titulo:'Endpoint Restablecimiento de contraseñas',
+      ruta:'Módulo de usuarios › Datos y contraseña del usuario', quien:'jesus-castillo', estado:'curso',
+      dias:8, nota:'Falta decidir si el correo de restablecimiento sale por el SMTP institucional o por un proveedor externo.' },
+    { clave:'SICOE-85',  proy:'SICOE', titulo:'Manejo de usuarios (definición)', nuevo:true,
+      ruta:'Módulo de usuarios › Datos y contraseña del usuario', quien:null, estado:'pendiente',
+      dias:6, nota:'Falta la definición funcional. Llegó de Dirección después de cerrar la planeación.' },
+    { clave:'INFRA-T1',  proy:'IN', titulo:'Respaldos automáticos de la base de SICOE con verificación de restauración',
+      ruta:'Operación continua de servidores › Respaldos y monitoreo', quien:'roberto-cortes', estado:'curso',
+      dias:3, nota:'Espera el inventario de bases de SICOE para saber qué esquemas entran al respaldo.' }
+  ]
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   UTILIDADES
+   ═══════════════════════════════════════════════════════════════ */
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+const persona = id => PERSONAS[id] || '—';
+const inicial = id => persona(id).split(' ').filter(Boolean).slice(0,2).map(p => p[0]).join('').toUpperCase();
+const proyNombre = clave => (PROYECTOS.find(p => p.clave === clave) || {}).nombre || clave;
+
+/* Medidor: SIEMPRE con el conteo crudo. Nunca un porcentaje solo (regla 3).
+   Con menos de 5 tareas no se pinta proporción: se pinta el conteo. */
+function medidor(hechas, total) {
+  if (!total) return '<span class="sin-desglosar">sin desglosar</span>';
+  if (total < 5) return `<span class="medidor"><span class="medidor__conteo tabular">${hechas} de ${total}</span></span>`;
+  const pct = (hechas / total) * 100;
+  return `<span class="medidor" title="${hechas} tareas hechas de ${total}">
+    <span class="medidor__pista"><span class="medidor__relleno" style="width:${pct.toFixed(1)}%"></span></span>
+    <span class="medidor__conteo tabular">${hechas}/${total}</span></span>`;
+}
+const contadorBloq = n => n > 0 ? `<span class="contador" title="${n} bloqueadas">${CUADRO}${n}</span>` : '';
+const dias = n => `${n} <small>${n === 1 ? 'día' : 'días'}</small>`;
+
+/* ═══════════════════════════════════════════════════════════════
+   BARRA LATERAL — es la navegación real; también cambia de pantalla
+   ═══════════════════════════════════════════════════════════════ */
+const VISTAS = [
+  { id: 'panorama', icono: 'panorama', texto: 'Panorama' },
+  { id: 'sprint',   icono: 'sprint',   texto: 'Sprint 34' },
+  { id: 'bloqueos', icono: 'bloqueos', texto: 'Bloqueos', bloqueos: BLOQUEOS.length },
+  { id: 'hechas',   icono: 'hechas',   texto: 'Terminadas' },
+  { id: 'backlog',  icono: 'backlog',  texto: 'Backlog del área' },
+  { id: 'carga',    icono: 'carga',    texto: 'Carga por persona' },
+  { id: 'equipos',  icono: 'equipos',  texto: 'Equipos' }
+];
+
+document.getElementById('vistas').innerHTML = VISTAS.map(v => `
+  <button class="lat-item" data-ir="${v.id}" title="${v.texto}">
+    <span class="lat-item__icono">${ICO[v.icono]}</span>
+    <span class="lat-item__texto">${v.texto}</span>
+    ${contadorBloq(v.bloqueos || 0)}
+  </button>`).join('');
+
+document.getElementById('proyectos').innerHTML = PROYECTOS.map(p => `
+  <button class="lat-item ${p.capturado ? '' : 'lat-item--vacio'}" title="${esc(p.largo)}${p.capturado ? '' : ' · sin nada capturado'}">
+    <span class="lat-inicial">${p.ini}</span>
+    <span class="lat-item__texto">${esc(p.nombre)}</span>
+    ${contadorBloq(p.bloqueos || 0)}
+  </button>`).join('');
+
+/* ═══════════════════════════════════════════════════════════════
+   PANTALLA 1 · PANORAMA
+   Orden por ATENCIÓN REQUERIDA, y la regla se escribe en pantalla:
+   un orden no explicado confunde más que el alfabético.
+   ═══════════════════════════════════════════════════════════════ */
+let ordenPanorama = 'atencion';
+
+function tarjetaProyecto(p) {
+  const total = p.hechas + p.abiertas;
+  const quietoLargo = p.quieto >= 14;
+  return `<button class="tarjeta-proy" title="${esc(p.largo)}">
+    <span class="tarjeta-proy__cab">
+      <span class="tarjeta-proy__nombre">${esc(p.nombre)}</span>
+      ${contadorBloq(p.bloqueos)}
+    </span>
+    <span class="tarjeta-proy__avance">
+      ${medidor(p.hechas, total)}
+      <span class="tarjeta-proy__sep">·</span>
+      <span class="tabular" style="font-size:11.5px;color:var(--tinta-2)">${p.abiertas} abiertas</span>
+    </span>
+    <span class="tarjeta-proy__pie">
+      <span class="tarjeta-proy__quieto ${quietoLargo ? 'tarjeta-proy__quieto--largo' : ''} tabular">${p.quieto} días sin movimiento</span>
+      ${p.bloqueos ? `<span style="color:var(--bloqueo-tinta)" class="tabular">${p.bloqueos} bloqueo${p.bloqueos>1?'s':''}, el más viejo ${p.bloqueoViejo} d</span>` : ''}
+      ${p.canceladas ? `<span class="tabular">${p.canceladas} cancelada fuera del conteo</span>` : ''}
+    </span>
+  </button>`;
+}
+
+function panorama() {
+  const capturados = PROYECTOS.filter(p => p.capturado);
+  const vacios     = PROYECTOS.filter(p => !p.capturado);
+
+  /* Orden por atención: primero los que tienen bloqueos abiertos, por los
+     días del bloqueo más viejo; después el resto por días sin movimiento. */
+  const conBloqueo = capturados.filter(p => p.bloqueos > 0).sort((a,b) => b.bloqueoViejo - a.bloqueoViejo);
+  const sinBloqueo = capturados.filter(p => p.bloqueos === 0).sort((a,b) => b.quieto - a.quieto);
+  let grupos;
+  if (ordenPanorama === 'nombre') {
+    grupos = [{ titulo: 'Proyectos capturados', n: capturados.length,
+                lista: [...capturados].sort((a,b) => a.nombre.localeCompare(b.nombre,'es')) }];
+  } else if (ordenPanorama === 'quieto') {
+    grupos = [{ titulo: 'Por días sin movimiento', n: capturados.length,
+                lista: [...capturados].sort((a,b) => b.quieto - a.quieto) }];
+  } else {
+    grupos = [
+      { titulo: 'Con bloqueos abiertos', n: conBloqueo.length, lista: conBloqueo,
+        pie: 'ordenados por los días del bloqueo más viejo' },
+      { titulo: 'Sin bloqueos abiertos', n: sinBloqueo.length, lista: sinBloqueo,
+        pie: 'ordenados por días sin movimiento' }
+    ].filter(g => g.lista.length);
+  }
+
+  /* La franja SOLO existe si hay bloqueos abiertos. Si no hay, no se pinta
+     nada: un «¡todo despejado!» ocupando el mejor espacio es ruido. */
+  const abiertos = [...BLOQUEOS].sort((a,b) => b.dias - a.dias);
+  const enFranja = abiertos.slice(0, 3);
+  const restan   = abiertos.length - enFranja.length;
+  const franja = abiertos.length ? `
+    <div class="franja">
+      <div class="franja__cab">
+        ${CUADRO}<span class="franja__titulo">${abiertos.length} bloqueos abiertos</span>
+        <span class="franja__detalle">el más viejo lleva ${abiertos[0].dias} días · en ${new Set(abiertos.map(b=>b.proy)).size} proyectos</span>
+      </div>
+      <div class="franja__rejilla">
+        ${enFranja.map(b => `
+          <button class="franja__item" data-ir="bloqueos">
+            <span class="franja__dias">${b.dias}<small>d</small></span>
+            <span class="franja__texto">
+              <span class="franja__tarea">${esc(b.titulo)}</span>
+              <span class="franja__proy">${esc(proyNombre(b.proy))} · ${TIPOS_BLOQUEO[b.tipo].nombre.toLowerCase()}</span>
+            </span>
+          </button>`).join('')}
+        ${restan > 0 ? `<button class="franja__mas" data-ir="bloqueos">Ver los ${abiertos.length} bloqueos ${CHEVRON}</button>` : ''}
+      </div>
+    </div>` : '';
+
+  return {
+    titulo: 'Panorama',
+    sub: '11 proyectos · miércoles 26 de agosto de 2026',
+    html: franja + `
+      <div class="regla-orden">
+        <span>Orden:</span>
+        <div class="alternador">
+          <button data-orden="atencion" aria-pressed="${ordenPanorama==='atencion'}">Atención requerida</button>
+          <button data-orden="quieto"   aria-pressed="${ordenPanorama==='quieto'}">Días sin movimiento</button>
+          <button data-orden="nombre"   aria-pressed="${ordenPanorama==='nombre'}">Nombre</button>
+        </div>
+      </div>
+      <div class="lienzo">
+        ${grupos.map(g => `
+          <div class="seccion">
+            <div class="seccion__titulo">${g.titulo}
+              <span class="seccion__n">${g.n}${g.pie ? ' · ' + g.pie : ''}</span>
+            </div>
+            <div class="rejilla">${g.lista.map(tarjetaProyecto).join('')}</div>
+          </div>`).join('')}
+
+        <div class="seccion">
+          <div class="seccion__titulo">Sin nada capturado en PM-care
+            <span class="seccion__n">${vacios.length}</span>
+          </div>
+          <div class="fichas">
+            ${vacios.map(p => `<button class="ficha" title="Capturar ${esc(p.largo)}">
+              <span class="ficha__clave">${p.ini}</span>${esc(p.nombre)}</button>`).join('')}
+          </div>
+          <p style="margin-top:9px;font-size:11.5px;color:var(--tinta-3);max-width:70ch">
+            No es que no pase nada en ellos: es que PM-care no sabe. No se pinta 0 % ni barra
+            vacía, porque sería afirmar algo que la app no puede afirmar.
+          </p>
+        </div>
+      </div>`
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PANTALLA 2 · SPRINT GLOBAL
+   Tareas de varios proyectos mezcladas. «Solo lo mío» por omisión:
+   es lo que evita que el sprint deje de ser «mi semana».
+   El conmutador lleva el CONTEO en la etiqueta, para que un filtro que
+   deja la vista vacía se vea antes de pulsarlo, no después.
+   ═══════════════════════════════════════════════════════════════ */
+let soloMio = true;
+
+function tarjetaSprint(c) {
+  return `<article class="tarjeta ${c.nuevo ? 'tarjeta--nuevo' : ''}">
+   <div class="tarjeta__cuerpo">
+    <div class="tarjeta__cab">
+      <span class="glifo glifo--${c.estado}" title="${NOMBRE_ESTADO[c.estado]}">${GLIFOS[c.estado]}</span>
+      <span class="tarjeta__titulo">${esc(c.titulo)}</span>
+      <span class="clave">${c.clave}</span>
+    </div>
+    <div class="tarjeta__ruta"><span class="tarjeta__proy">${esc(proyNombre(c.proy))}</span> › ${esc(c.ruta)}</div>
+    <div class="tarjeta__pie">
+      ${c.incompleta
+        ? `<span class="tarjeta__falta">${esc(c.incompleta)}</span>`
+        : `<span class="tarjeta__persona">${esc(persona(c.quien))}${c.mio ? ' (tú)' : ''}</span>
+           <span class="tarjeta__sep">·</span>
+           ${c.sinFecha
+             ? '<span class="tarjeta__falta">sin fecha límite</span>'
+             : c.vencida
+               ? `<span class="tarjeta__vencida tabular">venció el ${c.vence}</span>`
+               : `<span class="tabular">vence ${c.vence}</span>`}`}
+      <span class="crece"></span>
+      ${c.arrastre ? `<span class="chip chip--arrastre" title="Va en su ${c.arrastre}">${c.arrastre}</span>` : ''}
+      ${c.nuevo ? '<span class="chip chip--nuevo" title="No planeado">Nuevo</span>' : ''}
+    </div>
+    ${c.bloqueo ? `<div class="tira-bloqueo">${CUADRO}<span><b>Bloqueada ${c.bloqueo.dias} días</b> · ${esc(c.bloqueo.nota)}</span></div>` : ''}
+   </div>
+  </article>`;
+}
+
+function vistaSprint() {
+  const mios  = SPRINT.items.filter(i => i.mio);
+  const lista = soloMio ? mios : SPRINT.items;
+  const enCurso = lista.filter(i => i.estado === 'curso').length;
+  const bloq    = lista.filter(i => i.bloqueo).length;
+  const nuevas  = lista.filter(i => i.nuevo).length;
+  const vencidas= lista.filter(i => i.vencida).length;
+  const hechas  = lista.filter(i => i.estado === 'hecha').length;
+
+  return {
+    titulo: SPRINT.nombre,
+    sub: `${SPRINT.rango} · día ${SPRINT.dia} de ${SPRINT.dias}`,
+    html: `
+      <div class="cab">
+        <span class="cab__titulo">${SPRINT.nombre} · ${SPRINT.rango}</span>
+        <span class="crece"></span>
+        <div class="alternador">
+          <button data-mio="1" aria-pressed="${soloMio}">Solo lo mío <span class="alternador__n">${mios.length}</span></button>
+          <button data-mio="0" aria-pressed="${!soloMio}">Todo el sprint <span class="alternador__n">${SPRINT.items.length}</span></button>
+        </div>
+        <button class="cab__accion" data-ir="cierre">Cerrar sprint ${CHEVRON}</button>
+      </div>
+      <div class="resumen">
+        ${medidor(hechas, lista.length)}
+        <span class="tabular">${enCurso} en curso · ${bloq} bloqueada${bloq===1?'':'s'} · ${nuevas} no planeada${nuevas===1?'':'s'}${vencidas ? ` · <span style="color:var(--bloqueo-tinta);font-weight:600">${vencidas} vencida${vencidas===1?'':'s'}</span>` : ''}</span>
+        ${soloMio ? '<span class="crece"></span><span style="color:var(--tinta-3)">Filtrado a tus tareas</span>' : ''}
+      </div>
+      <div class="lienzo">
+        ${lista.map(tarjetaSprint).join('')}
+        ${soloMio && SPRINT.items.length > mios.length ? `
+          <button class="corte" data-mio="0">
+            <b>${SPRINT.items.length - mios.length} tareas más</b> en el sprint, de otras personas
+            <span class="crece"></span> Ver todo el sprint ${CHEVRON}
+          </button>` : ''}
+      </div>
+      <div class="nota-pie">
+        La migaja empieza por el proyecto porque en esta vista las tareas vienen mezcladas:
+        saber de dónde es cada una va antes que saber de qué épica cuelga.
+      </div>`
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PANTALLA 3 · BLOQUEOS
+   Agrupados por TIPO por omisión. Con once proyectos, agrupar por proyecto
+   deja grupos de una fila y no sugiere ninguna acción nueva; agrupar por
+   tipo junta lo que se destraba con el mismo movimiento.
+   Sin la nota de qué lo detiene esta vista no sirve: por eso va en tinta
+   plena y con marca al costado, no en gris de metadato.
+   ═══════════════════════════════════════════════════════════════ */
+let agrupaBloqueos = 'tipo';
+const grupoAbierto = {};
+
+function filaBloqueo(b) {
+  return `<div class="fila-bloqueo ${b.nuevo ? 'fila-bloqueo--nuevo' : ''}">
+    <div class="fila-bloqueo__dias">
+      <span class="fila-bloqueo__cifra">${b.dias}</span>
+      <span class="fila-bloqueo__unidad">${b.dias === 1 ? 'DÍA' : 'DÍAS'}</span>
+    </div>
+    <div>
+      <div class="fila-bloqueo__cab">
+        <span class="glifo glifo--${b.estado}" title="${NOMBRE_ESTADO[b.estado]}">${GLIFOS[b.estado]}</span>
+        <span class="fila-bloqueo__titulo">${esc(b.titulo)}</span>
+        ${b.nuevo ? '<span class="chip chip--nuevo">Nuevo</span>' : ''}
+        <span class="clave">${b.clave}</span>
+      </div>
+      <div class="fila-bloqueo__ruta"><b style="color:var(--tinta-2)">${esc(proyNombre(b.proy))}</b> › ${esc(b.ruta)} · ${esc(persona(b.quien))}</div>
+      <div class="fila-bloqueo__nota">${esc(b.nota)}</div>
+      <div class="fila-bloqueo__acciones">
+        <button class="mini mini--fuerte">Desbloquear</button>
+        <button class="mini">Editar la nota</button>
+        <button class="mini">Ir a la tarea</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function vistaBloqueos() {
+  let grupos;
+  if (agrupaBloqueos === 'proyecto') {
+    const claves = [...new Set(BLOQUEOS.map(b => b.proy))];
+    grupos = claves.map(k => ({
+      id: k, titulo: proyNombre(k), salida: '',
+      items: BLOQUEOS.filter(b => b.proy === k).sort((a,b) => b.dias - a.dias)
+    }));
+  } else {
+    const tipos = [...new Set(BLOQUEOS.map(b => b.tipo))];
+    grupos = tipos.map(t => ({
+      id: t, titulo: TIPOS_BLOQUEO[t].nombre, salida: TIPOS_BLOQUEO[t].salida,
+      items: BLOQUEOS.filter(b => b.tipo === t).sort((a,b) => b.dias - a.dias)
+    }));
+  }
+  /* los grupos también se ordenan por días: el que tiene el bloqueo más
+     viejo va primero, no el que tiene más filas */
+  grupos.sort((a,b) => b.items[0].dias - a.items[0].dias);
+
+  return {
+    titulo: 'Bloqueos',
+    sub: `${BLOQUEOS.length} abiertos · el más viejo lleva ${Math.max(...BLOQUEOS.map(b=>b.dias))} días`,
+    html: `
+      <div class="cab">
+        <span class="cab__titulo">${BLOQUEOS.length} bloqueos abiertos</span>
+        <span class="crece"></span>
+        <span style="font-size:11.5px;color:var(--tinta-3)">Agrupar por</span>
+        <div class="alternador">
+          <button data-agrupa="tipo"     aria-pressed="${agrupaBloqueos==='tipo'}">Tipo de bloqueo</button>
+          <button data-agrupa="proyecto" aria-pressed="${agrupaBloqueos==='proyecto'}">Proyecto</button>
+        </div>
+      </div>
+      <div class="regla-orden">Grupos y filas ordenados por días detenido, del más viejo al más nuevo.</div>
+      <div class="lienzo">
+        ${grupos.map(g => {
+          const abierto = grupoAbierto['b-'+g.id] !== false;
+          return `<div class="grupo-bloqueo">
+            <button class="grupo-bloqueo__cab" data-plegar="b-${g.id}">
+              <span class="chevron" style="display:flex;color:var(--tinta-3);transform:rotate(${abierto?90:0}deg)">${CHEVRON}</span>
+              <span class="grupo-bloqueo__titulo">${esc(g.titulo)}</span>
+              <span class="grupo-bloqueo__n">${g.items.length}</span>
+              <span class="grupo-bloqueo__salida">${esc(g.salida)}</span>
+              <span class="crece"></span>
+            </button>
+            <div data-grupo="b-${g.id}" ${abierto ? '' : 'hidden'}>${g.items.map(filaBloqueo).join('')}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="nota-pie">
+        «Bloqueada» es una bandera, no un estado: cada tarea conserva su glifo propio
+        (pendiente o en curso) para saber a qué vuelve al desbloquearse.
+      </div>`
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PANTALLA 4 · TERMINADAS (avance real)
+   Registro POR SPRINT CERRADO, no lista infinita. El más reciente arriba,
+   agrupado por proyecto dentro de cada sprint, colapsable.
+   La serie 5 · 4 · 2 es lo que el usuario llama «avance real»; va como
+   cifra en la cabecera de cada sprint. NO como gráfica de velocidad:
+   sin estimaciones de esfuerzo, una curva prometería lo que no se sabe.
+   ═══════════════════════════════════════════════════════════════ */
+const sprintAbierto = { 'S-2026-33': true, 'S-2026-32': false, 'S-2026-31': false, 'fuera': false };
+
+function vistaTerminadas() {
+  return {
+    titulo: 'Terminadas',
+    sub: `${CERRADOS.reduce((s,c)=>s+c.total,0)} en los últimos 3 sprints cerrados`,
+    html: `
+      <div class="cab">
+        <span class="cab__titulo">Terminadas · registro por sprint</span>
+        <span class="crece"></span>
+        <span class="aviso-copia" id="aviso-copia">Copiado</span>
+      </div>
+      <div class="regla-orden">
+        Del sprint más reciente al más viejo. Dentro de cada sprint, agrupadas por proyecto.
+      </div>
+      <div class="lienzo">
+        ${CERRADOS.map(s => {
+          const abierto = sprintAbierto[s.id];
+          return `<div class="sprint-bloque">
+            <button class="sprint-bloque__cab" data-sprint="${s.id}">
+              <span class="chevron" style="display:flex;color:var(--tinta-3);transform:rotate(${abierto?90:0}deg)">${CHEVRON}</span>
+              <span class="sprint-bloque__nombre">${s.nombre}</span>
+              <span class="sprint-bloque__fechas">${s.rango}</span>
+              <span class="crece"></span>
+              <span class="sprint-bloque__cifra">${s.total}<small>terminadas</small></span>
+              <span class="copiar" data-copiar="${s.id}" role="button" tabindex="0">Copiar las ${s.total}</span>
+            </button>
+            <div data-grupo="s-${s.id}" ${abierto ? '' : 'hidden'}>
+              ${s.proyectos.map(p => `
+                <div class="subgrupo">
+                  <div class="subgrupo__titulo">${esc(p.nombre)} <span class="seccion__n">${p.tareas.length}</span></div>
+                  ${p.tareas.map(t => `
+                    <div class="fila-hecha">
+                      <span class="glifo glifo--hecha" title="Hecha">${GLIFOS.hecha}</span>
+                      <span class="fila-hecha__titulo">${esc(t.titulo)}</span>
+                      <span class="clave">${t.clave}</span>
+                      <span class="fila-hecha__fecha">${t.fecha}</span>
+                    </div>`).join('')}
+                </div>`).join('')}
+              ${s.noTerminada ? `<div style="padding:2px 16px 10px;font-size:11.5px;color:var(--tinta-3)">${esc(s.noTerminada)}</div>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+
+        <!-- Explica por qué la serie por sprint no cuadra con el 26/66 del panorama -->
+        <div class="sprint-bloque">
+          <button class="sprint-bloque__cab" data-sprint="fuera">
+            <span class="chevron" style="display:flex;color:var(--tinta-3);transform:rotate(${sprintAbierto.fuera?90:0}deg)">${CHEVRON}</span>
+            <span class="sprint-bloque__nombre" style="color:var(--tinta-2)">Terminadas sin pasar por un sprint</span>
+            <span class="sprint-bloque__fechas">antes de usar PM-care</span>
+            <span class="crece"></span>
+            <span class="sprint-bloque__cifra" style="color:var(--tinta-2)">${FUERA_DE_SPRINT}<small>terminadas</small></span>
+          </button>
+          <div data-grupo="s-fuera" ${sprintAbierto.fuera ? '' : 'hidden'}>
+            <div style="padding:10px 16px 14px;font-size:12px;color:var(--tinta-2);max-width:74ch">
+              Se capturaron ya hechas. Cuentan para el avance del proyecto (las 26 de SICOE)
+              pero no para el registro por sprint, porque nunca hubo un sprint que las contuviera.
+              Se dicen aquí para que las dos cifras no parezcan contradecirse.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="nota-pie">
+        Son conteos de tareas, no de esfuerzo. Una tarea de dos horas y una de dos semanas
+        suman igual: la serie dice cuántas cosas se cerraron, no cuánto trabajo se hizo.
+      </div>`
+  };
+}
+
+/* texto plano para «Copiar lista» — el formato que se pega en un correo */
+function textoSprint(s) {
+  const lineas = [`${s.nombre} · ${s.rango} · ${s.total} terminadas`];
+  s.proyectos.forEach(p => {
+    lineas.push('', p.nombre);
+    p.tareas.forEach(t => lineas.push(`  ${t.clave}  ${t.titulo}  (${t.fecha})`));
+  });
+  return lineas.join('\n');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PANTALLA 5 · CARGA POR PERSONA
+   La pregunta del usuario era: «¿le da tiempo de hacer todo eso en el
+   sprint, o hay riesgo de que deje un proyecto de lado?».
+   Sin estimaciones de esfuerzo, la app NO puede responder la primera
+   mitad. La honestidad está diseñada, no puesta al pie:
+     · la barra no tiene pista de fondo — una pista es un techo, y un techo
+       implica una capacidad que la app no conoce
+     · el largo compara personas entre sí, no contra un máximo inventado
+     · los tramos son el reparto: la dispersión se ve como número de tramos
+     · ningún semáforo, ninguna palabra como «sobrecargado»
+   ═══════════════════════════════════════════════════════════════ */
+let ordenCarga = 'total';
+
+function vistaCarga() {
+  const conTotal = CARGA.map(p => ({
+    ...p,
+    total: p.reparto.reduce((s,r) => s + r.n, 0),
+    disp: p.reparto.length
+  }));
+  const max = Math.max(...conTotal.map(p => p.total));
+  const lista = [...conTotal].sort((a,b) =>
+    ordenCarga === 'total' ? b.total - a.total : (b.disp - a.disp) || (b.total - a.total));
+
+  return {
+    titulo: 'Carga por persona',
+    sub: `${CARGA.length} personas · tareas abiertas hoy`,
+    html: `
+      <div class="cab">
+        <span class="cab__titulo">Carga por persona</span>
+        <span class="crece"></span>
+        <span style="font-size:11.5px;color:var(--tinta-3)">Ordenar por</span>
+        <div class="alternador">
+          <button data-carga="total" aria-pressed="${ordenCarga==='total'}">Carga total</button>
+          <button data-carga="disp"  aria-pressed="${ordenCarga==='disp'}">Dispersión</button>
+        </div>
+      </div>
+      <div class="lienzo">
+        <div class="aviso-honestidad">
+          <span class="aviso-honestidad__marca"></span>
+          <p class="aviso-honestidad__texto">
+            <b>PM-care no estima esfuerzo, así que esta vista no puede decirte si a alguien le da tiempo.</b>
+            Lo que sí sabe: cuántas tareas abiertas trae, entre cuántos proyectos están repartidas,
+            cuántas están detenidas y cuántas cerró en los sprints pasados. Por eso no hay barra de
+            capacidad ni semáforo: la conclusión la pones tú, con estos cuatro datos.
+          </p>
+        </div>
+        <div class="carga-cab">
+          <span>Persona</span>
+          <span>Reparto por proyecto
+            <span class="carga-cab__nota">— el largo compara entre personas, no contra una capacidad</span>
+          </span>
+        </div>
+        ${lista.map(p => `
+          <div class="persona">
+            <div>
+              <div class="persona__cab">
+                <span class="persona__nombre">${esc(persona(p.id))}</span>
+                ${p.yo ? '<span class="persona__yo">TÚ</span>' : ''}
+              </div>
+              <div class="persona__total">
+                <span class="persona__cifra">${p.total}</span>
+                <span class="persona__unidad">tareas abiertas</span>
+                <span class="persona__disp">· en ${p.disp} proyecto${p.disp===1?'':'s'}</span>
+              </div>
+              <div class="persona__marcas">
+                ${p.bloqueadas
+                  ? `<span class="marca marca--bloq">${CUADRO}${p.bloqueadas} bloqueada${p.bloqueadas===1?'':'s'}</span>`
+                  : '<span class="marca marca--cero">sin bloqueadas</span>'}
+                <span class="marca ${p.vencidas ? '' : 'marca--cero'}">${p.vencidas} vencida${p.vencidas===1?'':'s'}</span>
+                <span class="marca ${p.cerradas ? '' : 'marca--cero'}">${p.cerradas} cerrada${p.cerradas===1?'':'s'} en los 3 sprints cerrados</span>
+              </div>
+            </div>
+            <div class="reparto">
+              <div class="reparto__barra" style="width:${(p.total/max*100).toFixed(1)}%"
+                   title="${p.total} abiertas, repartidas en ${p.disp} proyecto${p.disp===1?'':'s'}">
+                ${p.reparto.map(r => `<span class="reparto__tramo" style="flex:${r.n}"></span>`).join('')}
+              </div>
+              <div class="reparto__etiquetas">
+                ${p.reparto.map(r => `<span class="reparto__etq">${esc(r.nombre)} <span class="reparto__n">${r.n}</span></span>`).join('')}
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="nota-pie">
+        El largo de la barra compara a una persona con la de más carga (${max}), no con una
+        capacidad: la app no sabe cuánto cabe en un sprint. · «Vencidas» solo puede contarse
+        sobre tareas del sprint: fuera del sprint no hay fecha límite que vencer.
+      </div>`
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PANTALLA 6 · CIERRE DE SPRINT
+   Vista completa, no una ventanita: son once decisiones y no caben en un
+   modal sin que el usuario pierda de vista lo que ya decidió.
+   El botón primario DICE LA CONSECUENCIA y se recalcula al vuelo.
+   ═══════════════════════════════════════════════════════════════ */
+const DESTINOS = [
+  { id: 'siguiente', texto: 'Pasa al siguiente sprint' },
+  { id: 'backlog',   texto: 'Vuelve al backlog' },
+  { id: 'noaplica',  texto: 'Ya no aplica' }
+];
+/* por omisión, todo lo que no terminó pasa al siguiente sprint */
+const destino = {};
+[...CIERRE.sinTerminar, ...CIERRE.bloqueadas].forEach(t => { destino[t.clave] = 'siguiente'; });
+const desmarcadas = {};   /* «no, no terminó» */
+
+function pieItem(t) {
+  return `<div class="item-cierre__pie">
+    ${t.quien ? esc(persona(t.quien)) : '<span class="tarjeta__falta">sin responsable</span>'}
+    ${t.arrastre ? `<span class="chip chip--arrastre">${t.arrastre}</span>` : ''}
+  </div>`;
+}
+
+function selectorDestino(t) {
+  return `<div class="item-cierre__control">
+    <div class="destino" role="group" aria-label="Destino de ${t.clave}">
+      ${DESTINOS.map(d => `<button data-destino="${t.clave}|${d.id}"
+        aria-pressed="${destino[t.clave]===d.id}">${d.texto}</button>`).join('')}
+    </div>
+  </div>`;
+}
+
+function vistaCierre() {
+  const pasan = [...CIERRE.sinTerminar, ...CIERRE.bloqueadas].filter(t => destino[t.clave] === 'siguiente');
+  const sinResp = pasan.filter(t => !t.quien);
+  const terminadas = CIERRE.terminadas.filter(t => !desmarcadas[t.clave]);
+  const revertidas = CIERRE.terminadas.filter(t => desmarcadas[t.clave]);
+
+  return {
+    titulo: 'Cerrar Sprint 34',
+    sub: `${SPRINT.rango} · 11 tareas`,
+    html: `
+      <div class="cab">
+        <span class="cab__titulo">Cerrar ${SPRINT.nombre} · ${SPRINT.rango}</span>
+        <span class="crece"></span>
+        <button class="cab__accion" data-ir="sprint">Volver al sprint</button>
+      </div>
+      <div class="regla-orden">
+        Revisa los tres bloques y decide qué pasa con cada tarea. Nada se guarda hasta que pulses el botón de abajo.
+      </div>
+
+      <div class="lienzo cierre">
+
+        <!-- BLOQUE 1 · terminadas, con botón por fila para corregir -->
+        <div class="cierre__bloque">
+          <div class="cierre__cab">
+            <span class="glifo glifo--hecha">${GLIFOS.hecha}</span>
+            <span class="cierre__titulo">Terminadas</span>
+            <span class="cierre__n">${terminadas.length} de ${CIERRE.terminadas.length}</span>
+            <span class="cierre__pregunta">¿Alguna no terminó de verdad?</span>
+            <span class="crece"></span>
+          </div>
+          ${CIERRE.terminadas.map(t => {
+            const rev = desmarcadas[t.clave];
+            return `<div class="item-cierre">
+              <div class="item-cierre__cab">
+                <span class="glifo glifo--${rev ? 'curso' : 'hecha'}">${GLIFOS[rev ? 'curso' : 'hecha']}</span>
+                <span class="item-cierre__titulo" ${rev ? 'style="color:var(--tinta-2)"' : ''}>${esc(t.titulo)}</span>
+                <span class="clave">${t.clave}</span>
+              </div>
+              <div class="item-cierre__ruta"><b style="color:var(--tinta-2)">${esc(proyNombre(t.proy))}</b> › ${esc(t.ruta)}</div>
+              ${pieItem(t)}
+              ${rev ? selectorDestino(t) : `<div class="item-cierre__control">
+                <button class="mini" data-desmarcar="${t.clave}">No, no terminó</button>
+              </div>`}
+            </div>`;
+          }).join('')}
+        </div>
+
+        <!-- BLOQUE 2 · sin terminar -->
+        <div class="cierre__bloque">
+          <div class="cierre__cab">
+            <span class="glifo glifo--pendiente">${GLIFOS.pendiente}</span>
+            <span class="cierre__titulo">Sin terminar</span>
+            <span class="cierre__n">${CIERRE.sinTerminar.length + revertidas.length}</span>
+            <span class="cierre__pregunta">La primera opción viene marcada</span>
+            <span class="crece"></span>
+          </div>
+          ${CIERRE.sinTerminar.map(t => `
+            <div class="item-cierre">
+              <div class="item-cierre__cab">
+                <span class="glifo glifo--${t.estado}" title="${NOMBRE_ESTADO[t.estado]}">${GLIFOS[t.estado]}</span>
+                <span class="item-cierre__titulo">${esc(t.titulo)}</span>
+                <span class="clave">${t.clave}</span>
+              </div>
+              <div class="item-cierre__ruta"><b style="color:var(--tinta-2)">${esc(proyNombre(t.proy))}</b> › ${esc(t.ruta)}</div>
+              ${pieItem(t)}
+              ${selectorDestino(t)}
+            </div>`).join('')}
+        </div>
+
+        <!-- BLOQUE 3 · bloqueadas: bloque propio, con la nota original
+             y la pregunta explícita de si sigue detenida -->
+        <div class="cierre__bloque">
+          <div class="cierre__cab">
+            <span style="color:var(--bloqueo-tinta);display:flex">${CUADRO}</span>
+            <span class="cierre__titulo">Bloqueadas</span>
+            <span class="cierre__n">${CIERRE.bloqueadas.length}</span>
+            <span class="cierre__pregunta">¿Sigue detenida por lo mismo?</span>
+            <span class="crece"></span>
+          </div>
+          ${CIERRE.bloqueadas.map(t => `
+            <div class="item-cierre ${t.nuevo ? 'tarjeta--nuevo' : ''}">
+              <div class="item-cierre__cab">
+                <span class="glifo glifo--${t.estado}" title="${NOMBRE_ESTADO[t.estado]}">${GLIFOS[t.estado]}</span>
+                <span class="item-cierre__titulo">${esc(t.titulo)}</span>
+                ${t.nuevo ? '<span class="chip chip--nuevo">Nuevo</span>' : ''}
+                <span class="clave">${t.clave}</span>
+              </div>
+              <div class="item-cierre__ruta"><b style="color:var(--tinta-2)">${esc(proyNombre(t.proy))}</b> › ${esc(t.ruta)}</div>
+              <div class="tira-bloqueo">${CUADRO}<span><b>Detenida ${t.dias} días</b> · ${esc(t.nota)}</span></div>
+              ${pieItem(t)}
+              <div class="item-cierre__control" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <div class="destino" role="group" aria-label="Sigue detenida ${t.clave}">
+                  <button aria-pressed="true">Sigue detenida</button>
+                  <button aria-pressed="false">Ya se destrabó</button>
+                </div>
+                ${selectorDestino(t).replace('<div class="item-cierre__control">','<div>').replace(/<\/div>$/,'</div>')}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <!-- barra de acción: la consecuencia siempre a la vista -->
+      <div class="barra-accion">
+        <button class="boton-solido" id="btn-cerrar">Cerrar sprint y pasar ${pasan.length} tarea${pasan.length===1?'':'s'}</button>
+        <button class="boton-texto">Cancelar</button>
+        ${sinResp.length ? `<span class="aviso-falta">${TRIANGULO}
+          ${sinResp.length} de las ${pasan.length} que pasan no tienen responsable</span>` : ''}
+        <span class="crece"></span>
+        <span style="font-size:11.5px;color:var(--tinta-3)" class="tabular">
+          ${terminadas.length} terminadas ·
+          ${pasan.length} al Sprint 35 ·
+          ${[...CIERRE.sinTerminar, ...CIERRE.bloqueadas].filter(t=>destino[t.clave]==='backlog').length} al backlog ·
+          ${[...CIERRE.sinTerminar, ...CIERRE.bloqueadas].filter(t=>destino[t.clave]==='noaplica').length} ya no aplican
+        </span>
+      </div>`
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PANTALLA 7 · EQUIPOS
+   ═══════════════════════════════════════════════════════════════ */
+function vistaEquipos() {
+  const cargaDe = id => {
+    const p = CARGA.find(c => c.id === id);
+    return p ? p.reparto.reduce((s,r) => s + r.n, 0) : 0;
+  };
+  const cargaEn = (id, proy) => {
+    const p = CARGA.find(c => c.id === id);
+    const r = p && p.reparto.find(x => x.proy === proy);
+    return r ? r.n : 0;
+  };
+
+  return {
+    titulo: 'Equipos',
+    sub: `${Object.keys(PERSONAS).length} personas en ${EQUIPOS.length} proyectos capturados`,
+    html: `
+      <div class="cab">
+        <span class="cab__titulo">Equipos</span>
+        <span class="crece"></span>
+        <a class="tb-primario" href="administracion.html"
+           style="height:24px;font-size:12px;display:flex;align-items:center;gap:6px;text-decoration:none">
+           Administrar proyectos y equipos ${CHEVRON}</a>
+      </div>
+      <div class="regla-orden">
+        Una persona puede estar en varios proyectos con roles distintos. La cifra de la derecha
+        es su carga abierta <b>en ese proyecto</b>.
+      </div>
+      <div class="lienzo">
+        <div class="seccion">
+          <div class="rejilla" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">
+            ${EQUIPOS.map(e => `
+              <div class="equipo">
+                <div class="equipo__cab">
+                  <span class="equipo__nombre">${esc(e.nombre)}</span>
+                  <span class="equipo__n">${e.miembros.length} personas</span>
+                </div>
+                ${e.miembros.map(m => `
+                  <div class="miembro">
+                    <span class="miembro__inicial">${inicial(m.id)}</span>
+                    <span class="miembro__datos">
+                      <span class="miembro__nombre">${esc(persona(m.id))}${m.id===YO?' (tú)':''}</span>
+                      <span class="miembro__rol">${esc(m.rol)}</span>
+                    </span>
+                    <span class="miembro__carga" title="${cargaEn(m.id, e.proy)} abiertas aquí, ${cargaDe(m.id)} en total">${cargaEn(m.id, e.proy)} ab.</span>
+                    <button class="miembro__quitar" title="Quitar del equipo">${EQUIS}</button>
+                  </div>`).join('')}
+                <button class="equipo__agregar">${MAS} Agregar a alguien</button>
+              </div>`).join('')}
+          </div>
+        </div>
+        <div class="seccion">
+          <div class="seccion__titulo">Sin equipo capturado <span class="seccion__n">7 proyectos</span></div>
+          <div class="fichas">
+            ${PROYECTOS.filter(p => !p.capturado).map(p =>
+              `<button class="ficha"><span class="ficha__clave">${p.ini}</span>${esc(p.nombre)}</button>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="nota-pie">
+        Esta vista es de consulta. Dar de alta, cerrar o eliminar proyectos, y crear equipos
+        o personas, vive en <b>Administración</b> (maqueta/administracion.html).
+      </div>`
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PANTALLA 5b · BACKLOG DEL ÁREA — no entraba en el alcance de esta
+   entrega; se deja marcada para no fingir que existe.
+   ═══════════════════════════════════════════════════════════════ */
+function vistaPendiente(nombre) {
+  return {
+    titulo: nombre, sub: 'no maquetada todavía',
+    html: `<div class="lienzo"><div class="seccion">
+      <div class="aviso-honestidad">
+        <span class="aviso-honestidad__marca"></span>
+        <p class="aviso-honestidad__texto">
+          <b>${esc(nombre)} no está en esta entrega.</b> Se deja marcada a propósito, en vez de
+          rellenarla con algo provisional que después alguien implemente por error.
+        </p>
+      </div>
+    </div></div>`
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ENRUTADOR DE MAQUETA
+   ═══════════════════════════════════════════════════════════════ */
+const PANTALLAS = [
+  { id: 'panorama', etq: 'Panorama',        render: panorama },
+  { id: 'sprint',   etq: 'Sprint',          render: vistaSprint },
+  { id: 'bloqueos', etq: 'Bloqueos',        render: vistaBloqueos },
+  { id: 'hechas',   etq: 'Terminadas',      render: vistaTerminadas },
+  { id: 'carga',    etq: 'Carga',           render: vistaCarga },
+  { id: 'cierre',   etq: 'Cierre de sprint',render: vistaCierre },
+  { id: 'equipos',  etq: 'Equipos',         render: vistaEquipos },
+  { id: 'backlog',  etq: 'Backlog',         render: () => vistaPendiente('Backlog del área') }
+];
+let actual = 'panorama';
+
+document.getElementById('pestanas').innerHTML = PANTALLAS.map((p, i) => `
+  <button class="pestana" role="tab" data-ir="${p.id}" aria-current="${p.id===actual}">
+    ${i < 7 ? `<span class="pestana__num">${i+1}</span>` : ''}${p.etq}
+  </button>`).join('');
+
+function pintar() {
+  const p = PANTALLAS.find(x => x.id === actual) || PANTALLAS[0];
+  const v = p.render();
+  document.getElementById('panel').innerHTML = v.html;
+  document.getElementById('tb-titulo').textContent = v.titulo;
+  document.getElementById('tb-sub').textContent = v.sub;
+  document.querySelectorAll('.pestana').forEach(b =>
+    b.setAttribute('aria-current', String(b.dataset.ir === actual)));
+  /* la barra lateral marca la vista real; «cierre» cuelga del sprint */
+  const lateralActiva = actual === 'cierre' ? 'sprint' : actual;
+  document.querySelectorAll('#vistas .lat-item').forEach(b =>
+    b.setAttribute('aria-current', String(b.dataset.ir === lateralActiva)));
+}
+
+function ir(id) { if (PANTALLAS.some(p => p.id === id)) { actual = id; pintar(); } }
+
+document.addEventListener('click', ev => {
+  const t = ev.target.closest('[data-ir],[data-orden],[data-mio],[data-agrupa],[data-carga],[data-plegar],[data-sprint],[data-copiar],[data-destino],[data-desmarcar]');
+  if (!t) return;
+
+  if (t.dataset.copiar) {            /* antes que data-sprint: va dentro de la cabecera */
+    ev.stopPropagation();
+    const s = CERRADOS.find(x => x.id === t.dataset.copiar);
+    const texto = textoSprint(s);
+    const avisar = () => {
+      const a = document.getElementById('aviso-copia');
+      if (!a) return;
+      a.textContent = `Copiado · ${texto.split('\n').length} líneas`;
+      a.classList.add('aviso-copia--visible');
+      setTimeout(() => a.classList.remove('aviso-copia--visible'), 2200);
+    };
+    if (navigator.clipboard) navigator.clipboard.writeText(texto).then(avisar, avisar);
+    else avisar();
+    return;
+  }
+  if (t.dataset.ir)      { ir(t.dataset.ir); return; }
+  if (t.dataset.orden)   { ordenPanorama = t.dataset.orden; pintar(); return; }
+  if (t.dataset.mio)     { soloMio = t.dataset.mio === '1'; pintar(); return; }
+  if (t.dataset.agrupa)  { agrupaBloqueos = t.dataset.agrupa; pintar(); return; }
+  if (t.dataset.carga)   { ordenCarga = t.dataset.carga; pintar(); return; }
+  if (t.dataset.desmarcar) { desmarcadas[t.dataset.desmarcar] = true; destino[t.dataset.desmarcar] = 'siguiente'; pintar(); return; }
+  if (t.dataset.destino) {
+    const [clave, d] = t.dataset.destino.split('|');
+    destino[clave] = d; pintar(); return;
+  }
+  if (t.dataset.plegar) {
+    const g = document.querySelector(`[data-grupo="${t.dataset.plegar}"]`);
+    if (g) { g.hidden = !g.hidden; grupoAbierto[t.dataset.plegar] = !g.hidden;
+             t.querySelector('.chevron').style.transform = `rotate(${g.hidden?0:90}deg)`; }
+    return;
+  }
+  if (t.dataset.sprint) {
+    const id = t.dataset.sprint;
+    sprintAbierto[id] = !sprintAbierto[id];
+    const g = document.querySelector(`[data-grupo="s-${id}"]`);
+    if (g) { g.hidden = !sprintAbierto[id];
+             t.querySelector('.chevron').style.transform = `rotate(${sprintAbierto[id]?90:0}deg)`; }
+  }
+});
+
+/* «Sigue detenida / Ya se destrabó»: alternador local del bloque 3 */
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('.destino button');
+  if (!b || b.dataset.destino) return;
+  b.parentElement.querySelectorAll('button').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+});
+
+/* ── interruptor de tema — solo para la maqueta ── */
+document.querySelectorAll('[data-tema-op]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.documentElement.dataset.tema = b.dataset.temaOp;
+    document.querySelectorAll('[data-tema-op]').forEach(o =>
+      o.setAttribute('aria-pressed', String(o === b)));
+  });
+});
+
+/* ── rail de la barra lateral ── */
+document.getElementById('btn-rail').addEventListener('click', () => {
+  document.getElementById('app').classList.toggle('rail');
+});
+const estrecha = window.matchMedia('(max-width: 1040px)');
+const aplicarEstrecho = () =>
+  document.getElementById('app').classList.toggle('estrecho', estrecha.matches);
+estrecha.addEventListener('change', aplicarEstrecho);
+aplicarEstrecho();
+
+pintar();
+</script>
+</body>
+</html>

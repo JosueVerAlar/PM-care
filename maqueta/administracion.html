@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="es" data-tema="sistema">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PM-care · maqueta E0 · administración</title>
+<!--
+  ═════════════════════════════════════════════════════════════════════════
+  MAQUETA ESTÁTICA — etapa E0. NO es la app.
+  Tercera pieza, junto a `index.html` (vista de proyecto) y `vistas.html`
+  (vistas globales y cierre de sprint). Aquí vive lo que ADMINISTRA el
+  contenido, no lo que lo consulta:
+      1 Proyectos  — alta, cerrar, reabrir, eliminar
+      2 Personas   — alta sin ceremonia, y en qué equipos vive cada una
+      3 Equipos    — crear, a qué proyectos están dedicados, quién los forma
+  Se separó de `vistas.html` porque aquel archivo ya iba en 118 KB: dos
+  archivos legibles antes que uno inmanejable.
+  ═════════════════════════════════════════════════════════════════════════
+
+  SISTEMA: los mismos tokens, la misma escala, la misma barra lateral de
+  216px con rail de 48px y el mismo interruptor de tema que las otras dos
+  maquetas. Cero color nuevo: cerrar usa neutros, eliminar usa la tinta de
+  bloqueo que ya existía, y la selección de chips usa --seleccion.
+
+  LAS TRES DECISIONES QUE ESTA PANTALLA RESUELVE
+  1. CERRAR ≠ ELIMINAR, y se lee sin explicación:
+     · cerrar está en cada fila activa, es neutro y reversible
+     · eliminar NO aparece en una fila activa. Solo dentro de la sección
+       de cerrados — hay que cerrar antes de poder borrar, así que son
+       dos gestos separados en el tiempo y no dos botones vecinos
+     · eliminar enumera lo que se pierde y pide escribir la clave a mano
+  2. UNA PERSONA VIVE EN VARIOS EQUIPOS, y se ve desde los dos lados:
+     en Personas, sus equipos como etiquetas más el conteo; en Equipos,
+     junto a cada miembro, en qué otro equipo está.
+     Con los datos reales: Jésús Alberto en Control escolar y en Operación;
+     Miguel Medina en un equipo dedicado a Infraestructura Y PED.
+  3. ALTA SIN CEREMONIA: nombre y a qué equipos. Dos campos, sin modal.
+     El rol se pone después, o nunca.
+
+  ⚠ DECISIÓN DE MODELO PENDIENTE, no la tomo yo: hoy el equipo vive DENTRO
+  del proyecto (`proyectos[].equipo[]`) y no tiene nombre. Un equipo con
+  nombre propio, dedicado a varios proyectos, es una entidad nueva de primer
+  nivel. Toca el esquema Zod y hay que decidirlo con dba y arquitecto.
+-->
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   1. TOKENS — todo el color vive aquí. Nada de hex fuera de esta sección.
+      Copiados literalmente de index.html; solo se añade el par --reparto.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* superficies */
+  --fondo-app:      #FFFFFF;
+  --fondo-lateral:  #F5F5F7;
+  --fondo-panel:    #FFFFFF;
+  --fondo-cabecera: #FAFAFB;
+  --hairline:       #DCDCE0;
+
+  /* tinta */
+  --tinta-1: #1D1D1F;   /* 16.8:1 sobre panel */
+  --tinta-2: #55555C;   /*  7.4:1 */
+  --tinta-3: #86868B;   /*  3.6:1 — solo metadatos */
+
+  /* interacción — NEUTRA a propósito: el azul compite con «en curso» */
+  --hover:     #F0F0F3;
+  --seleccion: #E4E4E8;
+
+  /* CANAL 1 · estado */
+  --estado-hecha:     #047857;
+  --estado-curso:     #1D4ED8;
+  --estado-pendiente: #86868B;
+  --estado-cancelada: #86868B;
+  --estado-sindesglosar: #A1A1A6;
+
+  /* CANAL 2 · procedencia */
+  --nuevo-banda:  #CA8A04;
+  --nuevo-fondo:  #FDF0CC;
+  --nuevo-tinta:  #713F12;
+
+  /* CANAL 3 · bloqueo */
+  --bloqueo-banda: #B91C1C;
+  --bloqueo-fondo: #FDF0F0;
+  --bloqueo-tinta: #991B1B;
+
+  /* chips neutros */
+  --chip-fondo: #ECECF0;
+  --chip-tinta: #4B5563;
+
+  /* medidor — relleno NEUTRO: el verde está reservado para «hecha» */
+  --medidor-pista:   #E4E4E8;
+  --medidor-relleno: #6E6E76;
+
+  /* NUEVO · reparto de carga. Dos neutros que solo separan tramos.
+     No son categóricos: el proyecto lo dice la etiqueta, no el tono. */
+  --reparto-a: #6E6E76;   /* 5.05:1 sobre panel */
+  --reparto-b: #8A8A92;   /* 3.43:1 sobre panel */
+
+  /* NUEVO · botón sólido de consecuencia (cierre de sprint).
+     Neutro a propósito: un azul aquí se leería como «en curso». */
+  --solido-fondo: #1D1D1F;
+  --solido-tinta: #FFFFFF;   /* 16.8:1 */
+
+  /* NUEVO · botón sólido de eliminar. Texto blanco sobre el rojo oscuro en
+     tema claro; en oscuro el rojo sube de luminancia y el blanco caería a
+     3.76:1, así que ahí el texto es la tinta oscura. */
+  --peligro-fondo: #B91C1C;
+  --peligro-tinta: #FFFFFF;   /* 6.47:1 */
+
+  /* métrica */
+  --alto-fila: 30px;
+  --ancho-lateral: 216px;
+  --ancho-rail: 48px;
+  /* medida de lectura: en un panel único de 1440px, dejar que el título y su
+     clave se separen 1200px vuelve la fila ilegible. El hover sigue llegando
+     al borde; lo que se limita es el CONTENIDO. */
+  --medida: 1040px;
+}
+
+/* Oscuro por preferencia del sistema (cuando no hay elección explícita) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    --fondo-app:      #1C1C1E;
+    --fondo-lateral:  #232326;
+    --fondo-panel:    #1C1C1E;
+    --fondo-cabecera: #202023;
+    --hairline:       #3A3A3F;
+
+    --tinta-1: #F2F2F5;
+    --tinta-2: #A9A9B2;
+    --tinta-3: #7C7C85;
+
+    --hover:     #2A2A2E;
+    --seleccion: #3A3A40;
+
+    --estado-hecha:     #0FA97A;
+    --estado-curso:     #4C8DF6;
+    --estado-pendiente: #7C7C85;
+    --estado-cancelada: #7C7C85;
+    --estado-sindesglosar: #6A6A73;
+
+    --nuevo-banda:  #D9A441;
+    --nuevo-fondo:  #3A2D0F;
+    --nuevo-tinta:  #F0CE7E;
+
+    --bloqueo-banda: #EF4444;
+    --bloqueo-fondo: #3A1A1A;
+    --bloqueo-tinta: #FCA5A5;
+
+    --chip-fondo: #2E2E33;
+    --chip-tinta: #B0B0BA;
+
+    --medidor-pista:   #3A3A40;
+    --medidor-relleno: #8E8E98;
+
+    --reparto-a: #8E8E98;   /* 5.24:1 */
+    --reparto-b: #6A6A73;   /* 3.18:1 */
+
+    --solido-fondo: #F2F2F5;
+    --solido-tinta: #1C1C1E;   /* 15.2:1 */
+
+    --peligro-fondo: #EF4444;
+    --peligro-tinta: #1C1C1E;   /* 4.52:1 */
+  }
+}
+
+/* Oscuro por elección explícita — gana sobre el sistema en ambos sentidos */
+:root[data-tema="oscuro"] {
+  --fondo-app:      #1C1C1E;
+  --fondo-lateral:  #232326;
+  --fondo-panel:    #1C1C1E;
+  --fondo-cabecera: #202023;
+  --hairline:       #3A3A3F;
+
+  --tinta-1: #F2F2F5;
+  --tinta-2: #A9A9B2;
+  --tinta-3: #7C7C85;
+
+  --hover:     #2A2A2E;
+  --seleccion: #3A3A40;
+
+  --estado-hecha:     #0FA97A;
+  --estado-curso:     #4C8DF6;
+  --estado-pendiente: #7C7C85;
+  --estado-cancelada: #7C7C85;
+  --estado-sindesglosar: #6A6A73;
+
+  --nuevo-banda:  #D9A441;
+  --nuevo-fondo:  #3A2D0F;
+  --nuevo-tinta:  #F0CE7E;
+
+  --bloqueo-banda: #EF4444;
+  --bloqueo-fondo: #3A1A1A;
+  --bloqueo-tinta: #FCA5A5;
+
+  --chip-fondo: #2E2E33;
+  --chip-tinta: #B0B0BA;
+
+  --medidor-pista:   #3A3A40;
+  --medidor-relleno: #8E8E98;
+
+  --reparto-a: #8E8E98;
+  --reparto-b: #6A6A73;
+
+  --solido-fondo: #F2F2F5;
+  --solido-tinta: #1C1C1E;
+
+  --peligro-fondo: #EF4444;
+  --peligro-tinta: #1C1C1E;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2. BASE
+   ═══════════════════════════════════════════════════════════════ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--tinta-1);
+  background: var(--fondo-app);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.crece { flex: 1; }
+
+/* números siempre tabulares: las columnas de conteo no deben bailar */
+.tabular, .medidor__conteo, .clave, .contador, .cifra { font-variant-numeric: tabular-nums; }
+
+.oculto { display: none !important; }
+
+/* ═══════════════════════════════════════════════════════════════
+   3. ARMAZÓN
+      Fila extra arriba SOLO PARA LA MAQUETA: el conmutador de pantallas.
+      En la app esa fila no existe; la navegación es la barra lateral.
+   ═══════════════════════════════════════════════════════════════ */
+
+.app {
+  display: grid;
+  grid-template-rows: 34px 44px 1fr;
+  height: 100vh;
+}
+
+.cuerpo {
+  display: grid;
+  grid-template-columns: var(--ancho-lateral) 1fr;
+  min-height: 0;
+}
+:is(.app.rail, .app.estrecho) .cuerpo { grid-template-columns: var(--ancho-rail) 1fr; }
+
+.panel { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--fondo-panel); }
+
+/* ── barra de maqueta (andamio, no producto) ────────────────── */
+.maqueta-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 12px;
+  background: var(--chip-fondo);
+  border-bottom: 1px solid var(--hairline);
+  overflow-x: auto;
+}
+.maqueta-bar__sello {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--chip-tinta);
+  padding-right: 10px; margin-right: 2px;
+  border-right: 1px solid var(--hairline);
+  height: 18px;
+}
+.maqueta-bar__sello::before {
+  content: ""; width: 8px; height: 8px; border-radius: 2px;
+  background: repeating-linear-gradient(45deg, var(--chip-tinta) 0 2px, transparent 2px 4px);
+}
+.pestana {
+  flex: 0 0 auto;
+  height: 22px; padding: 0 9px; border-radius: 4px;
+  font-size: 11.5px; color: var(--chip-tinta); white-space: nowrap;
+}
+.pestana:hover { background: var(--hover); color: var(--tinta-1); }
+.pestana[aria-current="true"] {
+  background: var(--fondo-panel); color: var(--tinta-1); font-weight: 600;
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+.pestana__num { color: var(--tinta-3); margin-right: 4px; font-weight: 400; }
+.pestana[aria-current="true"] .pestana__num { color: var(--tinta-2); }
+
+/* ── barra de herramientas (idéntica a index.html) ──────────── */
+.toolbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 12px;
+  background: var(--fondo-lateral);
+  border-bottom: 1px solid var(--hairline);
+}
+.tb-boton {
+  display: flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 9px; border-radius: 5px;
+  color: var(--tinta-2);
+}
+.tb-boton:hover { background: var(--hover); color: var(--tinta-1); }
+
+.tb-titulo { font-weight: 600; color: var(--tinta-1); }
+.tb-sub { font-size: 11.5px; color: var(--tinta-3); }
+
+.tb-primario {
+  height: 26px; padding: 0 11px; border-radius: 5px;
+  border: 1px solid var(--hairline);
+  background: var(--fondo-panel);
+  color: var(--tinta-1); font-weight: 500;
+}
+.tb-primario:hover { background: var(--hover); }
+
+/* interruptor de tema — SOLO PARA LA MAQUETA */
+.tema { display: flex; align-items: center; gap: 8px; padding-left: 12px; border-left: 1px solid var(--hairline); }
+.tema__etiqueta { font-size: 10px; letter-spacing: .07em; text-transform: uppercase; color: var(--tinta-3); }
+.tema__grupo { display: flex; padding: 2px; background: var(--chip-fondo); border-radius: 6px; }
+.tema__op { padding: 3px 9px; border-radius: 4px; font-size: 12px; color: var(--tinta-2); }
+.tema__op[aria-pressed="true"] {
+  background: var(--fondo-panel); color: var(--tinta-1); font-weight: 500;
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   4. BARRA LATERAL — misma métrica y mismo comportamiento de rail
+   ═══════════════════════════════════════════════════════════════ */
+
+.lateral {
+  background: var(--fondo-lateral);
+  border-right: 1px solid var(--hairline);
+  overflow-y: auto;
+  padding: 8px 0 16px;
+}
+.lat-grupo { padding: 0 8px; }
+.lat-titulo {
+  padding: 14px 8px 5px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tinta-3);
+}
+.lat-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; height: 27px; padding: 0 8px; border-radius: 5px;
+  color: var(--tinta-1); text-align: left;
+}
+.lat-item:hover { background: var(--hover); }
+.lat-item[aria-current="true"] { background: var(--seleccion); font-weight: 500; }
+.lat-item__icono { flex: 0 0 16px; display: flex; color: var(--tinta-2); }
+.lat-item__texto { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* proyecto sin nada capturado: se atenúa, no se esconde */
+.lat-item--vacio .lat-item__texto { color: var(--tinta-3); }
+
+/* contador de bloqueos: cuadrado + número. Nunca el color solo. */
+.contador { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--bloqueo-banda); }
+.contador svg { flex: 0 0 auto; }
+
+/* rail de 48px */
+:is(.app.rail, .app.estrecho) .lat-item__texto,
+:is(.app.rail, .app.estrecho) .lat-titulo { display: none; }
+:is(.app.rail, .app.estrecho) .lat-item { justify-content: center; padding: 0; position: relative; }
+:is(.app.rail, .app.estrecho) .lat-grupo { padding: 0 6px; }
+:is(.app.rail, .app.estrecho) .lat-item .contador {
+  position: absolute; transform: translate(11px, -9px); font-size: 9.5px;
+}
+:is(.app.rail, .app.estrecho) .lat-item .contador svg { display: none; }
+:is(.app.rail, .app.estrecho) .lat-sep { margin: 10px 6px; height: 1px; background: var(--hairline); }
+.lat-sep { display: none; }
+:is(.app.rail, .app.estrecho) .lat-inicial {
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 5px;
+  background: var(--chip-fondo); color: var(--chip-tinta);
+  font-size: 10px; font-weight: 600; letter-spacing: .02em;
+}
+.lat-inicial { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════
+   5. CABECERA DE PANEL Y CONTROLES
+   ═══════════════════════════════════════════════════════════════ */
+
+.cab {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 38px; padding: 0 16px;
+  background: var(--fondo-cabecera);
+  border-bottom: 1px solid var(--hairline);
+  flex: 0 0 auto;
+}
+.cab__titulo {
+  font-size: 12px; font-weight: 600; letter-spacing: .055em;
+  text-transform: uppercase; color: var(--tinta-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cab__accion { font-size: 11.5px; color: var(--tinta-3); padding: 3px 7px; border-radius: 4px; white-space: nowrap; }
+.cab__accion:hover { background: var(--hover); color: var(--tinta-1); }
+
+.alternador { display: flex; padding: 2px; background: var(--chip-fondo); border-radius: 5px; flex: 0 0 auto; }
+.alternador button { padding: 2px 8px; border-radius: 3px; font-size: 11.5px; color: var(--tinta-2); white-space: nowrap; }
+.alternador button[aria-pressed="true"] {
+  background: var(--fondo-panel); color: var(--tinta-1); font-weight: 500;
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+.alternador__n { font-variant-numeric: tabular-nums; color: var(--tinta-3); }
+.alternador button[aria-pressed="true"] .alternador__n { color: var(--tinta-2); }
+
+/* etiqueta de la regla de orden: un orden no explicado es peor que alfabético */
+.regla-orden {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 11.5px; color: var(--tinta-3);
+}
+
+.lienzo { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* ═══════════════════════════════════════════════════════════════
+   6. PIEZAS COMPARTIDAS — medidor, glifos, chips (de index.html)
+   ═══════════════════════════════════════════════════════════════ */
+
+.medidor { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.medidor__pista { width: 56px; height: 4px; border-radius: 2px; background: var(--medidor-pista); overflow: hidden; }
+.medidor__relleno { display: block; height: 100%; border-radius: 2px; background: var(--medidor-relleno); }
+.medidor__conteo { font-size: 11px; color: var(--tinta-2); min-width: 38px; }
+
+/* contenedor sin hojas: ni medidor ni 0 % — se dice lo que pasa (regla 2) */
+.sin-desglosar { font-size: 11px; color: var(--tinta-3); white-space: nowrap; }
+
+.glifo { flex: 0 0 14px; display: flex; align-items: center; justify-content: center; }
+.glifo--pendiente { color: var(--estado-pendiente); }
+.glifo--curso     { color: var(--estado-curso); }
+.glifo--hecha     { color: var(--estado-hecha); }
+.glifo--cancelada { color: var(--estado-cancelada); }
+.glifo--sindesglosar { color: var(--estado-sindesglosar); }
+
+.clave { flex: 0 0 auto; font-size: 11px; color: var(--tinta-3); letter-spacing: .02em; }
+
+.chip {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center;
+  height: 15px; padding: 0 5px; border-radius: 3px;
+  font-size: 10px; font-weight: 600; letter-spacing: .025em;
+  white-space: nowrap;
+}
+.chip--nuevo    { background: var(--nuevo-fondo); color: var(--nuevo-tinta); }
+.chip--bloqueo  { background: var(--bloqueo-fondo); color: var(--bloqueo-tinta); gap: 4px; }
+.chip--neutro   { background: var(--chip-fondo);  color: var(--chip-tinta); font-weight: 500; }
+.chip--arrastre { background: var(--chip-fondo);  color: var(--chip-tinta); }
+
+.tira-bloqueo {
+  display: flex; align-items: flex-start; gap: 6px;
+  padding: 4px 7px; border-radius: 4px;
+  background: var(--bloqueo-fondo); color: var(--bloqueo-tinta);
+  font-size: 11px; line-height: 16px;
+}
+.tira-bloqueo svg { flex: 0 0 auto; margin-top: 4px; }
+
+/* nota al pie de una vista: dice de qué NO habla la vista */
+.nota-pie {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border-top: 1px solid var(--hairline);
+  background: var(--fondo-cabecera);
+  font-size: 11px; color: var(--tinta-3);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   7. ADMINISTRACIÓN
+   ═══════════════════════════════════════════════════════════════ */
+
+.adm { padding-bottom: 28px; }
+
+.bloque { padding: 16px 16px 4px; max-width: 1080px; }
+.bloque__titulo {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tinta-3);
+  margin-bottom: 9px;
+}
+.bloque__n { font-size: 11px; letter-spacing: 0; text-transform: none; font-weight: 400; }
+.bloque__nota {
+  font-size: 11.5px; color: var(--tinta-3); margin: -4px 0 10px; max-width: 74ch;
+}
+
+/* ── ALTA SIN CEREMONIA ──────────────────────────────────────
+   Dos cosas y listo. Lo demás se completa después. */
+.alta {
+  border: 1px solid var(--hairline); border-radius: 7px;
+  background: var(--fondo-cabecera);
+  padding: 12px 13px 13px;
+  margin-bottom: 14px;
+  max-width: 1080px;
+}
+.alta__titulo { font-weight: 600; font-size: 13px; margin-bottom: 9px; }
+.alta__fila { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.alta__pie { font-size: 11.5px; color: var(--tinta-3); margin-top: 9px; max-width: 78ch; }
+
+.campo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.campo__etq { font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--tinta-3); }
+.campo input {
+  height: 28px; padding: 0 9px;
+  font: inherit; font-size: 12.5px;
+  color: var(--tinta-1); background: var(--fondo-panel);
+  border: 1px solid var(--hairline); border-radius: 5px;
+}
+.campo input::placeholder { color: var(--tinta-3); }
+.campo input:focus { outline: 2px solid var(--tinta-2); outline-offset: -1px; }
+.campo--clave input { width: 96px; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+
+/* chips seleccionables: la pertenencia se marca con ✓ + peso, no solo color */
+.chips-sel { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip-sel {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 26px; padding: 0 10px; border-radius: 5px;
+  border: 1px solid var(--hairline); background: var(--fondo-panel);
+  font-size: 12px; color: var(--tinta-2);
+}
+.chip-sel:hover { background: var(--hover); color: var(--tinta-1); }
+.chip-sel[aria-pressed="true"] {
+  background: var(--seleccion); color: var(--tinta-1); font-weight: 600;
+  border-color: var(--tinta-3);
+}
+.chip-sel__marca { width: 10px; display: flex; color: var(--tinta-2); }
+.chip-sel[aria-pressed="false"] .chip-sel__marca { visibility: hidden; }
+
+.boton-solido {
+  height: 28px; padding: 0 13px; border-radius: 5px;
+  background: var(--solido-fondo); color: var(--solido-tinta);
+  font-weight: 600; font-size: 12.5px;
+}
+.boton-solido:hover { opacity: .88; }
+.boton-solido[disabled] { opacity: .35; cursor: not-allowed; }
+.boton-texto { height: 28px; padding: 0 10px; border-radius: 5px; color: var(--tinta-2); font-size: 12.5px; }
+.boton-texto:hover { background: var(--hover); color: var(--tinta-1); }
+
+.mini {
+  height: 24px; padding: 0 9px; border-radius: 4px;
+  border: 1px solid var(--hairline); background: var(--fondo-panel);
+  font-size: 11.5px; color: var(--tinta-2); white-space: nowrap;
+}
+.mini:hover { background: var(--hover); color: var(--tinta-1); }
+/* «Eliminar» NUNCA es un botón neutro más: lleva la tinta de peligro */
+.mini--peligro { color: var(--bloqueo-tinta); border-color: var(--bloqueo-fondo); }
+.mini--peligro:hover { background: var(--bloqueo-fondo); color: var(--bloqueo-tinta); }
+
+/* ── FILA DE PROYECTO ───────────────────────────────────────── */
+.fila-proy {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 2px 11px;
+  align-items: center;
+  padding: 9px 12px;
+  border: 1px solid var(--hairline); border-radius: 7px;
+  background: var(--fondo-panel);
+  margin-bottom: 7px;
+}
+.fila-proy__sigla {
+  grid-column: 1; grid-row: 1 / span 2;
+  height: 30px; display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; background: var(--chip-fondo); color: var(--chip-tinta);
+  font-size: 10px; font-weight: 700; letter-spacing: .03em;
+}
+.fila-proy__nombre { grid-column: 2; grid-row: 1; font-weight: 600; font-size: 13px; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fila-proy__meta { grid-column: 2; grid-row: 2; font-size: 11.5px; color: var(--tinta-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fila-proy__acciones { grid-column: 3; grid-row: 1 / span 2; display: flex; gap: 6px; align-items: center; }
+
+/* un proyecto CERRADO se ve cerrado antes de leer nada:
+   tinta apagada, fondo hundido y sin borde vivo */
+.fila-proy--cerrado { background: var(--fondo-cabecera); border-style: dashed; }
+.fila-proy--cerrado .fila-proy__nombre { color: var(--tinta-2); font-weight: 500; }
+.fila-proy--cerrado .fila-proy__sigla { opacity: .6; }
+
+.etiqueta {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 16px; padding: 0 6px; border-radius: 3px;
+  font-size: 10px; font-weight: 600; letter-spacing: .03em;
+  background: var(--chip-fondo); color: var(--chip-tinta);
+  vertical-align: 1px;
+}
+.etiqueta--vacio { background: transparent; color: var(--tinta-3); border: 1px dashed var(--hairline); font-weight: 500; }
+
+/* ── CONFIRMACIÓN EN LÍNEA (cerrar) — barata, reversible ────── */
+.confirmar {
+  grid-column: 1 / -1; grid-row: 3;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+  margin-top: 9px; padding: 9px 10px;
+  border-radius: 5px; background: var(--fondo-cabecera);
+  border: 1px solid var(--hairline);
+  font-size: 12px; color: var(--tinta-2);
+}
+.confirmar b { color: var(--tinta-1); }
+
+/* ── ZONA DE PELIGRO (eliminar) — cara, irreversible ────────── */
+.peligro {
+  grid-column: 1 / -1; grid-row: 3;
+  margin-top: 9px; padding: 11px 12px;
+  border-radius: 5px;
+  background: var(--bloqueo-fondo);
+  border: 1px solid var(--bloqueo-banda);
+}
+.peligro__titulo {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12.5px; font-weight: 700; color: var(--bloqueo-tinta);
+  margin-bottom: 6px;
+}
+.peligro__texto { font-size: 12px; line-height: 17px; color: var(--bloqueo-tinta); max-width: 76ch; }
+.peligro__texto b { font-weight: 700; }
+.peligro__fila { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-top: 10px; }
+.peligro__fila .campo input { border-color: var(--bloqueo-banda); }
+.peligro__fila .campo__etq { color: var(--bloqueo-tinta); }
+.boton-peligro {
+  height: 28px; padding: 0 13px; border-radius: 5px;
+  background: var(--peligro-fondo); color: var(--peligro-tinta);
+  font-weight: 600; font-size: 12.5px;
+}
+.boton-peligro[disabled] { opacity: .55; cursor: not-allowed; }
+.boton-peligro:not([disabled]):hover { filter: brightness(1.1); }
+
+/* ── PERSONAS ───────────────────────────────────────────────── */
+.fila-persona {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 250px) minmax(0, 1fr) 108px auto;
+  gap: 11px; align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--hairline);
+}
+.fila-persona:hover { background: var(--hover); }
+.fila-persona__inicial {
+  height: 26px; display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; background: var(--chip-fondo); color: var(--chip-tinta);
+  font-size: 10px; font-weight: 700;
+}
+.fila-persona__nombre { font-size: 12.5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fila-persona__equipos { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.fila-persona__carga { text-align: right; font-size: 11.5px; color: var(--tinta-2); font-variant-numeric: tabular-nums; }
+/* la señal de que alguien vive en varios equipos: el conteo, no solo los chips */
+.multi { font-size: 10.5px; font-weight: 700; color: var(--tinta-1); }
+
+.tabla-cab {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 250px) minmax(0, 1fr) 108px auto;
+  gap: 11px; padding: 8px 12px 6px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 10.5px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--tinta-3);
+}
+.tabla-cab__nota { letter-spacing: 0; text-transform: none; font-weight: 400; font-size: 11px; }
+.marco { border: 1px solid var(--hairline); border-radius: 7px; overflow: hidden; }
+.marco .fila-persona:last-child { border-bottom: 0; }
+
+/* ── EQUIPOS ────────────────────────────────────────────────── */
+.rejilla-eq { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); }
+.equipo { border: 1px solid var(--hairline); border-radius: 7px; background: var(--fondo-panel); overflow: hidden; }
+.equipo__cab { padding: 10px 12px 9px; border-bottom: 1px solid var(--hairline); background: var(--fondo-cabecera); }
+.equipo__nombre { font-weight: 600; font-size: 13px; }
+.equipo__dedicado { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 6px; font-size: 11px; color: var(--tinta-3); }
+.miembro { display: flex; align-items: center; gap: 9px; padding: 5px 12px; min-height: 34px; border-bottom: 1px solid var(--hairline); }
+.miembro:hover { background: var(--hover); }
+.miembro__inicial {
+  flex: 0 0 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; background: var(--chip-fondo); color: var(--chip-tinta);
+  font-size: 10px; font-weight: 700;
+}
+.miembro__datos { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 15px; }
+.miembro__nombre { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.miembro__rol { font-size: 11px; color: var(--tinta-3); }
+/* el mismo hecho, visto desde el equipo: esta persona también está en otro.
+   Va en la línea del rol, no en la del nombre: con nowrap competía por el
+   ancho y aplastaba el nombre hasta partirlo. */
+.miembro__rol { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.miembro__tambien { color: var(--tinta-2); font-weight: 500; }
+.miembro__quitar {
+  flex: 0 0 auto; width: 20px; height: 20px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--tinta-3); opacity: 0;
+}
+.miembro:hover .miembro__quitar { opacity: 1; }
+.miembro__quitar:hover { background: var(--seleccion); color: var(--tinta-1); }
+.equipo__agregar { display: flex; align-items: center; gap: 7px; width: 100%; padding: 8px 12px; color: var(--tinta-2); font-size: 12px; text-align: left; }
+.equipo__agregar:hover { background: var(--hover); color: var(--tinta-1); }
+
+.nota-pie {
+  flex: 0 0 auto; padding: 8px 16px;
+  border-top: 1px solid var(--hairline); background: var(--fondo-cabecera);
+  font-size: 11px; color: var(--tinta-3);
+}
+
+@media (max-width: 1040px) {
+  .cuerpo { grid-template-columns: var(--ancho-rail) 1fr; }
+  .fila-persona, .tabla-cab { grid-template-columns: 30px minmax(0,1fr) 90px; }
+  .fila-persona__equipos { grid-column: 1 / -1; padding-left: 41px; }
+  .tabla-cab > :nth-child(3) { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- ══ andamio de maqueta: no va en la app ══ -->
+  <div class="maqueta-bar">
+    <span class="maqueta-bar__sello">Maqueta</span>
+    <span id="pestanas" style="display:flex;gap:4px"></span>
+    <span class="crece"></span>
+    <a class="pestana" href="vistas.html" style="text-decoration:none">← Vistas globales</a>
+  </div>
+
+  <header class="toolbar">
+    <button class="tb-boton" id="btn-rail" title="Colapsar la barra lateral">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+        <rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="M6 2.5v11"/>
+      </svg>
+    </button>
+    <span class="tb-titulo" id="tb-titulo">Administración</span>
+    <span class="tb-sub" id="tb-sub"></span>
+    <span class="crece"></span>
+    <div class="tema">
+      <span class="tema__etiqueta">tema</span>
+      <div class="tema__grupo" role="group" aria-label="Tema">
+        <button class="tema__op" data-tema-op="claro"   aria-pressed="false">Claro</button>
+        <button class="tema__op" data-tema-op="oscuro"  aria-pressed="false">Oscuro</button>
+        <button class="tema__op" data-tema-op="sistema" aria-pressed="true">Sistema</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="cuerpo">
+    <nav class="lateral">
+      <div class="lat-grupo" id="vistas"></div>
+      <div class="lat-sep"></div>
+      <div class="lat-titulo">Administración</div>
+      <div class="lat-grupo" id="adm-nav"></div>
+    </nav>
+    <section class="panel" id="panel"></section>
+  </div>
+</div>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   GLIFOS E ICONOS — los mismos de index.html y vistas.html
+   ═══════════════════════════════════════════════════════════════ */
+const CUADRO   = '<svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.2" fill="currentColor"/></svg>';
+const TRIANGULO= '<svg width="11" height="11" viewBox="0 0 10 10"><path d="M5 .8 9.6 8.8H.4z" fill="currentColor"/></svg>';
+const CHEVRON  = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 2 6.8 5 3.5 8"/></svg>';
+const EQUIS    = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2.4 2.4l5.2 5.2M7.6 2.4 2.4 7.6"/></svg>';
+const MAS      = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M6 2.5v7M2.5 6h7"/></svg>';
+const PALOMA   = '<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.4 4.7 9 10 3.4"/></svg>';
+const CANDADO  = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.8" y="6.2" width="8.4" height="6" rx="1.4"/><path d="M4.8 6.2V4.6a2.2 2.2 0 014.4 0v1.6"/></svg>';
+const BOTE     = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2.6 3.9h8.8M5.6 3.9V2.6h2.8v1.3M3.9 3.9l.5 7.1h5.2l.5-7.1"/></svg>';
+
+const ICO = {
+  panorama: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>',
+  sprint:   '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.8v2.4M10.5 1.8v2.4"/></svg>',
+  bloqueos: '<svg width="15" height="15" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="1.6" fill="currentColor"/></svg>',
+  carga:    '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 13V7M8 13V3M13 13v-4"/></svg>',
+  proyectos:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1.8 4.6a1.4 1.4 0 011.4-1.4h2.6l1.3 1.6h5.1a1.4 1.4 0 011.4 1.4v5.4a1.4 1.4 0 01-1.4 1.4H3.2a1.4 1.4 0 01-1.4-1.4z"/></svg>',
+  personas: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="5.4" r="2.5"/><path d="M3.2 13.4c0-2.4 2.2-3.9 4.8-3.9s4.8 1.5 4.8 3.9"/></svg>',
+  equipos:  '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="6" cy="5.5" r="2.4"/><path d="M1.8 13.2c0-2.2 1.9-3.6 4.2-3.6s4.2 1.4 4.2 3.6"/><path d="M11 3.4a2.4 2.4 0 010 4.4M12.2 9.9c1.3.5 2.1 1.6 2.1 3.3"/></svg>'
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   DATOS
+   REAL, de datos/ejemplo.json: las personas, y la conformación de
+   los equipos de SICOE / Infraestructura / PED con sus roles.
+   REAL, de la carga de hoy en Jira: las tareas abiertas por persona.
+   maqueta: los EQUIPOS como entidad con nombre propio (el JSON los
+   guarda como una lista dentro de cada proyecto, sin nombre), Mario,
+   los conteos de SIEST, y RENAC como proyecto ya cerrado — hacía
+   falta uno cerrado para poder enseñar el flujo de eliminar.
+
+   ⚠ DECISIÓN DE MODELO QUE NO ES MÍA: hoy el «equipo» vive DENTRO
+   del proyecto (`proyectos[].equipo[]`). Que un equipo tenga nombre
+   propio y esté dedicado a VARIOS proyectos lo convierte en entidad
+   de primer nivel con su propia lista. Eso toca el esquema Zod y hay
+   que decidirlo con dba/arquitecto antes de implementarlo.
+   ═══════════════════════════════════════════════════════════════ */
+
+let PERSONAS = [
+  { id:'roberto-cortes', nombre:'Roberto Carlos Cortés Ramírez', yo:true, abiertas:2 },
+  { id:'jesus-castillo', nombre:'Jesús Alberto Castillo Hernández',  abiertas:12 },
+  { id:'josue-vergara',  nombre:'Josué Vergara',                     abiertas:29 },
+  { id:'jose-dominguez', nombre:'José Praxedes Domínguez Acosta',    abiertas:5 },
+  { id:'miguel-medina',  nombre:'Miguel Medina',                     abiertas:8 },
+  { id:'mario',          nombre:'Mario',                             abiertas:8 }
+];
+
+let PROYECTOS = [
+  { clave:'SICOE',  sigla:'SIC', nombre:'SICOE — Control escolar',            cerrado:false, tareas:66, epicas:5, historias:10, sprints:3 },
+  { clave:'IN',     sigla:'IN',  nombre:'Infraestructura',                    cerrado:false, tareas:12, epicas:2, historias:3,  sprints:1 },
+  { clave:'PED',    sigla:'PED', nombre:'PED — Plataforma Eventos Deportivos',cerrado:false, tareas:3,  epicas:1, historias:1,  sprints:0 },
+  { clave:'SIEST',  sigla:'SIE', nombre:'SIEST',                              cerrado:false, tareas:8,  epicas:0, historias:0,  sprints:0 },
+  { clave:'DW',     sigla:'DW',  nombre:'DGETI web',                          cerrado:false, tareas:0,  epicas:0, historias:0,  sprints:0 },
+  { clave:'IDCE',   sigla:'IDC', nombre:'IDCE',                               cerrado:false, tareas:0,  epicas:0, historias:0,  sprints:0 },
+  { clave:'INDICA', sigla:'IND', nombre:'INDICA',                             cerrado:false, tareas:0,  epicas:0, historias:0,  sprints:0 },
+  { clave:'PULSO',  sigla:'PUL', nombre:'PULSO',                              cerrado:false, tareas:0,  epicas:0, historias:0,  sprints:0 },
+  { clave:'REDOC',  sigla:'RED', nombre:'REDOC',                              cerrado:false, tareas:0,  epicas:0, historias:0,  sprints:0 },
+  { clave:'SISEC',  sigla:'SIS', nombre:'SISEC',                              cerrado:false, tareas:0,  epicas:0, historias:0,  sprints:0 },
+  { clave:'RENAC',  sigla:'REN', nombre:'RENAC',                              cerrado:true,  cerradoEn:'12 may 2026', tareas:24, epicas:3, historias:7, sprints:2 }
+];
+
+let EQUIPOS = [
+  { id:'control-escolar', nombre:'Control escolar', proyectos:['SICOE'], miembros:[
+      { id:'roberto-cortes', rol:'líder técnico' },
+      { id:'jesus-castillo', rol:'backend' },
+      { id:'josue-vergara',  rol:'backend y QA' },
+      { id:'jose-dominguez', rol:'vistas' } ] },
+  /* Un solo equipo dedicado a DOS proyectos: es el caso que el modelo
+     actual (equipo dentro del proyecto) no sabe representar. */
+  { id:'operacion', nombre:'Operación e infraestructura', proyectos:['IN','PED'], miembros:[
+      { id:'roberto-cortes', rol:'líder técnico' },
+      { id:'miguel-medina',  rol:'servidores e integraciones' },
+      { id:'jesus-castillo', rol:'backend' } ] },
+  { id:'siest', nombre:'SIEST', proyectos:['SIEST'], miembros:[
+      { id:'roberto-cortes', rol:'líder técnico' },
+      { id:'mario',          rol:'desarrollo' } ] }
+];
+
+/* ═══════════════════════════════════════════════════════════════
+   UTILIDADES
+   ═══════════════════════════════════════════════════════════════ */
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const buscaPersona = id => PERSONAS.find(p => p.id === id) || { nombre:'—' };
+const nombreProy   = k  => (PROYECTOS.find(p => p.clave === k) || {}).nombre || k;
+const inicial = n => n.split(' ').filter(Boolean).slice(0,2).map(p => p[0]).join('').toUpperCase();
+/* todos los equipos de una persona: es el dato que hace evidente que
+   alguien vive en varios, y se usa desde las dos pantallas */
+const equiposDe = id => EQUIPOS.filter(e => e.miembros.some(m => m.id === id));
+
+/* estado efímero de la maqueta: qué fila tiene abierta su confirmación */
+let confirmando = null;   /* clave del proyecto que se está cerrando */
+let eliminando  = null;   /* clave del proyecto en zona de peligro */
+let textoBorrar = '';
+let selProyEquipo = [];   /* chips marcados en el alta de equipo */
+let selPersEquipo = [];
+let selEquiposPersona = [];
+
+/* ═══════════════════════════════════════════════════════════════
+   BARRA LATERAL — las vistas de consulta viven en vistas.html
+   ═══════════════════════════════════════════════════════════════ */
+document.getElementById('vistas').innerHTML = [
+  ['panorama','Panorama'], ['sprint','Sprint 34'], ['bloqueos','Bloqueos'], ['carga','Carga por persona']
+].map(([i,t]) => `<a class="lat-item" href="vistas.html" style="text-decoration:none" title="${t}">
+    <span class="lat-item__icono">${ICO[i]}</span><span class="lat-item__texto">${t}</span></a>`).join('');
+
+const SECCIONES = [
+  { id:'proyectos', icono:'proyectos', texto:'Proyectos' },
+  { id:'personas',  icono:'personas',  texto:'Personas' },
+  { id:'equipos',   icono:'equipos',   texto:'Equipos' }
+];
+let actual = 'proyectos';
+
+document.getElementById('adm-nav').innerHTML = SECCIONES.map(v =>
+  `<button class="lat-item" data-ir="${v.id}" title="${v.texto}">
+    <span class="lat-item__icono">${ICO[v.icono]}</span>
+    <span class="lat-item__texto">${v.texto}</span></button>`).join('');
+
+document.getElementById('pestanas').innerHTML = SECCIONES.map((p,i) =>
+  `<button class="pestana" data-ir="${p.id}"><span class="pestana__num">${i+1}</span>${p.texto}</button>`).join('');
+
+/* ═══════════════════════════════════════════════════════════════
+   1 · PROYECTOS
+   CERRAR ≠ ELIMINAR, y la diferencia se lee sin explicación:
+     · «Cerrar» está en cada fila activa, es un botón neutro y su
+       confirmación dice, ahí mismo, que se puede reabrir.
+     · «Eliminar» NO EXISTE en una fila activa. Solo aparece dentro
+       de la sección de cerrados. Para borrar algo hay que cerrarlo
+       primero: son dos gestos separados en el tiempo, no dos botones
+       vecinos que se confunden con el pulgar.
+     · Y eliminar cobra su precio: enumera lo que se pierde y pide
+       escribir la clave del proyecto a mano.
+   ═══════════════════════════════════════════════════════════════ */
+function contenido(p) {
+  if (!p.tareas) return '<span class="etiqueta etiqueta--vacio">Sin nada capturado</span>';
+  const partes = [`${p.tareas} tarea${p.tareas===1?'':'s'}`];
+  if (p.epicas)  partes.push(`${p.epicas} épica${p.epicas===1?'':'s'}`);
+  if (p.historias) partes.push(`${p.historias} historia${p.historias===1?'':'s'}`);
+  if (p.sprints) partes.push(`${p.sprints} sprint${p.sprints>1?'s':''} con historia`);
+  return partes.join(' · ');
+}
+
+function filaProyecto(p) {
+  const eqs = EQUIPOS.filter(e => e.proyectos.includes(p.clave));
+  return `<div class="fila-proy ${p.cerrado ? 'fila-proy--cerrado' : ''}">
+    <span class="fila-proy__sigla">${p.sigla}</span>
+    <span class="fila-proy__nombre">${esc(p.nombre)}
+      ${p.cerrado ? `<span class="etiqueta">${CANDADO}Cerrado el ${p.cerradoEn}</span>` : ''}</span>
+    <span class="fila-proy__meta">${contenido(p)}${eqs.length ? ' · ' + eqs.map(e => esc(e.nombre)).join(', ') : ''}</span>
+    <span class="fila-proy__acciones">
+      ${p.cerrado
+        ? `<button class="mini" data-reabrir="${p.clave}">Reabrir</button>
+           <button class="mini mini--peligro" data-eliminar="${p.clave}">${BOTE} Eliminar…</button>`
+        : `<button class="mini" data-cerrar="${p.clave}">Cerrar proyecto</button>`}
+    </span>
+
+    ${confirmando === p.clave ? `
+      <div class="confirmar">
+        ${CANDADO}
+        <span>Cerrar <b>${esc(p.nombre)}</b> conserva sus ${p.tareas} tareas y su historial,
+        y lo saca del Panorama y del sprint. <b>Se puede reabrir cuando quieras.</b></span>
+        <span class="crece"></span>
+        <button class="boton-solido" data-confirmar-cerrar="${p.clave}">Cerrar proyecto</button>
+        <button class="boton-texto" data-cancelar="1">Cancelar</button>
+      </div>` : ''}
+
+    ${eliminando === p.clave ? `
+      <div class="peligro">
+        <div class="peligro__titulo">${TRIANGULO} Eliminar ${esc(p.nombre)} para siempre</div>
+        <div class="peligro__texto">
+          Se borran <b>${p.tareas} tareas, ${p.epicas} épicas, ${p.historias} historias
+          y ${p.sprints} sprint${p.sprints===1?'':'s'} cerrados</b>, con todo su historial.
+          Cerrar lo habría guardado; esto no. <b>No hay deshacer desde la app:</b>
+          solo se recupera restaurando un respaldo anterior a este momento.
+        </div>
+        <div class="peligro__fila">
+          <label class="campo campo--clave">
+            <span class="campo__etq">Escribe ${p.clave} para confirmar</span>
+            <input id="campo-borrar" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="${p.clave}" value="${esc(textoBorrar)}">
+          </label>
+          <button class="boton-peligro" data-confirmar-eliminar="${p.clave}"
+                  ${textoBorrar.trim().toUpperCase() === p.clave ? '' : 'disabled'}>
+            Eliminar ${p.clave} para siempre</button>
+          <button class="boton-texto" data-cancelar="1">Cancelar</button>
+        </div>
+      </div>` : ''}
+  </div>`;
+}
+
+function vistaProyectos() {
+  const activos  = PROYECTOS.filter(p => !p.cerrado);
+  const cerrados = PROYECTOS.filter(p =>  p.cerrado);
+  return {
+    titulo:'Proyectos', sub:`${activos.length} activos · ${cerrados.length} cerrado${cerrados.length===1?'':'s'}`,
+    html:`
+      <div class="cab"><span class="cab__titulo">Proyectos</span></div>
+      <div class="lienzo adm">
+        <div class="bloque">
+          <div class="alta">
+            <div class="alta__titulo">Dar de alta un proyecto</div>
+            <div class="alta__fila">
+              <label class="campo" style="flex:1 1 300px">
+                <span class="campo__etq">Nombre</span>
+                <input id="np-nombre" type="text" placeholder="Sistema de becas" autocomplete="off">
+              </label>
+              <label class="campo campo--clave">
+                <span class="campo__etq">Clave</span>
+                <input id="np-clave" type="text" placeholder="SIBE" autocomplete="off" maxlength="6">
+              </label>
+              <button class="boton-solido" id="np-alta">Dar de alta</button>
+            </div>
+            <div class="alta__pie">
+              La clave prefija los ids de todas sus tareas (<b>SICOE-T14</b>) y no se puede
+              cambiar después sin romper las referencias del historial. Se propone sola
+              desde el nombre; corrígela ahora si no te gusta.
+            </div>
+          </div>
+
+          <div class="bloque__titulo" style="padding:0">Activos <span class="bloque__n">${activos.length}</span></div>
+          ${activos.map(filaProyecto).join('')}
+        </div>
+
+        <div class="bloque">
+          <div class="bloque__titulo" style="padding:0">Cerrados <span class="bloque__n">${cerrados.length}</span></div>
+          <div class="bloque__nota">
+            Conservan todas sus tareas y su historial, y dejan de aparecer en el Panorama,
+            en el sprint y en la carga por persona. Se pueden reabrir en un clic.
+            Eliminar solo se ofrece aquí: para borrar un proyecto hay que cerrarlo antes.
+          </div>
+          ${cerrados.length ? cerrados.map(filaProyecto).join('')
+            : '<div class="bloque__nota">Ningún proyecto cerrado todavía.</div>'}
+        </div>
+      </div>
+      <div class="nota-pie">
+        Cerrar es reversible y conserva la historia. Eliminar no es ninguna de las dos cosas,
+        y por eso vive en otra sección y pide escribir la clave a mano.
+      </div>`
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2 · PERSONAS
+   ALTA SIN CEREMONIA: nombre y a qué equipos. Nada más.
+   Y la columna de equipos es la que hace evidente el requisito de
+   que una persona vive en varios: los chips, y el conteo cuando
+   son más de uno.
+   ═══════════════════════════════════════════════════════════════ */
+function vistaPersonas() {
+  const enVarios = PERSONAS.filter(p => equiposDe(p.id).length > 1);
+  return {
+    titulo:'Personas', sub:`${PERSONAS.length} personas`,
+    html:`
+      <div class="cab"><span class="cab__titulo">Personas</span></div>
+      <div class="lienzo adm">
+        <div class="bloque">
+          <div class="alta">
+            <div class="alta__titulo">Dar de alta a alguien</div>
+            <div class="alta__fila">
+              <label class="campo" style="flex:1 1 280px">
+                <span class="campo__etq">Nombre</span>
+                <input id="npe-nombre" type="text" placeholder="Nombre y apellidos" autocomplete="off">
+              </label>
+              <div class="campo" style="flex:2 1 380px">
+                <span class="campo__etq">¿A qué equipos?</span>
+                <div class="chips-sel">
+                  ${EQUIPOS.map(e => `<button class="chip-sel" data-sel-eq="${e.id}"
+                    aria-pressed="${selEquiposPersona.includes(e.id)}">
+                    <span class="chip-sel__marca">${PALOMA}</span>${esc(e.nombre)}</button>`).join('')}
+                </div>
+              </div>
+              <button class="boton-solido" id="npe-alta">Dar de alta</button>
+            </div>
+            <div class="alta__pie">
+              Dos cosas y ya. El rol dentro de cada equipo se pone después, desde Equipos;
+              se puede dejar en blanco todo el tiempo que haga falta.
+            </div>
+          </div>
+
+          <div class="marco">
+            <div class="tabla-cab">
+              <span></span><span>Persona</span>
+              <span>Equipos <span class="tabla-cab__nota">— una persona puede estar en varios</span></span>
+              <span style="text-align:right">Carga abierta</span><span></span>
+            </div>
+            ${PERSONAS.map(p => {
+              const eqs = equiposDe(p.id);
+              return `<div class="fila-persona">
+                <span class="fila-persona__inicial">${inicial(p.nombre)}</span>
+                <span class="fila-persona__nombre">${esc(p.nombre)}${p.yo ? ' (tú)' : ''}</span>
+                <span class="fila-persona__equipos">
+                  ${eqs.length
+                    ? eqs.map(e => `<span class="etiqueta">${esc(e.nombre)}</span>`).join('') +
+                      (eqs.length > 1 ? `<span class="multi">en ${eqs.length} equipos</span>` : '')
+                    : '<span class="etiqueta etiqueta--vacio">Sin equipo</span>'}
+                </span>
+                <span class="fila-persona__carga">${p.abiertas} tareas</span>
+                <button class="mini" data-quitar-persona="${p.id}">Dar de baja</button>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="nota-pie">
+        ${enVarios.length} de ${PERSONAS.length} personas están en más de un equipo
+        (${enVarios.map(p => esc(p.nombre.split(' ')[0])).join(', ')}). Dar de baja a alguien
+        no reasigna sus tareas: PM-care avisa cuántas quedarían sin responsable antes de aplicarlo.
+      </div>`
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   3 · EQUIPOS
+   Un equipo tiene nombre, personas, y los PROYECTOS a los que está
+   dedicado — que pueden ser varios (Operación cubre IN y PED).
+   Desde aquí el «vive en varios equipos» se ve del otro lado:
+   junto a cada miembro se dice en qué otro equipo está.
+   ═══════════════════════════════════════════════════════════════ */
+function vistaEquipos() {
+  const activos = PROYECTOS.filter(p => !p.cerrado);
+  return {
+    titulo:'Equipos', sub:`${EQUIPOS.length} equipos`,
+    html:`
+      <div class="cab"><span class="cab__titulo">Equipos</span></div>
+      <div class="lienzo adm">
+        <div class="bloque" style="max-width:none">
+          <div class="alta">
+            <div class="alta__titulo">Crear un equipo</div>
+            <div class="alta__fila">
+              <label class="campo" style="flex:1 1 260px">
+                <span class="campo__etq">Nombre del equipo</span>
+                <input id="ne-nombre" type="text" placeholder="Datos y reportes" autocomplete="off">
+              </label>
+            </div>
+            <div class="alta__fila" style="margin-top:11px">
+              <div class="campo" style="flex:1 1 100%">
+                <span class="campo__etq">¿A qué proyectos está dedicado?</span>
+                <div class="chips-sel">
+                  ${activos.map(p => `<button class="chip-sel" data-sel-proy="${p.clave}"
+                    aria-pressed="${selProyEquipo.includes(p.clave)}">
+                    <span class="chip-sel__marca">${PALOMA}</span>${esc(p.nombre)}</button>`).join('')}
+                </div>
+              </div>
+            </div>
+            <div class="alta__fila" style="margin-top:11px">
+              <div class="campo" style="flex:1 1 100%">
+                <span class="campo__etq">¿Quiénes lo forman?</span>
+                <div class="chips-sel">
+                  ${PERSONAS.map(p => `<button class="chip-sel" data-sel-pers="${p.id}"
+                    aria-pressed="${selPersEquipo.includes(p.id)}">
+                    <span class="chip-sel__marca">${PALOMA}</span>${esc(p.nombre)}</button>`).join('')}
+                </div>
+              </div>
+            </div>
+            <div class="alta__fila" style="margin-top:12px">
+              <button class="boton-solido" id="ne-alta">Crear equipo</button>
+              <span class="alta__pie" style="margin:0">
+                Un equipo puede estar dedicado a varios proyectos, y una persona puede
+                estar en varios equipos. Ninguna de las dos cosas es un error.
+              </span>
+            </div>
+          </div>
+
+          <div class="rejilla-eq">
+            ${EQUIPOS.map(e => `
+              <div class="equipo">
+                <div class="equipo__cab">
+                  <div class="equipo__nombre">${esc(e.nombre)}</div>
+                  <div class="equipo__dedicado">Dedicado a
+                    ${e.proyectos.map(k => `<span class="etiqueta">${esc(nombreProy(k))}</span>`).join('')}
+                    ${e.proyectos.length > 1 ? `<span class="multi">${e.proyectos.length} proyectos</span>` : ''}
+                  </div>
+                </div>
+                ${e.miembros.map(m => {
+                  const otros = equiposDe(m.id).filter(x => x.id !== e.id);
+                  const p = buscaPersona(m.id);
+                  return `<div class="miembro">
+                    <span class="miembro__inicial">${inicial(p.nombre)}</span>
+                    <span class="miembro__datos">
+                      <span class="miembro__nombre">${esc(p.nombre)}${p.yo ? ' (tú)' : ''}</span>
+                      <span class="miembro__rol" title="${otros.length ? 'También en ' + otros.map(o => esc(o.nombre)).join(', ') : ''}">
+                        ${esc(m.rol || 'sin rol')}${otros.length
+                          ? ` · <span class="miembro__tambien">también en ${otros.length === 1
+                              ? esc(otros[0].nombre) : otros.length + ' equipos'}</span>` : ''}
+                      </span>
+                    </span>
+                    <button class="miembro__quitar" title="Quitar del equipo"
+                            data-quitar-miembro="${e.id}|${m.id}">${EQUIS}</button>
+                  </div>`;
+                }).join('')}
+                <button class="equipo__agregar">${MAS} Agregar a alguien</button>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="nota-pie">
+        El equipo como entidad con nombre propio y varios proyectos <b>no existe todavía en el
+        esquema</b>: hoy la lista de personas vive dentro de cada proyecto. Es una decisión de
+        modelo pendiente con dba y arquitecto, no algo que la maqueta pueda dar por hecho.
+      </div>`
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ENRUTADOR
+   ═══════════════════════════════════════════════════════════════ */
+const RENDER = { proyectos: vistaProyectos, personas: vistaPersonas, equipos: vistaEquipos };
+
+function pintar() {
+  const v = RENDER[actual]();
+  document.getElementById('panel').innerHTML = v.html;
+  document.getElementById('tb-titulo').textContent = 'Administración · ' + v.titulo;
+  document.getElementById('tb-sub').textContent = v.sub;
+  document.querySelectorAll('.pestana[data-ir]').forEach(b => b.setAttribute('aria-current', String(b.dataset.ir === actual)));
+  document.querySelectorAll('#adm-nav .lat-item').forEach(b => b.setAttribute('aria-current', String(b.dataset.ir === actual)));
+  const c = document.getElementById('campo-borrar');
+  if (c) { c.focus(); c.setSelectionRange(c.value.length, c.value.length); }
+}
+
+/* clave propuesta desde el nombre: primera palabra en mayúsculas, sin acentos */
+function claveDesde(nombre) {
+  return nombre.normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^A-Za-z0-9 ]/g,' ').trim().split(/\s+/)[0].slice(0,6).toUpperCase();
+}
+
+document.addEventListener('input', ev => {
+  const t = ev.target;
+  if (t.id === 'np-nombre') {
+    const clave = document.getElementById('np-clave');
+    if (!clave.dataset.tocado) clave.value = claveDesde(t.value);
+  }
+  if (t.id === 'np-clave') t.dataset.tocado = '1';
+  if (t.id === 'campo-borrar') {
+    textoBorrar = t.value;
+    const btn = document.querySelector('[data-confirmar-eliminar]');
+    if (btn) btn.disabled = textoBorrar.trim().toUpperCase() !== btn.dataset.confirmarEliminar;
+  }
+});
+
+document.addEventListener('click', ev => {
+  const t = ev.target.closest('[data-ir],[data-cerrar],[data-reabrir],[data-eliminar],[data-cancelar],[data-confirmar-cerrar],[data-confirmar-eliminar],[data-sel-eq],[data-sel-proy],[data-sel-pers],[data-quitar-miembro],[data-quitar-persona],#np-alta,#npe-alta,#ne-alta');
+  if (!t || t.tagName === 'A') return;
+  const d = t.dataset;
+
+  if (d.ir)      { actual = d.ir; confirmando = eliminando = null; pintar(); return; }
+  if (d.cerrar)  { confirmando = d.cerrar; eliminando = null; pintar(); return; }
+  if (d.eliminar){ eliminando = d.eliminar; confirmando = null; textoBorrar = ''; pintar(); return; }
+  if (d.cancelar){ confirmando = eliminando = null; textoBorrar = ''; pintar(); return; }
+
+  if (d.confirmarCerrar) {
+    const p = PROYECTOS.find(x => x.clave === d.confirmarCerrar);
+    p.cerrado = true; p.cerradoEn = '26 ago 2026';
+    confirmando = null; pintar(); return;
+  }
+  if (d.reabrir) {
+    const p = PROYECTOS.find(x => x.clave === d.reabrir);
+    p.cerrado = false; delete p.cerradoEn; pintar(); return;
+  }
+  if (d.confirmarEliminar) {
+    PROYECTOS = PROYECTOS.filter(x => x.clave !== d.confirmarEliminar);
+    EQUIPOS.forEach(e => { e.proyectos = e.proyectos.filter(k => k !== d.confirmarEliminar); });
+    eliminando = null; textoBorrar = ''; pintar(); return;
+  }
+
+  /* chips seleccionables */
+  const alterna = (lista, valor) =>
+    lista.includes(valor) ? lista.filter(x => x !== valor) : [...lista, valor];
+  if (d.selEq)   { selEquiposPersona = alterna(selEquiposPersona, d.selEq); pintar(); return; }
+  if (d.selProy) { selProyEquipo     = alterna(selProyEquipo, d.selProy);   pintar(); return; }
+  if (d.selPers) { selPersEquipo     = alterna(selPersEquipo, d.selPers);   pintar(); return; }
+
+  if (d.quitarMiembro) {
+    const [eq, pe] = d.quitarMiembro.split('|');
+    const e = EQUIPOS.find(x => x.id === eq);
+    e.miembros = e.miembros.filter(m => m.id !== pe);
+    pintar(); return;
+  }
+  if (d.quitarPersona) {
+    PERSONAS = PERSONAS.filter(p => p.id !== d.quitarPersona);
+    EQUIPOS.forEach(e => { e.miembros = e.miembros.filter(m => m.id !== d.quitarPersona); });
+    pintar(); return;
+  }
+
+  if (t.id === 'np-alta') {
+    const nombre = document.getElementById('np-nombre').value.trim();
+    const clave  = document.getElementById('np-clave').value.trim().toUpperCase();
+    if (!nombre || !clave || PROYECTOS.some(p => p.clave === clave)) return;
+    PROYECTOS.unshift({ clave, sigla: clave.slice(0,3), nombre, cerrado:false,
+                        tareas:0, epicas:0, historias:0, sprints:0 });
+    pintar(); return;
+  }
+  if (t.id === 'npe-alta') {
+    const nombre = document.getElementById('npe-nombre').value.trim();
+    if (!nombre) return;
+    const id = 'p' + Date.now();
+    PERSONAS.push({ id, nombre, abiertas:0 });
+    selEquiposPersona.forEach(eq => EQUIPOS.find(e => e.id === eq).miembros.push({ id, rol:'' }));
+    selEquiposPersona = []; pintar(); return;
+  }
+  if (t.id === 'ne-alta') {
+    const nombre = document.getElementById('ne-nombre').value.trim();
+    if (!nombre) return;
+    EQUIPOS.push({ id:'e'+Date.now(), nombre,
+      proyectos:[...selProyEquipo],
+      miembros: selPersEquipo.map(id => ({ id, rol:'' })) });
+    selProyEquipo = []; selPersEquipo = []; pintar(); return;
+  }
+});
+
+/* ── interruptor de tema — solo para la maqueta ── */
+document.querySelectorAll('[data-tema-op]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.documentElement.dataset.tema = b.dataset.temaOp;
+    document.querySelectorAll('[data-tema-op]').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+  });
+});
+document.getElementById('btn-rail').addEventListener('click', () => {
+  document.getElementById('app').classList.toggle('rail');
+});
+const estrecha = window.matchMedia('(max-width: 1040px)');
+const aplicarEstrecho = () => document.getElementById('app').classList.toggle('estrecho', estrecha.matches);
+estrecha.addEventListener('change', aplicarEstrecho);
+aplicarEstrecho();
+
+pintar();
+</script>
+</body>
+</html>
