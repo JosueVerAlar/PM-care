@@ -128,15 +128,19 @@ export function cargaDe(doc: Documento, personaId: PersonaId, hoy: Fecha): Carga
     for (const item of activo.items) {
       const ubicacion = indice.get(item.tarea_id);
       if (!ubicacion) continue;
-      // El responsable del item manda; en `null` hereda el de la tarea.
-      if (compromisoEfectivo(item, ubicacion.tarea).responsable !== personaId) continue;
+      // El compromiso del item manda; en `null` hereda el de la tarea.
+      const compromiso = compromisoEfectivo(item, ubicacion.tarea);
+      if (compromiso.responsable !== personaId) continue;
 
       const { tarea, proyecto } = ubicacion;
       carga.total += 1;
       if (estaAbierta(tarea)) carga.abiertas += 1;
       if (tarea.estado === 'hecha') carga.hechas += 1;
       if (estaBloqueada(tarea)) carga.bloqueadas += 1;
-      if (estaVencida(tarea, hoy)) carga.vencidas += 1;
+      // La fecha sale del MISMO compromiso que el responsable: si el item la fija, una
+      // tarea sin fecha propia sí puede estar vencida dentro de este sprint.
+      if (compromiso.fechaLimite !== null && compromiso.fechaLimite < hoy && estaAbierta(tarea))
+        carga.vencidas += 1;
 
       const fila =
         porProyecto.get(proyecto.clave) ??

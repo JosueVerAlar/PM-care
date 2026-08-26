@@ -147,6 +147,21 @@ describe('regla 4: verde solo si el estado es hecha, jamás por redondeo', () =>
     expect(estadoDerivado(avance)).not.toBe('hecha');
   });
 
+  it('estadoDerivado decide por el conteo, no por el pct: un 100 con hojas abiertas no es verde', () => {
+    // Hoy `contarTareas` topa el pct en 99 y por eso los dos criterios coinciden. Esta
+    // prueba desacopla las dos cosas: `estadoDerivado` recibe un avance cualquiera y no
+    // debe fiarse del número que traiga. Sin ella, cambiar la condición a `pct === 100`
+    // pasa desapercibido hasta el día que alguien quite el tope.
+    const mentiroso: Avance = { hojas: 200, hechas: 199, enCurso: 1, pendientes: 0, canceladas: 0, pct: 100 };
+    expect(estadoDerivado(mentiroso)).toBe('en_movimiento');
+    expect(estadoDerivado(mentiroso)).not.toBe('hecha');
+  });
+
+  it('estadoDerivado tampoco cree en un pct null cuando el conteo dice que está todo hecho', () => {
+    const mentiroso: Avance = { hojas: 3, hechas: 3, enCurso: 0, pendientes: 0, canceladas: 0, pct: null };
+    expect(estadoDerivado(mentiroso)).toBe('hecha');
+  });
+
   it('200 de 200 hechas: ahora sí, 100 y hecha', () => {
     const avance = contarTareas(tareasConEstados(repetir('hecha', 200)));
     expect(avance.pct).toBe(100);
@@ -238,7 +253,7 @@ describe('regla 3: el pct de la épica es el agregado de sus hojas, no el promed
     ]);
     const hijos = epica.historias.map((h) => avanceDeHistoria(h).pct);
     expect(hijos).toEqual([33, 33, 33]);
-    expect(hijos.reduce((a, b) => a + (b ?? 0), 0)).toBe(99);
+    expect(hijos.reduce<number>((suma, pct) => suma + (pct ?? 0), 0)).toBe(99);
     expect(avanceDeEpica(epica).pct).toBe(33);
   });
 

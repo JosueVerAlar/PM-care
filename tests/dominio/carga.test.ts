@@ -237,7 +237,7 @@ describe('cargaDe: qué se le comprometió en el sprint activo', () => {
     expect(carga?.enSprint.hechas).toBe(0);
   });
 
-  it.fails('BUG: la fecha límite comprometida en el sprint no cuenta como vencida', () => {
+  it('la fecha límite comprometida en el sprint cuenta como vencida', () => {
     // El item manda sobre la tarea (`compromisoEfectivo`), y `cargaDe` ya lo respeta para
     // el responsable. Para la fecha no: lee `tarea.fecha_limite` directamente, así que un
     // compromiso vencido del sprint no aparece en la carga de nadie.

@@ -47,7 +47,7 @@ por eso no va primero aunque sea lo que más se ve.
 ---
 
 ## E0 · Maqueta estática
-**Estado:** ⬜ pendiente · **Agente:** `diseno` · **Depende de:** nada · **Tamaño:** pequeño
+**Estado:** ✅ terminada · **Agente:** `diseno` · **Depende de:** nada · **Tamaño:** pequeño
 
 **Entrega:** una página HTML estática, sin React ni build, con la vista de proyecto a dos
 paneles y ~60 filas usando los títulos reales de `docs/datos-reales-sicoe.md`. Paleta,
@@ -61,7 +61,7 @@ hora de trabajo que cambia decisiones de E6.
 ---
 
 ## E1 · Andamio + app de humo
-**Estado:** ⬜ pendiente · **Agente:** `infra` · **Depende de:** nada · **Tamaño:** pequeño
+**Estado:** ✅ terminada · **Agente:** `infra` · **Depende de:** nada · **Tamaño:** pequeño
 
 **Entrega:** `package.json`, Vite, TypeScript, `electron/principal.ts`, `electron/precarga.ts`,
 vitest configurado. Una ventana que dice «PM-care» y la versión.
@@ -76,7 +76,7 @@ Descubrirlo aquí cuesta una hora; descubrirlo en E5 cuesta una etapa.
 ---
 
 ## E2 · Modelo de datos
-**Estado:** ⬜ pendiente · **Agente:** `arquitecto` + `backend` · **Depende de:** E1 · **Tamaño:** mediano
+**Estado:** ✅ terminada · **Agente:** `arquitecto` + `backend` · **Depende de:** E1 · **Tamaño:** mediano
 
 **Entrega:** `compartido/esquema.ts` con los esquemas Zod de proyecto, épica, historia, tarea,
 sprint, bloqueo, persona/equipo y el documento raíz; tipos vía `z.infer`; contadores de id por
@@ -93,7 +93,7 @@ reales de SICOE; un documento con un campo desconocido pasa la validación y lo 
 ---
 
 ## E3 · Almacén e integridad
-**Estado:** ⬜ pendiente · **Agente:** `backend` · **Depende de:** E2 · **Tamaño:** grande
+**Estado:** ✅ terminada · **Agente:** `backend` · **Depende de:** E2 · **Tamaño:** grande
 
 **Entrega:** `electron/almacen/` — carga con validación, escritura atómica (temporal hermano +
 `fsync` + `rename`), respaldos rotativos, `historial.jsonl` append-only con `proyecto_id` y
@@ -110,7 +110,7 @@ sobrescribe; el `historial.jsonl` tiene una línea por mutación.
 ---
 
 ## E4 · Cálculo derivado
-**Estado:** ⬜ pendiente · **Agente:** `backend` + `qa` · **Depende de:** E2 · **Tamaño:** mediano
+**Estado:** ✅ terminada · **Agente:** `backend` + `qa` · **Depende de:** E2 · **Tamaño:** mediano
 
 **Entrega:** `compartido/derivar.ts`, puro: estado y avance de historias y épicas contando
 tareas, más las métricas de Panorama (días sin movimiento, razón de no planeado contra la
@@ -318,3 +318,34 @@ puntos u horas · adjuntos y comentarios en las tareas.
 <!-- Una línea por cambio de estado. Entradas nuevas arriba. Formato: FECHA · etapa · qué pasó -->
 
 - 2026-08-26 · Plan creado. Ninguna etapa iniciada.
+
+---
+
+## Bitácora
+
+**2026-08-26 · E0 a E4 terminadas y verificadas.**
+
+- **E0** maqueta con datos reales de SICOE, tema claro y oscuro. 52 KB, autocontenida.
+  Contraste medido: 30 pares evaluados, los 2 que fallaban corregidos.
+- **E1** andamio. El proceso principal va en **CommonJS**: el módulo `electron` no ofrece
+  exports con nombre para ESM. Los scripts limpian `ELECTRON_RUN_AS_NODE`, que algunos
+  entornos exportan y hace arrancar Electron como Node puro — muere sin mensaje y con
+  código de salida cero.
+- **E2** modelo, tipos y cálculo derivado. Zod valida `datos/ejemplo.json`; 25 nodos
+  evaluados sin un solo `NaN`.
+- **E3** almacén. Verificado ejecutando: 50 muertes del proceso a media escritura →
+  50/50 archivos legibles; 5 formas de corrupción → todas en solo lectura sin
+  sobrescribir; temporales huérfanos barridos al arrancar; respaldos = uno por sesión y
+  uno por día, no uno por escritura.
+- **E4** 258 pruebas en verde. Verificación por mutación: 11 mutaciones, 11 muertas.
+  Se corrigieron los 2 bugs que `qa` encontró y ancló:
+  la banda de "no planeada" seguía pintándose en tareas canceladas, y la carga por
+  persona leía la fecha de la tarea en vez de la comprometida en el sprint.
+
+**Hallazgo de proceso que conviene no repetir:** el `CLAUDE.md` inicial contradecía dos
+decisiones ya cerradas (el estado `bloqueada` y la ruta de `src/compartido/`), y dos
+agentes distintos chocaron con lo mismo antes de que se detectara. Un error en el
+documento de reglas se propaga a todos a la vez: revisarlo con más cuidado que el código.
+
+**Siguiente:** E5 (puente IPC ya escrito y conectado; falta la interfaz que lo consuma)
+y E6, el hito donde el árbol y el sprint se ven con datos reales.

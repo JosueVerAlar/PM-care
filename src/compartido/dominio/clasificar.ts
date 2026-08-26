@@ -88,9 +88,12 @@ export function venceHoy(tarea: Tarea, hoy: Fecha): boolean {
  * ¿Se pinta la marca de procedencia? Solo mientras la tarea siga abierta: la banda
  * desaparece al cerrarse, porque a fin de mes lo interesante es cuánto de lo que quedó
  * abierto no estaba planeado, no repintar de amarillo lo que ya se cerró.
+ *
+ * "Cerrada" incluye `cancelada`, no solo `hecha`: una cancelada también dejó de pedir
+ * atención, y dejarla amarilla ensucia justo la señal que la banda existe para dar.
  */
 export function mostrarProcedencia(tarea: Tarea): boolean {
-  return !tarea.planeada && tarea.estado !== 'hecha';
+  return !tarea.planeada && estaAbierta(tarea);
 }
 
 // --- recorrido --------------------------------------------------------------

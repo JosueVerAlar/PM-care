@@ -215,7 +215,7 @@ describe('procedencia: emergente es de dónde viene, no en qué estado está (re
     expect(mostrarProcedencia(unaTarea({ planeada: false, estado: 'hecha' }))).toBe(false);
   });
 
-  it.fails('BUG: una emergente CANCELADA tampoco debería pintar la banda — también está cerrada', () => {
+  it('una emergente CANCELADA tampoco pinta la banda: también está cerrada', () => {
     // `mostrarProcedencia` solo excluye `hecha`, pero su propio comentario dice "solo
     // mientras la tarea siga abierta". Una cancelada está cerrada. Esta prueba queda en
     // xfail estricto: cuando el bug se arregle, vitest la marca en rojo por pasar y hay
