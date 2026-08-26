@@ -48,6 +48,13 @@
   --chip-fondo: #ECECF0;
   --chip-tinta: #4B5563;     /* 6.4:1 */
 
+  /* superficies sólidas de acción (E7). Tomadas tal cual de la maqueta de
+     administración de `diseno`, donde ya venían medidas en los dos temas. */
+  --solido-fondo:  #1D1D1F;
+  --solido-tinta:  #FFFFFF;   /* 16.8:1 */
+  --peligro-fondo: #B91C1C;
+  --peligro-tinta: #FFFFFF;   /*  6.5:1 */
+
   /* medidor — relleno NEUTRO: el verde está reservado para «hecha» */
   --medidor-pista:   #E4E4E8;
   --medidor-relleno: #6E6E76;
@@ -100,6 +107,11 @@
 
     --chip-fondo: #2E2E33;
     --chip-tinta: #B0B0BA;
+
+    --solido-fondo:  #F2F2F5;
+    --solido-tinta:  #1C1C1E;   /* 15.2:1 */
+    --peligro-fondo: #EF4444;
+    --peligro-tinta: #1C1C1E;   /*  4.5:1 */
 
     --medidor-pista:   #3A3A40;
     --medidor-relleno: #8E8E98;

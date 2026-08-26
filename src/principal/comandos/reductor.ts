@@ -727,6 +727,20 @@ function aplicar(
       if (indice < 0) {
         return { ok: false, error: { codigo: 'invalido', mensaje: `${sitio.tarea.id} no está en ${sprint.id}` } };
       }
+      // Antes de quitar el item, lo comprometido en él se vuelca a la tarea. Sacar
+      // tareas del sprint para redefinir la historia y volver a meterlas es flujo
+      // normal, no excepción: si el responsable o la fecha vivían solo en el item,
+      // el `splice` los borraría en silencio. Solo se vuelca lo que la tarea no
+      // tiene ya; la tarea nunca pierde un dato propio.
+      const saliente = sprint.items[indice];
+      if (saliente !== undefined) {
+        if (sitio.tarea.responsable === null && saliente.responsable !== null)
+          sitio.tarea.responsable = saliente.responsable;
+        if (sitio.tarea.fecha_limite === null && saliente.fecha_limite !== null)
+          sitio.tarea.fecha_limite = saliente.fecha_limite;
+        if (sitio.tarea.prioridad === null && saliente.prioridad !== null)
+          sitio.tarea.prioridad = saliente.prioridad;
+      }
       // Se quita el item entero, no se marca. El rastro de la salida vive en el historial
       // append-only; así `items` siempre significa «lo comprometido», sin filtros.
       sprint.items.splice(indice, 1);

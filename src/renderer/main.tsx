@@ -7,6 +7,7 @@ import './estilos/base.css'
 import './estilos/lateral.css'
 import './estilos/arbol.css'
 import './estilos/sprint.css'
+import './estilos/edicion.css'
 import './estilos/pantallas.css'
 
 const raiz = document.getElementById('raiz')

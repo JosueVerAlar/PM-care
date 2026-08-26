@@ -13,7 +13,7 @@
 import { expect } from 'vitest';
 
 import { validarDocumento } from '../../src/compartido/modelo/esquema';
-import type { Documento } from '../../src/compartido/modelo/tipos';
+import type { Documento, Instante } from '../../src/compartido/modelo/tipos';
 import type { ErrorComando, ResultadoReductor } from '../../src/principal/comandos/reductor';
 import { reducir } from '../../src/principal/comandos/reductor';
 import type { Comando } from '../../src/principal/comandos/tipos';
@@ -59,8 +59,6 @@ export function exigirError(resultado: ResultadoReductor): ErrorComando {
 export function aplicar(doc: Documento, comando: Comando, ahora: Instante = AHORA): Documento {
   return exigirOk(reducir(doc, comando, ahora)).documento;
 }
-
-type Instante = string;
 
 /** Una secuencia que debe pasar entera. El primer fallo detiene la prueba con su mensaje. */
 export function aplicarTodos(

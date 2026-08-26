@@ -1,11 +1,15 @@
 /**
- * La barra superior: colapsar la lateral, qué se está mirando y «Capturar».
+ * La barra superior: colapsar la lateral, qué se está mirando, deshacer y «Capturar».
  *
- * «Capturar», no «Agregar» (CLAUDE.md). En E6 la interfaz es de solo lectura, así que el
- * botón se muestra DESHABILITADO y con el motivo en su `title`, en vez de ocultarlo: la
- * pantalla del hito tiene que enseñar la forma final para que se pueda juzgar, y un
- * botón que existe y no hace nada al pulsarlo es peor que uno que se ve apagado y dice
- * por qué.
+ * «Capturar», no «Agregar» (CLAUDE.md). Desde E7 el botón ESCRIBE, y es contextual: abre
+ * la captura dentro de lo que esté seleccionado en el árbol —épica seleccionada, historia
+ * nueva; historia o tarea, tarea nueva— y en la raíz del proyecto si no hay nada
+ * seleccionado. Es el mismo destino que calcula la tecla `N`, resuelto en un solo sitio
+ * (`App.tsx`) para que las dos rutas no puedan divergir.
+ *
+ * «Deshacer» se muestra aunque exista `⌘Z` porque la pila vive en el proceso principal y
+ * se vacía ante un cambio externo del archivo: el botón deshabilitado es lo único que
+ * dice «ya no hay nada que deshacer» antes de que el usuario pulse y no pase nada.
  *
  * La franja de arrastre de la ventana (`titleBarStyle: 'hiddenInset'`) se resuelve en el
  * CSS: la barra entera es arrastrable menos sus controles.
@@ -19,12 +23,22 @@ export function BarraHerramientas({
   lateralColapsada,
   alternarLateral,
   soloLectura,
+  puedeDeshacer,
+  deshacer,
+  capturar,
+  queSeCaptura,
 }: {
   titulo: string;
   subtitulo: string | null;
   lateralColapsada: boolean;
   alternarLateral: () => void;
   soloLectura: boolean;
+  puedeDeshacer: boolean;
+  deshacer: () => void;
+  /** `null` cuando no hay dónde capturar (una vista global, o solo lectura). */
+  capturar: (() => void) | null;
+  /** Qué se crearía: «épica en SICOE», «tarea en Grupos de regularización». */
+  queSeCaptura: string | null;
 }) {
   return (
     <header className="toolbar">
@@ -56,9 +70,30 @@ export function BarraHerramientas({
 
       <button
         type="button"
+        className="tb-boton"
+        onClick={deshacer}
+        disabled={!puedeDeshacer}
+        title={
+          puedeDeshacer
+            ? 'Deshacer el último cambio (⌘Z)'
+            : 'No hay nada que deshacer. La pila se vacía si el archivo cambia por fuera.'
+        }
+      >
+        Deshacer
+      </button>
+
+      <button
+        type="button"
         className="tb-primario"
-        disabled
-        title="Capturar tareas llega en E7. Hasta entonces la interfaz no escribe nada."
+        disabled={capturar === null}
+        onClick={() => capturar?.()}
+        title={
+          capturar === null
+            ? soloLectura
+              ? 'La app está en solo lectura: no se escribe nada hasta resolver el archivo.'
+              : 'Abre un proyecto para capturar.'
+            : `Capturar ${queSeCaptura ?? ''} (N sobre la fila enfocada)`
+        }
       >
         Capturar
       </button>
