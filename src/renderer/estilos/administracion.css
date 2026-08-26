@@ -1,0 +1,321 @@
+/* ═══════════════════════════════════════════════════════════════
+   E12 · SPRINT GLOBAL Y ADMINISTRACIÓN
+
+   Los valores vienen de `maqueta/vistas.html` (pantalla 2) y de
+   `maqueta/administracion.html`, sin retocar la paleta: todo el color sale de los
+   tokens de `base.css`, que están medidos en claro y oscuro. Aquí no hay ni un hex.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── SPRINT GLOBAL ───────────────────────────────────────────────
+   El conteo va DENTRO de la etiqueta del conmutador: un filtro que deja la vista
+   vacía tiene que verse antes de pulsarlo, no después. */
+
+.alternador__n {
+  margin-left: 5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--tinta-3);
+}
+.alternador button[aria-pressed="true"] .alternador__n { color: var(--tinta-2); }
+.alternador button:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Vencidas: única cifra del resumen que sube de tinta. Va con la palabra, nunca sola. */
+.resumen__alerta { color: var(--bloqueo-tinta); font-weight: 600; }
+
+/* Quién es «yo». Vive junto al filtro que lo usa, no en una pantalla de ajustes. */
+.quien-soy { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.quien-soy__etq { color: var(--tinta-3); white-space: nowrap; }
+.quien-soy select {
+  height: 22px; padding: 0 4px; border-radius: 4px;
+  font: inherit; font-size: 11.5px;
+  color: var(--tinta-1); background: var(--fondo-panel);
+  border: 1px solid var(--hairline);
+  max-width: 220px;
+}
+
+/* En la vista global la migaja empieza por el proyecto, y ese tramo va en tinta más
+   fuerte: es lo primero que hay que poder saltar cuando las tareas vienen mezcladas. */
+.tarjeta__proy { color: var(--tinta-2); font-weight: 600; }
+
+/* El corte del final: dice qué esconde el filtro. Sin él, «Solo lo mío» haría creer que
+   el sprint es más pequeño de lo que es — que es la lectura que lleva a comprometer de más. */
+.corte {
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; padding: 10px 12px;
+  border-top: 1px solid var(--hairline);
+  background: var(--fondo-cabecera);
+  font-size: 11.5px; color: var(--tinta-2);
+  text-align: left;
+}
+.corte:hover { background: var(--hover); color: var(--tinta-1); }
+.corte b { color: var(--tinta-1); }
+
+/* El formulario de captura, encajado entre el resumen y la lista. */
+.alta--sprint { margin: 10px 12px; }
+.campo--destino { flex: 1 1 320px; min-width: 0; }
+
+/* ── ADMINISTRACIÓN · armazón de sección ─────────────────────── */
+
+.adm { padding-bottom: 28px; }
+
+.bloque { padding: 14px 16px 4px; max-width: var(--medida); }
+.bloque--ancho { max-width: none; }
+.bloque__titulo {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--tinta-3);
+  margin-bottom: 9px;
+}
+.bloque__n { font-size: 11px; letter-spacing: 0; text-transform: none; font-weight: 400; }
+.bloque__nota { font-size: 11.5px; color: var(--tinta-3); margin: -2px 0 10px; max-width: 74ch; }
+.bloque__nota--dentro { padding: 12px; margin: 0; }
+.bloque__nota b { color: var(--tinta-2); }
+
+/* ── ALTA SIN CEREMONIA ──────────────────────────────────────── */
+
+.alta {
+  border: 1px solid var(--hairline); border-radius: 7px;
+  background: var(--fondo-cabecera);
+  padding: 12px 13px 13px;
+  margin-bottom: 14px;
+}
+.alta__titulo { font-weight: 600; font-size: 13px; margin-bottom: 9px; }
+.alta__fila { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.alta__pie { font-size: 11.5px; color: var(--tinta-3); margin-top: 9px; max-width: 82ch; line-height: 16px; }
+.alta__pie b { color: var(--tinta-2); }
+/* Un choque de clave no es una nota al pie: es lo que impide dar de alta. */
+.alta__error { color: var(--bloqueo-tinta); font-weight: 600; }
+
+.campo--clave input { width: 104px; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+.campo--chips { margin-top: 11px; }
+
+/* ── CHIPS SELECCIONABLES ─────────────────────────────────────
+   La pertenencia se marca con ✓ + peso + fondo. Nunca solo color. */
+
+.chips-sel { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip-sel {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 26px; padding: 0 10px; border-radius: 5px;
+  border: 1px solid var(--hairline); background: var(--fondo-panel);
+  font-size: 12px; color: var(--tinta-2);
+}
+.chip-sel:hover { background: var(--hover); color: var(--tinta-1); }
+.chip-sel[aria-pressed="true"] {
+  background: var(--seleccion); color: var(--tinta-1); font-weight: 600;
+  border-color: var(--tinta-3);
+}
+.chip-sel--mini { height: 21px; padding: 0 7px; font-size: 11px; gap: 4px; }
+/* El hueco de la marca se reserva siempre: si apareciera y desapareciera, la fila
+   entera bailaría cada vez que se pulsa un chip. */
+.chip-sel__marca { width: 10px; display: flex; color: var(--tinta-2); }
+.chip-sel__marca--hueca { visibility: hidden; }
+
+/* ── FILA DE PROYECTO ────────────────────────────────────────── */
+
+.fila-proy {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 2px 11px;
+  align-items: center;
+  padding: 9px 12px;
+  border: 1px solid var(--hairline); border-radius: 7px;
+  background: var(--fondo-panel);
+  margin-bottom: 7px;
+}
+.fila-proy__sigla {
+  grid-column: 1; grid-row: 1 / span 2;
+  height: 30px; display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; background: var(--chip-fondo); color: var(--chip-tinta);
+  font-size: 10px; font-weight: 700; letter-spacing: .03em;
+}
+.fila-proy__nombre {
+  grid-column: 2; grid-row: 1; font-weight: 500; font-size: 13px; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fila-proy__meta {
+  grid-column: 2; grid-row: 2; font-size: 11.5px; color: var(--tinta-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fila-proy__acciones {
+  grid-column: 3; grid-row: 1 / span 2;
+  display: flex; gap: 6px; align-items: center;
+}
+.fila-proy__nota { font-size: 11px; color: var(--tinta-3); }
+
+/* Un proyecto CERRADO se ve cerrado antes de leer nada: tinta apagada, fondo hundido
+   y borde discontinuo. Es la señal que hace que «cerrar» y «eliminar» no se confundan. */
+.fila-proy--cerrado { background: var(--fondo-cabecera); border-style: dashed; }
+.fila-proy--cerrado .fila-proy__nombre { color: var(--tinta-2); font-weight: 400; }
+.fila-proy--cerrado .fila-proy__sigla { opacity: .6; }
+
+.etiqueta {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 16px; padding: 0 6px; border-radius: 3px;
+  margin-left: 7px;
+  font-size: 10px; font-weight: 600; letter-spacing: .03em;
+  background: var(--chip-fondo); color: var(--chip-tinta);
+  vertical-align: 1px;
+}
+.etiqueta--vacio {
+  background: transparent; color: var(--tinta-3);
+  border: 1px dashed var(--hairline); font-weight: 500;
+}
+
+/* ── CONFIRMACIÓN EN LÍNEA (cerrar) — barata y reversible ────── */
+
+.confirmar {
+  grid-column: 1 / -1; grid-row: 3;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+  margin-top: 9px; padding: 9px 10px;
+  border-radius: 5px; background: var(--fondo-cabecera);
+  border: 1px solid var(--hairline);
+  font-size: 12px; line-height: 17px; color: var(--tinta-2);
+}
+.confirmar b { color: var(--tinta-1); }
+.confirmar svg { flex: 0 0 auto; }
+
+/* ── ZONA DE PELIGRO (eliminar) — cara e irreversible ───────── */
+
+.peligro {
+  grid-column: 1 / -1;
+  margin-top: 9px; padding: 11px 12px;
+  border-radius: 5px;
+  background: var(--bloqueo-fondo);
+  border: 1px solid var(--bloqueo-banda);
+}
+.peligro__titulo {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12.5px; font-weight: 700; color: var(--bloqueo-tinta);
+  margin-bottom: 6px;
+}
+.peligro__texto { font-size: 12px; line-height: 17px; color: var(--bloqueo-tinta); max-width: 78ch; }
+.peligro__fila { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-top: 10px; }
+.peligro__fila .campo input { border-color: var(--bloqueo-banda); }
+.peligro__fila .campo__etq { color: var(--bloqueo-tinta); }
+.peligro .boton-texto { color: var(--bloqueo-tinta); }
+.peligro .boton-texto:hover { background: var(--bloqueo-banda); color: var(--peligro-tinta); }
+
+/* «Eliminar» NUNCA es un botón neutro más: lleva la tinta de peligro. */
+.mini--peligro { color: var(--bloqueo-tinta); border-color: var(--bloqueo-fondo); }
+.mini--peligro:hover { background: var(--bloqueo-fondo); color: var(--bloqueo-tinta); }
+.boton-peligro:disabled { opacity: .55; cursor: not-allowed; filter: none; }
+
+/* ── PERSONAS ────────────────────────────────────────────────── */
+
+.marco { border: 1px solid var(--hairline); border-radius: 7px; overflow: hidden; }
+.marco .fila-persona:last-child { border-bottom: 0; }
+
+.tabla-cab,
+.fila-persona {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 230px) minmax(0, 1fr) 96px auto;
+  gap: 4px 11px; align-items: center;
+}
+.tabla-cab {
+  padding: 8px 12px 6px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--fondo-cabecera);
+  font-size: 10.5px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--tinta-3);
+}
+.tabla-cab__nota { letter-spacing: 0; text-transform: none; font-weight: 400; font-size: 11px; }
+.tabla-cab__der { text-align: right; }
+
+.fila-persona { padding: 7px 12px; border-bottom: 1px solid var(--hairline); }
+.fila-persona:hover { background: var(--hover); }
+.fila-persona--inactiva .fila-persona__nombre { color: var(--tinta-2); }
+.fila-persona--inactiva .fila-persona__inicial { opacity: .6; }
+.fila-persona__inicial {
+  height: 26px; display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; background: var(--chip-fondo); color: var(--chip-tinta);
+  font-size: 10px; font-weight: 700;
+}
+.fila-persona__nombre {
+  font-size: 12.5px; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fila-persona__campo {
+  width: 100%; height: 24px; padding: 0 6px;
+  font: inherit; font-size: 12.5px;
+  color: var(--tinta-1); background: var(--fondo-panel);
+  border: 1px solid var(--hairline); border-radius: 4px;
+}
+.fila-persona__equipos { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; min-width: 0; }
+.fila-persona__equipos .etiqueta { margin-left: 0; }
+.fila-persona__carga {
+  text-align: right; font-size: 11.5px; color: var(--tinta-2);
+}
+.fila-persona__acciones { display: flex; gap: 6px; align-items: center; }
+.fila-persona .peligro { margin-bottom: 4px; }
+
+/* La señal de que alguien vive en varios equipos es el CONTEO, no solo los chips:
+   tres etiquetas se leen como tres cosas sueltas, «en 3 equipos» se lee como un hecho. */
+.multi { font-size: 10.5px; font-weight: 700; color: var(--tinta-1); white-space: nowrap; }
+
+/* ── EQUIPOS EDITABLES ───────────────────────────────────────── */
+
+/* La tarjeta de equipo se comparte con la vista de consulta; aquí solo se añade lo que
+   la edición necesita. El nombre es un `p`, no un botón: no lleva subrayado al pasar. */
+p.equipo__nombre:hover { text-decoration: none; }
+.equipo__dedicado {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
+  margin-top: 5px; font-size: 11px; color: var(--tinta-3);
+}
+.equipo__dedicado .etiqueta { margin-left: 0; }
+
+.miembro__rol { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.miembro__tambien { color: var(--tinta-2); font-weight: 500; }
+/* El rol se edita en su sitio: un campo que parece texto hasta que se toca. Texto libre
+   a propósito («backend», «vistas», «QA»): no es un enum que haya que mantener. */
+.miembro__campo {
+  width: 100%; max-width: 200px; height: 19px; padding: 0 4px;
+  font: inherit; font-size: 11px; color: var(--tinta-3);
+  background: transparent; border: 1px solid transparent; border-radius: 3px;
+}
+.miembro__campo:hover { border-color: var(--hairline); }
+.miembro__campo:focus {
+  color: var(--tinta-1); background: var(--fondo-panel);
+  border-color: var(--hairline); outline: 2px solid var(--foco); outline-offset: -1px;
+}
+
+.miembro__quitar {
+  flex: 0 0 auto; width: 20px; height: 20px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--tinta-3); opacity: 0;
+}
+/* El foco del teclado tiene que revelarlo igual que el ratón, o la acción no existe
+   para quien no usa ratón. */
+.miembro:hover .miembro__quitar,
+.miembro__quitar:focus-visible { opacity: 1; }
+.miembro__quitar:hover { background: var(--seleccion); color: var(--tinta-1); }
+
+.equipo__agregar {
+  display: flex; align-items: center; gap: 7px;
+  width: 100%; padding: 8px 12px;
+  color: var(--tinta-2); font-size: 12px; text-align: left;
+  border-top: 1px solid var(--hairline);
+}
+.equipo__agregar:hover { background: var(--hover); color: var(--tinta-1); }
+.equipo__agregar--abierto {
+  align-items: flex-end; gap: 8px; flex-wrap: wrap;
+  background: var(--fondo-cabecera); cursor: default;
+}
+.equipo__agregar--abierto:hover { background: var(--fondo-cabecera); }
+.equipo__nota { font-size: 11.5px; color: var(--tinta-3); max-width: 40ch; }
+
+/* ── UMBRAL ESTRECHO ─────────────────────────────────────────── */
+/* Bajo 1040 px la tabla de personas pierde la columna de equipos como COLUMNA y la
+   pone debajo, sangrada: partirla en dos líneas conserva el dato, esconderla lo pierde. */
+@media (max-width: 1040px) {
+  .tabla-cab,
+  .fila-persona { grid-template-columns: 30px minmax(0, 1fr) 96px auto; }
+  .tabla-cab > :nth-child(3) { display: none; }
+  .fila-persona__equipos { grid-column: 1 / -1; padding-left: 41px; }
+  .fila-proy { grid-template-columns: 34px minmax(0, 1fr); }
+  .fila-proy__acciones { grid-column: 1 / -1; grid-row: 3; padding-left: 45px; }
+  .quien-soy__etq { display: none; }
+}
+
+/* Chip de un proyecto al que la persona NO pertenece: sigue siendo accionable, pero se
+   retira del primer plano. La pertenencia manda; el resto es la lista de a dónde podría ir. */
+.chip-sel--fuera { color: var(--tinta-3); border-style: dashed; }
+.chip-sel--fuera:hover { color: var(--tinta-1); border-style: solid; }

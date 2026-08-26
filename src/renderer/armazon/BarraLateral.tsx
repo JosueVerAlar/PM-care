@@ -1,5 +1,6 @@
 /**
- * La barra lateral: las siete vistas globales y la lista de proyectos.
+ * La barra lateral: las siete vistas globales, la lista de proyectos y las tres secciones
+ * de Administración.
  *
  * Los contadores de bloqueadas se derivan del documento, nunca se guardan. Un contador
  * en cero no se pinta: una columna de ceros entrena a no mirar la columna.
@@ -11,12 +12,13 @@
 
 import { useMemo } from 'react';
 
-import { paraBacklogDelArea, paraVistaBloqueos, paraVistaTerminadas, senalesDeProyecto } from '../../compartido/dominio/clasificar';
+import { paraVistaBloqueos, senalesDeProyecto } from '../../compartido/dominio/clasificar';
 import { sprintActivo } from '../../compartido/dominio/derivar';
 import type { Documento, Fecha } from '../../compartido/modelo/tipos';
 import { ContadorBloqueos } from '../componentes/Chips';
 import { Icono } from '../componentes/iconos';
-import { useAccionesInterfaz, type IdVistaGlobal, type Vista } from '../estado/interfaz';
+import { useAccionesInterfaz, type Vista } from '../estado/interfaz';
+import { SECCIONES_ADMIN } from '../vistas/administracion/VistaAdministracion';
 import { GLOBALES } from '../vistas/globales/registro';
 
 export function BarraLateral({
@@ -35,7 +37,7 @@ export function BarraLateral({
   claveActiva: string | null;
   hoy: Fecha;
 }) {
-  const { verProyecto, verGlobal } = useAccionesInterfaz();
+  const { verProyecto, verGlobal, verAdmin } = useAccionesInterfaz();
 
   const bloqueosTotales = useMemo(() => paraVistaBloqueos(documento).length, [documento]);
   const activo = useMemo(() => sprintActivo(documento), [documento]);
@@ -55,7 +57,7 @@ export function BarraLateral({
   );
 
   return (
-    <nav className="lateral" aria-label="Vistas y proyectos">
+    <nav className="lateral" aria-label="Vistas, proyectos y administración">
       <div className="lat-grupo">
         <h2 className="lat-titulo">Vistas</h2>
         {GLOBALES.map((entrada) => (
@@ -109,32 +111,30 @@ export function BarraLateral({
           </button>
         ))}
       </div>
+
+      <div className="lat-sep" />
+
+      {/* Administración va al final y en su propio grupo: no es una vista de consulta más,
+          es donde se edita el catálogo del que dependen todas las de arriba. */}
+      <div className="lat-grupo">
+        <h2 className="lat-titulo">Administración</h2>
+        {SECCIONES_ADMIN.map((seccion) => (
+          <button
+            key={seccion.id}
+            type="button"
+            className="lat-item"
+            title={`Administrar ${seccion.texto.toLowerCase()}`}
+            aria-label={`Administración · ${seccion.texto}`}
+            aria-current={vista?.tipo === 'admin' && vista.seccion === seccion.id}
+            onClick={() => verAdmin(seccion.id)}
+          >
+            <span className="lat-item__icono">
+              <Icono nombre={seccion.icono} />
+            </span>
+            <span className="lat-item__texto">{seccion.texto}</span>
+          </button>
+        ))}
+      </div>
     </nav>
   );
-}
-
-/**
- * Conteos reales para los marcadores de posición de las vistas globales.
- *
- * Vive aquí, junto a la lista que las nombra, para que nadie invente un número en la
- * pantalla vacía: lo que se muestra sale de los mismos selectores que E10 y E11 van a
- * usar para construir la vista de verdad.
- */
-export function conteoDeVistaGlobal(documento: Documento, id: IdVistaGlobal): number | null {
-  switch (id) {
-    case 'bloqueos':
-      return paraVistaBloqueos(documento).length;
-    case 'terminadas':
-      return paraVistaTerminadas(documento).length;
-    case 'backlog':
-      return paraBacklogDelArea(documento).length;
-    case 'sprint':
-      return sprintActivo(documento)?.items.length ?? 0;
-    case 'panorama':
-      return documento.proyectos.filter((p) => !p.archivado).length;
-    case 'carga':
-      return documento.personas.filter((p) => p.activa).length;
-    case 'equipos':
-      return documento.proyectos.filter((p) => !p.archivado).length;
-  }
 }

@@ -35,10 +35,21 @@ export type IdVistaGlobal =
   | 'carga'
   | 'equipos';
 
+/**
+ * Las tres secciones de Administración (E12).
+ *
+ * Son secciones de UNA vista y no tres vistas globales más: las tres editan el mismo
+ * catálogo —proyectos, personas y la relación entre ambos— y el usuario entra a
+ * «administrar», no a «ver equipos». Meterlas en `IdVistaGlobal` las habría mezclado en la
+ * lista de vistas de consulta, que es justo lo contrario de lo que son.
+ */
+export type SeccionAdmin = 'proyectos' | 'personas' | 'equipos';
+
 /** Las vistas a las que se llega desde la barra lateral. Son a las que se puede volver. */
 export type VistaSimple =
   | { tipo: 'proyecto'; clave: string }
-  | { tipo: 'global'; id: IdVistaGlobal };
+  | { tipo: 'global'; id: IdVistaGlobal }
+  | { tipo: 'admin'; seccion: SeccionAdmin };
 
 export type Vista =
   | VistaSimple
@@ -59,7 +70,10 @@ export type Vista =
 
 /** ¿La vista ocupa el ancho de los dos paneles? Ninguna de estas tiene panel hermano. */
 export function esVistaAncha(vista: Vista | null): boolean {
-  return vista !== null && (vista.tipo === 'global' || vista.tipo === 'cierre');
+  return (
+    vista !== null &&
+    (vista.tipo === 'global' || vista.tipo === 'cierre' || vista.tipo === 'admin')
+  );
 }
 
 /** «Terminadas» es una PESTAÑA del panel del árbol, no un tercer panel (CLAUDE.md). */
@@ -81,7 +95,15 @@ export type Redaccion =
   /** Capturar. `padreId` es la clave del proyecto, el id de la épica o el de la historia. */
   | { tipo: 'capturar'; clase: ClaseNodo; padreId: string }
   /** Bandera de bloqueo con su nota obligatoria. */
-  | { tipo: 'bloqueo'; tareaId: string };
+  | { tipo: 'bloqueo'; tareaId: string }
+  /**
+   * E12 — capturar una tarea directamente en el Sprint global, sin pasar por el árbol.
+   *
+   * Comparte el mismo hueco que los demás formularios a propósito: si el usuario está
+   * escribiendo un compromiso y abre esta captura, el compromiso se cierra en vez de
+   * quedar los dos peleándose por Enter.
+   */
+  | { tipo: 'capturaSprint' };
 
 /**
  * Un arrastre en curso. Se guarda además del `dataTransfer` del navegador porque el
@@ -113,6 +135,21 @@ export interface EstadoInterfaz {
   /** Conmutador del panel derecho: «Solo este proyecto» contra «Todo el sprint». */
   soloEsteProyecto: boolean;
   lateralColapsada: boolean;
+
+  // --- E12 · Sprint global ---------------------------------------------
+  /**
+   * Conmutador de la vista global: «Solo lo mío» contra «Todo el sprint». **Arranca
+   * activo.** Con once proyectos y cinco personas, el sprint sin filtrar deja de ser «mi
+   * semana» y pasa a ser «la semana del área»: se abre y ya no se sabe qué te toca a ti.
+   */
+  soloMio: boolean;
+  /**
+   * Quién es «yo». `null` = todavía nadie lo eligió, y entonces quien pinta usa
+   * `personaPorOmision` contra el documento vigente — mismo criterio que el proyecto
+   * seleccionado, que se guarda como clave y se resuelve al pintar. El día que el esquema
+   * tenga un campo de identidad, esto se convierte en su valor inicial y deja de deducirse.
+   */
+  yo: string | null;
 
   // --- E7 --------------------------------------------------------------
   /**
@@ -151,6 +188,9 @@ type AccionInterfaz =
   | { tipo: 'verProyecto'; clave: string }
   | { tipo: 'irATarea'; clave: string; abrir: readonly string[]; tareaId: string }
   | { tipo: 'verGlobal'; id: IdVistaGlobal }
+  | { tipo: 'verAdmin'; seccion: SeccionAdmin }
+  | { tipo: 'alcanceMio'; soloMio: boolean }
+  | { tipo: 'elegirYo'; personaId: string | null }
   | { tipo: 'verCierre'; sprintId: string }
   | { tipo: 'salirDelCierre' }
   | { tipo: 'alternarNodo'; id: string }
@@ -174,6 +214,8 @@ const INICIAL: EstadoInterfaz = {
   pestana: 'backlog',
   soloEsteProyecto: true,
   lateralColapsada: false,
+  soloMio: true,
+  yo: null,
   nodoActivo: null,
   focoArbol: 0,
   siguienteArbol: 0,
@@ -231,6 +273,22 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
     case 'verGlobal':
       if (estado.vista?.tipo === 'global' && estado.vista.id === accion.id) return estado;
       return { ...estado, vista: { tipo: 'global', id: accion.id }, redaccion: null, arrastre: null };
+
+    case 'verAdmin':
+      if (estado.vista?.tipo === 'admin' && estado.vista.seccion === accion.seccion) return estado;
+      // Se cierra lo que hubiera abierto por la misma razón de siempre: un formulario que
+      // apunta a una tarjeta del sprint no se puede pintar en una pantalla sin tarjetas.
+      return {
+        ...estado,
+        vista: { tipo: 'admin', seccion: accion.seccion },
+        redaccion: null,
+        arrastre: null,
+      };
+
+    case 'alcanceMio':
+      return estado.soloMio === accion.soloMio ? estado : { ...estado, soloMio: accion.soloMio };
+    case 'elegirYo':
+      return estado.yo === accion.personaId ? estado : { ...estado, yo: accion.personaId };
 
     case 'verCierre': {
       if (estado.vista?.tipo === 'cierre' && estado.vista.sprintId === accion.sprintId) return estado;
@@ -303,6 +361,12 @@ export interface AccionesInterfaz {
    */
   irATarea(clave: string, abrir: readonly string[], tareaId: string): void;
   verGlobal(id: IdVistaGlobal): void;
+  /** Abre una de las tres secciones de Administración. */
+  verAdmin(seccion: SeccionAdmin): void;
+  /** Conmutador «Solo lo mío / Todo el sprint» de la vista global. */
+  cambiarAlcanceMio(soloMio: boolean): void;
+  /** Corrige quién es «yo». `null` vuelve a la persona deducida del documento. */
+  elegirYo(personaId: string | null): void;
   /** Abre la pantalla de cierre de ese sprint. Todavía no cierra nada. */
   verCierre(sprintId: string): void;
   /** Vuelve a la vista desde la que se entró al cierre. */
@@ -337,6 +401,9 @@ export function ProveedorInterfaz({ children }: { children: ReactNode }) {
       verProyecto: (clave) => despachar({ tipo: 'verProyecto', clave }),
       irATarea: (clave, abrir, tareaId) => despachar({ tipo: 'irATarea', clave, abrir, tareaId }),
       verGlobal: (id) => despachar({ tipo: 'verGlobal', id }),
+      verAdmin: (seccion) => despachar({ tipo: 'verAdmin', seccion }),
+      cambiarAlcanceMio: (soloMio) => despachar({ tipo: 'alcanceMio', soloMio }),
+      elegirYo: (personaId) => despachar({ tipo: 'elegirYo', personaId }),
       verCierre: (sprintId) => despachar({ tipo: 'verCierre', sprintId }),
       salirDelCierre: () => despachar({ tipo: 'salirDelCierre' }),
       alternarNodo: (id) => despachar({ tipo: 'alternarNodo', id }),

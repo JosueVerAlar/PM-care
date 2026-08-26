@@ -39,6 +39,7 @@ import {
   useAccionesInterfaz,
   useInterfaz,
   type ClaseNodo,
+  type SeccionAdmin,
 } from './estado/interfaz';
 import { usePuedeDeshacer, useMutar, useSoloLectura } from './estado/mutaciones';
 import { Cargando, FalloDelPuente, SinProyectos, SinPuente } from './pantallas/Avisos';
@@ -47,6 +48,7 @@ import type { Diagnostico } from './puente/api';
 import { enCampoDeTexto, esDeshacer } from './util/atajos';
 import { buscarNodo } from './util/nodos';
 import { hoyLocal, nombreSinClave } from './util/presentacion';
+import { entradaAdmin, VistaAdministracion } from './vistas/administracion/VistaAdministracion';
 import { VistaCierre } from './vistas/cierre/VistaCierre';
 import { entradaGlobal } from './vistas/globales/registro';
 import { VistaGlobal } from './vistas/globales/VistaGlobal';
@@ -100,6 +102,19 @@ function Armazon() {
 
   return <Aplicacion documento={documento} ruta={ruta} diagnostico={diagnostico} />;
 }
+
+/**
+ * Lo que cada sección de Administración promete, para la barra superior.
+ *
+ * Vive aquí y no en `SECCIONES_ADMIN` porque es texto de la BARRA, igual que
+ * `entradaGlobal(...).pregunta` lo es para las vistas globales: la tabla de secciones la
+ * lee también la lateral, donde una frase entera no cabe.
+ */
+const SUBTITULO_ADMIN: Record<SeccionAdmin, string> = {
+  proyectos: 'Alta, cierre y eliminación. La clave se fija al crear y no se cambia nunca.',
+  personas: 'El catálogo global. Dar de baja es el camino normal; eliminar, la excepción.',
+  equipos: 'Quién está en cada proyecto y con qué rol. Los miembros salen del catálogo.',
+};
 
 /** «1 tarea» / «12 tareas». Sin el singular roto que delata una plantilla. */
 function cuentaTareas(n: number): string {
@@ -163,15 +178,19 @@ function Aplicacion({
   const titulo =
     vista?.tipo === 'global'
       ? entradaGlobal(vista.id).texto
-      : ancha
-        ? 'PM-care'
-        : (proyecto?.clave ?? 'PM-care');
+      : vista?.tipo === 'admin'
+        ? `Administración · ${entradaAdmin(vista.seccion).texto}`
+        : ancha
+          ? 'PM-care'
+          : (proyecto?.clave ?? 'PM-care');
   const subtitulo =
     vista?.tipo === 'global'
       ? entradaGlobal(vista.id).pregunta
-      : ancha || proyecto === undefined
-        ? null
-        : nombreSinClave(proyecto.clave, proyecto.nombre);
+      : vista?.tipo === 'admin'
+        ? SUBTITULO_ADMIN[vista.seccion]
+        : ancha || proyecto === undefined
+          ? null
+          : nombreSinClave(proyecto.clave, proyecto.nombre);
 
   // --- ⌘Z ------------------------------------------------------------------
   const alDeshacer = useCallback(() => {
@@ -247,6 +266,8 @@ function Aplicacion({
 
         {vista?.tipo === 'global' ? (
           <VistaGlobal id={vista.id} documento={documento} hoy={hoy} />
+        ) : vista?.tipo === 'admin' ? (
+          <VistaAdministracion seccion={vista.seccion} documento={documento} />
         ) : vista?.tipo === 'cierre' ? (
           <VistaCierre documento={documento} sprintId={vista.sprintId} hoy={hoy} />
         ) : proyecto === undefined ? (

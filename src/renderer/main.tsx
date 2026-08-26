@@ -11,6 +11,7 @@ import './estilos/edicion.css'
 import './estilos/cierre.css'
 import './estilos/globales.css'
 import './estilos/pantallas.css'
+import './estilos/administracion.css'
 
 const raiz = document.getElementById('raiz')
 if (!raiz) throw new Error('Falta el nodo #raiz en index.html')

@@ -18,6 +18,7 @@
 
 import { useCallback } from 'react';
 
+import type { Documento } from '../../compartido/modelo/tipos';
 import { useAccionesAlmacen, useAlmacen } from './almacen';
 import { useAccionesInterfaz } from './interfaz';
 import type { Comando } from '../puente/api';
@@ -43,7 +44,20 @@ export function usePuedeDeshacer(): boolean {
  */
 export type Mutar = (comando: Comando, contexto: string) => Promise<boolean>;
 
-export function useMutar(): Mutar {
+/**
+ * Igual que `useMutar`, pero devuelve el DOCUMENTO resultante en vez de un booleano.
+ *
+ * Lo necesita exactamente un caso: capturar una tarea desde el Sprint global, donde hace
+ * falta el id que acaba de emitir el contador del proyecto para poder moverla al sprint
+ * en el mismo gesto. El id no viaja en la respuesta del comando —y adivinarlo desde el
+ * renderer sería replicar `siguienteId`—, así que se lee del documento que vuelve.
+ *
+ * `useMutar` está construido encima: un solo camino de escritura, una sola forma de
+ * avisar de un fallo (regla 5: no se revierte nada, se cuenta lo que pasó).
+ */
+export type Aplicar = (comando: Comando, contexto: string) => Promise<Documento | null>;
+
+export function useAplicar(): Aplicar {
   const { aplicar } = useAccionesAlmacen();
   const { avisar } = useAccionesInterfaz();
   const soloLectura = useSoloLectura();
@@ -52,17 +66,25 @@ export function useMutar(): Mutar {
     async (comando, contexto) => {
       if (soloLectura) {
         avisar(`${contexto}: la app está en solo lectura y no escribió nada.`);
-        return false;
+        return null;
       }
       const respuesta = await aplicar(comando);
       if (respuesta.ok) {
         avisar(null);
-        return true;
+        return respuesta.instantanea.documento;
       }
       const detalle = respuesta.detalles?.length ? ` (${respuesta.detalles.join('; ')})` : '';
       avisar(`${contexto}: ${respuesta.mensaje}${detalle}`);
-      return false;
+      return null;
     },
     [aplicar, avisar, soloLectura],
+  );
+}
+
+export function useMutar(): Mutar {
+  const aplicar = useAplicar();
+  return useCallback(
+    async (comando, contexto) => (await aplicar(comando, contexto)) !== null,
+    [aplicar],
   );
 }

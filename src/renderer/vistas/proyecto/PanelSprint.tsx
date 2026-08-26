@@ -7,11 +7,14 @@
  *
  * El conmutador «Solo este proyecto / Todo el sprint» existe porque el sprint del
  * usuario cruza los 11 proyectos: mirando SICOE hace falta poder preguntar «¿y qué más
- * me comprometí esta quincena?» sin salir de la vista.
+ * me comprometí esta quincena?» sin salir de la vista. Para la pregunta al revés —«¿qué
+ * me toca a mí esta quincena, venga de donde venga?»— está la vista global del sprint,
+ * que es la misma lista con otro filtro.
  *
- * Lo que se pinta sale entero de `clasificar.ts` y `derivar.ts`: `paraVistaSprint`,
- * `compromisoEfectivo`, `rutaDe`, `contarTareas`. Este archivo no cuenta nada por su
- * cuenta.
+ * Lo que se pinta sale entero de `dominio/sprint.ts`: la fila llega con el compromiso
+ * efectivo, el nombre del responsable, los días de bloqueo, si venció y por cuántos
+ * sprints ha pasado la tarea. Este archivo no cuenta nada por su cuenta, y la tarjeta es
+ * la MISMA que usa la vista global.
  *
  * ## E7 — este panel es la zona de soltar
  *
@@ -27,37 +30,20 @@
 import { useMemo, useRef, useState } from 'react';
 
 import { primerSprintPlaneado } from '../../../compartido/dominio/cierre';
+import { indexarTareas } from '../../../compartido/dominio/derivar';
 import {
-  compromisoEfectivo,
-  contarTareas,
-  indexarTareas,
-  rutaDe,
-} from '../../../compartido/dominio/derivar';
-import {
-  bloqueoAbierto,
-  diasBloqueada,
-  estaBloqueada,
-  mostrarProcedencia,
-  paraSprintDeProyecto,
-  paraVistaSprint,
-  sprintsQueLaTocaron,
-  type FilaSprint,
-} from '../../../compartido/dominio/clasificar';
-import type { Documento, Fecha, Persona, Sprint } from '../../../compartido/modelo/tipos';
-import { ChipNeutro, ChipNuevo, TiraBloqueo } from '../../componentes/Chips';
-import { Glifo } from '../../componentes/iconos';
+  filasDeProyecto,
+  filasDeSprint,
+  resumirSprint,
+} from '../../../compartido/dominio/sprint';
+import type { Documento, Fecha, Sprint } from '../../../compartido/modelo/tipos';
 import { Medidor } from '../../componentes/Medidor';
+import { TarjetaSprint } from '../../componentes/TarjetaSprint';
 import { useAccionesSprint } from '../../estado/acciones-sprint';
 import { useAccionesInterfaz, useInterfaz } from '../../estado/interfaz';
 import { useMutar } from '../../estado/mutaciones';
 import { chipDeArrastre, esArrastreDeTarea, TIPO_TAREA } from '../../util/arrastre';
-import {
-  etiquetaDeTarea,
-  fechaCorta,
-  formaDeTarea,
-  instanteCorto,
-  ordinal,
-} from '../../util/presentacion';
+import { cuenta, fechaCorta } from '../../util/presentacion';
 import { FormularioCompromiso } from './FormularioCompromiso';
 
 export interface PropsPanelSprint {
@@ -88,8 +74,8 @@ export function PanelSprint({
   editable,
   dosPaneles,
 }: PropsPanelSprint) {
-  const { arrastre, redaccion } = useInterfaz();
-  const { arrastrar, verCierre } = useAccionesInterfaz();
+  const { arrastre, redaccion, nodoActivo } = useInterfaz();
+  const { arrastrar, verCierre, redactar, irANodo, irASiguiente } = useAccionesInterfaz();
   const acciones = useAccionesSprint(sprint);
   const mutar = useMutar();
 
@@ -104,24 +90,14 @@ export function PanelSprint({
     [documento, sprint],
   );
 
+  const todas = useMemo(() => filasDeSprint(documento, sprint, hoy), [documento, sprint, hoy]);
   const filas = useMemo(
-    () =>
-      soloEsteProyecto
-        ? paraSprintDeProyecto(documento, sprint, clave)
-        : paraVistaSprint(documento, sprint),
-    [documento, sprint, clave, soloEsteProyecto],
+    () => (soloEsteProyecto ? filasDeProyecto(todas, clave) : todas),
+    [todas, clave, soloEsteProyecto],
   );
-
-  const nombres = useMemo(
-    () => new Map(documento.personas.map((p: Persona) => [p.id, p.nombre])),
-    [documento.personas],
-  );
+  const resumen = useMemo(() => resumirSprint(filas), [filas]);
 
   const indice = useMemo(() => indexarTareas(documento), [documento]);
-
-  const avance = useMemo(() => contarTareas(filas.map((f) => f.ubicacion.tarea)), [filas]);
-  const bloqueadas = filas.filter((f) => estaBloqueada(f.ubicacion.tarea)).length;
-  const noPlaneadas = filas.filter((f) => mostrarProcedencia(f.ubicacion.tarea)).length;
 
   // --- zona de soltar -------------------------------------------------------
   const [sobre, setSobre] = useState(false);
@@ -169,14 +145,12 @@ export function PanelSprint({
   if (sobre) clasesPanel.push('panel--soltar');
 
   return (
-    <section
-      className={clasesPanel.join(' ')}
-      aria-label="Sprint activo"
-      {...zona}
-    >
+    <section className={clasesPanel.join(' ')} aria-label="Sprint activo" {...zona}>
       <header className="cab">
         <h2 className="cab__titulo">
-          {sprint ? `${sprint.nombre} · ${fechaCorta(sprint.inicio)}–${fechaCorta(sprint.fin)}` : 'Sin sprint activo'}
+          {sprint
+            ? `${sprint.nombre} · ${fechaCorta(sprint.inicio)}–${fechaCorta(sprint.fin)}`
+            : 'Sin sprint activo'}
         </h2>
         <span className="crece" />
         {/* La entrada al cierre vive donde el usuario mira el sprint. No confirma nada
@@ -202,7 +176,7 @@ export function PanelSprint({
           <p className="vacio__nota">
             Los sprints cerrados siguen guardados y son inmutables: ningún comando los toca.
             {planeado !== undefined
-              ? ` ${planeado.nombre} está planeado con ${planeado.items.length} tarea${planeado.items.length === 1 ? '' : 's'} dentro; actívalo para volver a comprometer.`
+              ? ` ${planeado.nombre} está planeado con ${cuenta(planeado.items.length, 'tarea', 'tareas')} dentro; actívalo para volver a comprometer.`
               : ' No hay ninguno planeado todavía.'}
           </p>
           {/* Activar es un acto aparte de cerrar, y por eso está aquí y no encadenado al
@@ -236,186 +210,68 @@ export function PanelSprint({
       ) : (
         <>
           <div className="resumen">
-            <Medidor avance={avance} />
+            <Medidor avance={resumen.avance} />
             <span className="tabular">
-              {avance.enCurso} en curso · {bloqueadas} bloqueada{bloqueadas === 1 ? '' : 's'} ·{' '}
-              {noPlaneadas} no planeada{noPlaneadas === 1 ? '' : 's'}
+              {resumen.avance.enCurso} en curso ·{' '}
+              {cuenta(resumen.bloqueadas, 'bloqueada', 'bloqueadas')} ·{' '}
+              {cuenta(resumen.noPlaneadas, 'no planeada', 'no planeadas')}
             </span>
           </div>
 
           <ul className="lista-sprint">
-            {filas.map((fila) => (
-              <TarjetaSprint
-                key={fila.item.tarea_id}
-                fila={fila}
-                documento={documento}
-                nombres={nombres}
-                hoy={hoy}
-                mostrarProyecto={!soloEsteProyecto}
-                editable={editable}
-                sprint={sprint}
-                acciones={acciones}
-                redactando={
-                  dosPaneles &&
-                  redaccion?.tipo === 'compromiso' &&
-                  redaccion.tareaId === fila.item.tarea_id
-                }
-              />
-            ))}
+            {filas.map((fila) => {
+              const { tarea } = fila.ubicacion;
+              const redactando =
+                dosPaneles && redaccion?.tipo === 'compromiso' && redaccion.tareaId === tarea.id;
+              return (
+                <TarjetaSprint
+                  key={fila.item.tarea_id}
+                  fila={fila}
+                  mostrarProyecto={!soloEsteProyecto}
+                  arrastrando={arrastre?.tareaId === tarea.id}
+                  acciones={
+                    editable && sprint.estado !== 'cerrado'
+                      ? {
+                          editar: () => redactar({ tipo: 'compromiso', tareaId: tarea.id }),
+                          sacar: () => void acciones.sacar(tarea.id),
+                          alIniciarArrastre: (evento) => {
+                            evento.dataTransfer.setData(TIPO_TAREA, tarea.id);
+                            evento.dataTransfer.effectAllowed = 'move';
+                            chipDeArrastre(evento, tarea.titulo);
+                            arrastrar({ tareaId: tarea.id, origen: 'sprint' });
+                          },
+                          alTerminarArrastre: () => arrastrar(null),
+                        }
+                      : null
+                  }
+                  formulario={
+                    redactando ? (
+                      <FormularioCompromiso
+                        tarea={tarea}
+                        item={fila.item}
+                        personas={documento.personas}
+                        finDeSprint={sprint.fin}
+                        hoy={hoy}
+                        // Al cerrar, el foco vuelve a la fila del árbol de la que salió la
+                        // tarea. Sin esto se queda en el `body` y el siguiente `S` no tiene
+                        // sobre qué actuar: la cadena «↓ · S · Enter» se rompe en la segunda.
+                        cerrar={(avanzar) => {
+                          redactar(null);
+                          // Solo se avanza si el compromiso salió de ESTA fila del árbol: si
+                          // vino de un arrastre con el ratón desde otro sitio, mover el foco
+                          // sería teletransportar al usuario a una fila que no miraba.
+                          if (avanzar && nodoActivo === tarea.id) irASiguiente();
+                          else irANodo(tarea.id);
+                        }}
+                      />
+                    ) : null
+                  }
+                />
+              );
+            })}
           </ul>
         </>
       )}
     </section>
-  );
-}
-
-interface PropsTarjeta {
-  fila: FilaSprint;
-  documento: Documento;
-  nombres: Map<string, string>;
-  hoy: Fecha;
-  mostrarProyecto: boolean;
-  editable: boolean;
-  sprint: Sprint;
-  acciones: ReturnType<typeof useAccionesSprint>;
-  redactando: boolean;
-}
-
-function TarjetaSprint({
-  fila,
-  documento,
-  nombres,
-  hoy,
-  mostrarProyecto,
-  editable,
-  sprint,
-  acciones,
-  redactando,
-}: PropsTarjeta) {
-  const { arrastre } = useInterfaz();
-  const { arrastrar, redactar, irANodo, irASiguiente } = useAccionesInterfaz();
-  const { nodoActivo } = useInterfaz();
-  const { item, ubicacion } = fila;
-  const { tarea } = ubicacion;
-  // El compromiso del item manda; en `null` hereda el de la tarea. Nunca se lee uno solo.
-  const compromiso = compromisoEfectivo(item, tarea);
-  const bloqueo = bloqueoAbierto(tarea);
-  const nuevo = mostrarProcedencia(tarea);
-  // Arrastrada = aparece en más de un sprint. Se deriva, no se marca a mano.
-  const pasos = sprintsQueLaTocaron(documento, tarea.id).length;
-
-  const ruta = rutaDe(ubicacion);
-  const migaja = mostrarProyecto ? ruta.join(' › ') : ruta.slice(1).join(' › ');
-
-  const responsable = compromiso.responsable
-    ? (nombres.get(compromiso.responsable) ?? compromiso.responsable)
-    : null;
-  const cuando =
-    tarea.estado === 'hecha' && tarea.hecha_en !== null
-      ? `cerrada ${instanteCorto(tarea.hecha_en)}`
-      : compromiso.fechaLimite !== null
-        ? `vence ${fechaCorta(compromiso.fechaLimite)}`
-        : null;
-  const vencida =
-    compromiso.fechaLimite !== null &&
-    compromiso.fechaLimite < hoy &&
-    (tarea.estado === 'pendiente' || tarea.estado === 'en_curso');
-
-  const clases = ['tarjeta'];
-  if (nuevo) clases.push('tarjeta--nuevo');
-  if (arrastre?.tareaId === tarea.id) clases.push('tarjeta--arrastrando');
-  if (redactando) clases.push('tarjeta--redactando');
-
-  return (
-    <li
-      className={clases.join(' ')}
-      draggable={editable && sprint.estado !== 'cerrado'}
-      onDragStart={(evento) => {
-        evento.dataTransfer.setData(TIPO_TAREA, tarea.id);
-        evento.dataTransfer.effectAllowed = 'move';
-        chipDeArrastre(evento, tarea.titulo);
-        arrastrar({ tareaId: tarea.id, origen: 'sprint' });
-      }}
-      onDragEnd={() => arrastrar(null)}
-    >
-      <div className="tarjeta__cab">
-        <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} />
-        <span className="tarjeta__titulo">{tarea.titulo}</span>
-        {editable && (
-          <div className="tarjeta__acciones">
-            {!redactando && (
-              <button
-                type="button"
-                className="mini"
-                onClick={() => redactar({ tipo: 'compromiso', tareaId: tarea.id })}
-              >
-                {responsable === null && cuando === null ? 'Completar' : 'Editar'}
-              </button>
-            )}
-            <button
-              type="button"
-              className="mini"
-              title="Sacarla del sprint. Lo escrito se conserva en la tarea."
-              onClick={() => void acciones.sacar(tarea.id)}
-            >
-              Sacar
-            </button>
-          </div>
-        )}
-        <span className="clave">{tarea.id}</span>
-      </div>
-
-      <p className="tarjeta__ruta" title={ruta.join(' › ')}>
-        {migaja}
-      </p>
-
-      {redactando ? (
-        <FormularioCompromiso
-          tarea={tarea}
-          item={item}
-          personas={documento.personas}
-          finDeSprint={sprint.fin}
-          hoy={hoy}
-          // Al cerrar, el foco vuelve a la fila del árbol de la que salió la tarea. Sin
-          // esto se queda en el `body` y el siguiente `S` no tiene sobre qué actuar: la
-          // cadena «↓ · S · Enter» se rompe justo en la segunda tarea.
-          cerrar={(avanzar) => {
-            redactar(null);
-            // Solo se avanza si el compromiso salió de ESTA fila del árbol: si vino de un
-            // arrastre con el ratón desde otro sitio, mover el foco del árbol sería
-            // teletransportar al usuario a una fila que no estaba mirando.
-            if (avanzar && nodoActivo === tarea.id) irASiguiente();
-            else irANodo(tarea.id);
-          }}
-        />
-      ) : (
-        <div className="tarjeta__pie">
-          {/* Un compromiso a medias se dice, no se rellena con un guion que parece un dato. */}
-          {responsable === null && cuando === null ? (
-            <span className="tarjeta__falta">Falta quién y para cuándo</span>
-          ) : (
-            <>
-              <span className="tarjeta__persona">{responsable ?? 'Sin responsable'}</span>
-              <span className="tarjeta__sep">·</span>
-              <span className={`tabular${vencida ? ' tarjeta__vencida' : ''}`}>
-                {cuando ?? 'sin fecha'}
-              </span>
-            </>
-          )}
-          <span className="crece" />
-          {pasos > 1 && (
-            <ChipNeutro
-              texto={ordinal(pasos)}
-              titulo={`Arrastrada: es el ${ordinal(pasos)} sprint por el que pasa`}
-            />
-          )}
-          {nuevo && <ChipNuevo />}
-        </div>
-      )}
-
-      {bloqueo && (
-        <TiraBloqueo diasBloqueada={diasBloqueada(tarea, hoy) ?? 0} motivo={bloqueo.motivo} />
-      )}
-    </li>
   );
 }

@@ -121,6 +121,47 @@ export function CuadroBloqueo() {
   );
 }
 
+// --- E12 · glifos de la administración ---------------------------------------
+// Los tres son DECORATIVOS: van con `aria-hidden` y nunca solos, siempre junto al texto
+// que dicen lo mismo. Un candado sin la palabra «cerrado» no es información, es un adorno.
+
+/** «Cerrado»: acompaña siempre a la fecha de cierre o al verbo. */
+export function Candado() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth={1.4} aria-hidden="true">
+      <rect x="2.8" y="6.2" width="8.4" height="6" rx="1.4" />
+      <path d="M4.8 6.2V4.6a2.2 2.2 0 014.4 0v1.6" />
+    </svg>
+  );
+}
+
+/** Triángulo de la zona de peligro. Nunca es el único aviso: el texto lo dice entero. */
+export function Advertencia() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M5 .8 9.6 8.8H.4z" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** Aspa de «quitar». El botón que la lleva siempre trae `title` y nombre accesible. */
+export function Equis() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" aria-hidden="true">
+      <path d="M2.4 2.4l5.2 5.2M7.6 2.4 2.4 7.6" />
+    </svg>
+  );
+}
+
+/** Cruz de «agregar». Igual: siempre junto a la palabra. */
+export function Mas() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" aria-hidden="true">
+      <path d="M6 2.5v7M2.5 6h7" />
+    </svg>
+  );
+}
+
 // --- iconos de la barra lateral ---------------------------------------------
 
 const LATERAL = {
@@ -137,7 +178,11 @@ export type NombreIcono =
   | 'terminadas'
   | 'backlog'
   | 'carga'
-  | 'equipos';
+  | 'equipos'
+  // E12 · las tres secciones de Administración. Comparten la métrica de 15×15 de la
+  // barra lateral para que la lista no se desalinee al llegar al separador.
+  | 'proyectos'
+  | 'personas';
 
 const ICONOS: Record<NombreIcono, () => React.JSX.Element> = {
   panorama: () => (
@@ -186,6 +231,17 @@ const ICONOS: Record<NombreIcono, () => React.JSX.Element> = {
       <circle cx="6" cy="5.5" r="2.4" />
       <path d="M1.8 13.2c0-2.2 1.9-3.6 4.2-3.6s4.2 1.4 4.2 3.6" />
       <path d="M11 3.4a2.4 2.4 0 010 4.4M12.2 9.9c1.3.5 2.1 1.6 2.1 3.3" />
+    </svg>
+  ),
+  proyectos: () => (
+    <svg {...LATERAL} fill="none" stroke="currentColor" strokeWidth={1.3}>
+      <path d="M1.8 4.4a1.6 1.6 0 011.6-1.6h2.4l1.4 1.7h5A1.6 1.6 0 0113.8 6v6a1.6 1.6 0 01-1.6 1.6H3.4A1.6 1.6 0 011.8 12z" />
+    </svg>
+  ),
+  personas: () => (
+    <svg {...LATERAL} fill="none" stroke="currentColor" strokeWidth={1.3}>
+      <circle cx="8" cy="5.4" r="2.6" />
+      <path d="M2.9 13.4c0-2.5 2.3-4.1 5.1-4.1s5.1 1.6 5.1 4.1" />
     </svg>
   ),
 };
