@@ -39,14 +39,10 @@ import {
   BotonIrATarea,
   GrupoPlegable,
   Lienzo,
-  NotaPie,
   PanelGlobal,
-  ReglaOrden,
   VacioGlobal,
 } from './piezas';
 
-/** A partir de aquí valdría la pena medir si hace falta virtualizar. Ver la nota al pie. */
-const UMBRAL_A_VIGILAR = 1000;
 
 export function VistaBacklog({ documento, hoy }: { documento: Documento; hoy: Fecha }) {
   const [alcance, setAlcance] = useState<AlcanceBacklog>('todas');
@@ -75,6 +71,13 @@ export function VistaBacklog({ documento, hoy }: { documento: Documento; hoy: Fe
     <PanelGlobal etiqueta="Backlog del área">
       <header className="cab">
         <h2 className="cab__titulo">Backlog del área</h2>
+        {/* El conteo que llevaba la franja del orden: cuántas filas se están viendo de
+            cuántas, y cuánto hay capturado en total. */}
+        <span className="cab__nota tabular">
+          {conteo.visibles} de {conteo.enAlcance} filas
+          {filtro.trim() !== '' && ' tras el filtro'} · {conteo.capturadas} capturadas
+        </span>
+
         <span className="crece" />
 
         <label className="solo-lectores" htmlFor={idBusqueda}>
@@ -127,16 +130,6 @@ export function VistaBacklog({ documento, hoy }: { documento: Documento; hoy: Fe
         </div>
       </header>
 
-      <ReglaOrden>
-        {alcance === 'todas'
-          ? 'Todo lo capturado, incluidas hechas y canceladas.'
-          : 'Solo lo abierto que NO está comprometido en el sprint activo: de aquí sale lo que entra al siguiente.'}{' '}
-        <span className="tabular">
-          {conteo.visibles} de {conteo.enAlcance} filas
-          {filtro.trim() !== '' && ' tras el filtro'} · {conteo.capturadas} tareas capturadas en
-          total
-        </span>
-      </ReglaOrden>
 
       {filas.length === 0 ? (
         <VacioGlobal
@@ -190,13 +183,7 @@ export function VistaBacklog({ documento, hoy }: { documento: Documento; hoy: Fe
         </Lienzo>
       )}
 
-      <NotaPie>
-        Se pintan las {conteo.visibles} filas visibles sin virtualizar: con {conteo.capturadas}{' '}
-        tareas capturadas todavía no hace falta.
-        {conteo.capturadas >= UMBRAL_A_VIGILAR &&
-          ' Ya se pasó de las mil filas: toca medir el tiempo de pintado antes de que plegar y filtrar dejen de bastar.'}{' '}
-        Una tarea sin responsable no desaparece de ninguna agrupación: cae en «Sin asignar».
-      </NotaPie>
+
     </PanelGlobal>
   );
 }

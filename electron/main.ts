@@ -1,5 +1,16 @@
-import { app, BrowserWindow, dialog, session, shell, nativeTheme } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  session,
+  shell,
+  nativeTheme,
+  type MenuItemConstructorOptions,
+} from 'electron'
 import path from 'node:path'
+
 import { directorioDeDatos, rutasEn } from '../src/principal/almacen/rutas'
 import { Repositorio } from '../src/principal/almacen/repositorio'
 import { registrarManejadores } from '../src/principal/ipc/manejadores'
@@ -8,7 +19,20 @@ let repositorio: Repositorio | null = null
 /** Se pone en true la primera vez que `before-quit` fuerza el vaciado de la cola. */
 let cerrando = false
 
-const urlDesarrollo = process.env.VITE_DEV_SERVER_URL
+/**
+ * Estado del ítem Edición ▸ Deshacer, tal y como lo publica el renderer.
+ *
+ * Los canales se escriben a mano aquí y en el preload por la misma razón que los del
+ * almacén: con `sandbox: true` el preload no puede importar un módulo de constantes.
+ */
+const CANAL_ESTADO_DESHACER = 'menu:estado-deshacer'
+const CANAL_DESHACER = 'menu:deshacer'
+
+let deshacerVivo = false
+let deshacerEtiqueta: string | null = null
+
+const urlDesarrollo
+ = process.env.VITE_DEV_SERVER_URL
 const enDesarrollo = !app.isPackaged
 
 /**
@@ -45,7 +69,77 @@ function politicaDeContenido(): string {
   ].join('; ')
 }
 
+/**
+ * EL MENÚ DE APLICACIÓN (E13).
+ *
+ * Hasta ahora no se llamaba a `Menu.setApplicationMenu` en ninguna parte, así que Electron
+ * montaba su menú por omisión, cuyo **Edición ▸ Deshacer** es un `role: 'undo'`: el
+ * deshacer del campo de texto enfocado, no el comando de dominio. Había dos «Deshacer» y
+ * el que ocupaba el sitio canónico de macOS hacía otra cosa.
+ *
+ * Tres decisiones dentro:
+ *
+ * 1. **El acelerador se PINTA pero no se REGISTRA** (`registerAccelerator: false`). Si el
+ *    menú se quedara con `⌘Z`, la tecla dejaría de llegar al renderer y se perdería la
+ *    excepción que ya está resuelta en `atajos.ts`: dentro de un campo de texto, `⌘Z` es
+ *    el deshacer de lo que se está tecleando y tiene que seguir siéndolo. Así el menú
+ *    enseña el atajo —que es lo que pide la guía de interfaz humana— y la tecla la sigue
+ *    atendiendo quien sabe distinguir los dos casos.
+ * 2. **Se deshabilita, no se esconde.** Un ítem en gris enseña que la función existe; uno
+ *    que desaparece no enseña nada.
+ * 3. **Cortar/Copiar/Pegar se quedan** con sus roles nativos: los campos de texto de la
+ *    app los necesitan, y son justo lo que se perdería al dejar de usar el menú por
+ *    omisión.
+ */
+function construirMenu(): void {
+  const edicion: MenuItemConstructorOptions[] = [
+    {
+      // El nombre de lo que se va a revertir, no «Deshacer» a secas: sin objeto, el ítem
+      // no deja predecir qué va a pasar. La etiqueta la publica el renderer.
+      label: deshacerEtiqueta === null ? 'Deshacer' : `Deshacer ${deshacerEtiqueta}`,
+      accelerator: 'CmdOrCtrl+Z',
+      registerAccelerator: false,
+      enabled: deshacerVivo,
+      click: () => {
+        // `BrowserWindow`, no la ventana que llega al `click`: esa está tipada como
+        // `BaseWindow` y no tiene `webContents`.
+        const destino = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+        if (destino && !destino.isDestroyed()) destino.webContents.send(CANAL_DESHACER)
+      },
+
+    },
+    { type: 'separator' },
+    { role: 'cut', label: 'Cortar' },
+    { role: 'copy', label: 'Copiar' },
+    { role: 'paste', label: 'Pegar' },
+    { role: 'selectAll', label: 'Seleccionar todo' },
+  ]
+
+  const plantilla: MenuItemConstructorOptions[] = [
+    { role: 'appMenu' },
+    { label: 'Edición', submenu: edicion },
+    // Las herramientas de desarrollo no viajan al `.app`: ahí Ver es solo el zoom y la
+    // pantalla completa.
+    enDesarrollo
+      ? { role: 'viewMenu' }
+      : {
+          label: 'Ver',
+          submenu: [
+            { role: 'resetZoom', label: 'Tamaño real' },
+            { role: 'zoomIn', label: 'Acercar' },
+            { role: 'zoomOut', label: 'Alejar' },
+            { type: 'separator' },
+            { role: 'togglefullscreen', label: 'Pantalla completa' },
+          ],
+        },
+    { role: 'windowMenu' },
+  ]
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(plantilla))
+}
+
 function crearVentana(): void {
+
   const ventana = new BrowserWindow({
     width: 1512,
     height: 950,
@@ -159,7 +253,23 @@ void app.whenReady().then(async () => {
     })
   })
 
+  // El renderer es el único que sabe si queda algo que deshacer y cómo se llamaba. El
+  // menú se reconstruye solo cuando alguno de los dos cambia: rehacerlo en cada tecla
+  // haría parpadear la barra de menús de macOS.
+  ipcMain.on(CANAL_ESTADO_DESHACER, (_evento, dato: unknown) => {
+    const estado = dato as { puede?: unknown; etiqueta?: unknown } | null
+    const puede = estado?.puede === true
+    const etiqueta = typeof estado?.etiqueta === 'string' && estado.etiqueta !== '' ? estado.etiqueta : null
+    if (puede === deshacerVivo && etiqueta === deshacerEtiqueta) return
+    deshacerVivo = puede
+    deshacerEtiqueta = etiqueta
+    construirMenu()
+  })
+
+  construirMenu()
+
   const directorio = directorioDeDatos(app.getPath('userData'))
+
   repositorio = new Repositorio(rutasEn(directorio))
   registrarManejadores({
     repositorio,

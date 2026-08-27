@@ -35,7 +35,8 @@ import { CuadroBloqueo, Chevron } from '../../componentes/iconos';
 import { Medidor } from '../../componentes/Medidor';
 import { useAccionesInterfaz } from '../../estado/interfaz';
 import { dias, etiquetaBloqueo, nombreSinClave, tareas as cuentaTareas } from '../../util/presentacion';
-import { Lienzo, NotaPie, PanelGlobal, ReglaOrden, VacioGlobal } from './piezas';
+import { Lienzo, PanelGlobal, ReglaOrden, VacioGlobal } from './piezas';
+
 
 /** Cuántos bloqueos caben en la franja antes de que deje de ser una franja. */
 const EN_LA_FRANJA = 3;
@@ -139,11 +140,11 @@ export function VistaPanorama({ documento, hoy }: { documento: Documento; hoy: F
       )}
 
       <ReglaOrden>
-        {orden === 'atencion' &&
-          'Primero lo que tiene bloqueos abiertos, por los días del bloqueo más viejo; después el resto, por días sin movimiento.'}
-        {orden === 'quieto' && 'Del que lleva más tiempo sin ninguna marca de movimiento al que menos.'}
-        {orden === 'nombre' && 'Alfabético. El orden ya no dice nada: es solo para encontrar uno concreto.'}
+        {orden === 'atencion' && 'Primero lo bloqueado; después, lo más quieto.'}
+        {orden === 'quieto' && 'Del que lleva más días sin movimiento al que menos.'}
+        {orden === 'nombre' && 'Alfabético.'}
       </ReglaOrden>
+
 
       <Lienzo>
         {vista.unicaLista !== null ? (
@@ -189,20 +190,12 @@ export function VistaPanorama({ documento, hoy }: { documento: Documento; hoy: F
                 </button>
               ))}
             </div>
-            <p className="seccion__aclaracion">
-              No es que no pase nada en ellos: es que PM-care no sabe. No se pinta 0 % ni barra
-              vacía, porque sería afirmar algo que la app no puede afirmar.
-            </p>
+
           </Seccion>
         )}
       </Lienzo>
 
-      <NotaPie>
-        Esto muestra qué está <b>quieto</b>, no qué es <b>importante</b>: la prioridad se
-        captura a mano y la app no la deduce. «Sin movimiento» se cuenta sobre las marcas que
-        el documento guarda —capturar, dar por hecha, bloquear y desbloquear—; editar un
-        título no cuenta como movimiento.
-      </NotaPie>
+
     </PanelGlobal>
   );
 }

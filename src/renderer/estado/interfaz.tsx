@@ -182,7 +182,27 @@ export interface EstadoInterfaz {
    * misma persona, y escribirlo diez veces es lo que hace que se deje de escribir.
    */
   ultimaPersona: string | null;
+
+  // --- E13 · el menú de aplicación -------------------------------------
+  /**
+   * Qué dice cada paso de la pila de deshacer, de más viejo a más nuevo.
+   *
+   * La pila REAL vive en el proceso principal y guarda documentos, no palabras: sabe
+   * cuántos pasos quedan, no cómo se llamaban. Y el menú Edición de macOS pide
+   * justamente eso — «Deshacer capturar SICOE-T14», no «Deshacer» a secas—, así que el
+   * texto se apunta aquí, del lado que sí lo sabe: el `contexto` con el que se mandó cada
+   * comando.
+   *
+   * Es una ETIQUETA, nunca la fuente de verdad: si el menú está habilitado o no lo decide
+   * `puedeDeshacer` de la instantánea. Cuando el proceso principal vacía su pila —cambio
+   * externo del archivo—, esta se vacía detrás.
+   */
+  pilaDeshacer: readonly string[];
 }
+
+/** El mismo tope que `TOPE_DESHACER` del repositorio: 20 pasos. */
+const TOPE_ETIQUETAS = 20;
+
 
 type AccionInterfaz =
   | { tipo: 'verProyecto'; clave: string }
@@ -206,7 +226,11 @@ type AccionInterfaz =
   | { tipo: 'arrastrar'; arrastre: Arrastre | null }
   | { tipo: 'confirmar'; confirmacion: Confirmacion | null }
   | { tipo: 'avisar'; aviso: string | null }
-  | { tipo: 'recordarPersona'; personaId: string | null };
+  | { tipo: 'recordarPersona'; personaId: string | null }
+  | { tipo: 'apilarDeshacer'; etiqueta: string }
+  | { tipo: 'desapilarDeshacer' }
+  | { tipo: 'vaciarDeshacer' };
+
 
 const INICIAL: EstadoInterfaz = {
   vista: null,
@@ -224,7 +248,9 @@ const INICIAL: EstadoInterfaz = {
   confirmacion: null,
   aviso: null,
   ultimaPersona: null,
+  pilaDeshacer: [],
 };
+
 
 function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz {
   switch (accion.tipo) {
@@ -350,8 +376,21 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
       return estado.aviso === accion.aviso ? estado : { ...estado, aviso: accion.aviso };
     case 'recordarPersona':
       return { ...estado, ultimaPersona: accion.personaId };
+
+    case 'apilarDeshacer':
+      return {
+        ...estado,
+        pilaDeshacer: [...estado.pilaDeshacer, accion.etiqueta].slice(-TOPE_ETIQUETAS),
+      };
+    case 'desapilarDeshacer':
+      return estado.pilaDeshacer.length === 0
+        ? estado
+        : { ...estado, pilaDeshacer: estado.pilaDeshacer.slice(0, -1) };
+    case 'vaciarDeshacer':
+      return estado.pilaDeshacer.length === 0 ? estado : { ...estado, pilaDeshacer: [] };
   }
 }
+
 
 export interface AccionesInterfaz {
   verProyecto(clave: string): void;
@@ -388,7 +427,14 @@ export interface AccionesInterfaz {
   confirmar(confirmacion: Confirmacion | null): void;
   avisar(aviso: string | null): void;
   recordarPersona(personaId: string | null): void;
+  /** Anota cómo se llamaba el comando que acaba de entrar a la pila de deshacer. */
+  apilarDeshacer(etiqueta: string): void;
+  /** Un paso deshecho: su etiqueta deja de ser la que se ofrece. */
+  desapilarDeshacer(): void;
+  /** El proceso principal vació su pila (cambio externo): aquí no queda nada que nombrar. */
+  vaciarDeshacer(): void;
 }
+
 
 const ContextoInterfaz = createContext<EstadoInterfaz | null>(null);
 const ContextoAccionesInterfaz = createContext<AccionesInterfaz | null>(null);
@@ -421,6 +467,10 @@ export function ProveedorInterfaz({ children }: { children: ReactNode }) {
       confirmar: (confirmacion) => despachar({ tipo: 'confirmar', confirmacion }),
       avisar: (aviso) => despachar({ tipo: 'avisar', aviso }),
       recordarPersona: (personaId) => despachar({ tipo: 'recordarPersona', personaId }),
+      apilarDeshacer: (etiqueta) => despachar({ tipo: 'apilarDeshacer', etiqueta }),
+      desapilarDeshacer: () => despachar({ tipo: 'desapilarDeshacer' }),
+      vaciarDeshacer: () => despachar({ tipo: 'vaciarDeshacer' }),
+
     }),
     [],
   );

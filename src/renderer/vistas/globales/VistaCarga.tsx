@@ -40,7 +40,8 @@ import type { Documento, Fecha } from '../../../compartido/modelo/tipos';
 import { CuadroBloqueo } from '../../componentes/iconos';
 import { useAccionesInterfaz } from '../../estado/interfaz';
 import { cuenta, tareas as cuentaTareas } from '../../util/presentacion';
-import { Lienzo, NotaPie, PanelGlobal, VacioGlobal } from './piezas';
+import { Lienzo, PanelGlobal, VacioGlobal } from './piezas';
+
 
 export function VistaCarga({ documento, hoy }: { documento: Documento; hoy: Fecha }) {
   const [orden, setOrden] = useState<OrdenCarga>('total');
@@ -165,12 +166,7 @@ export function VistaCarga({ documento, hoy }: { documento: Documento; hoy: Fech
         )}
       </Lienzo>
 
-      <NotaPie>
-        «Vencidas» solo se puede contar sobre tareas del sprint: la fecha límite vive en el
-        compromiso, y fuera del sprint no hay fecha que vencer. · «Cerró en sprints
-        anteriores» sale del desenlace congelado de cada sprint cerrado, no del árbol de hoy:
-        reabrir una tarea no reescribe lo que se cerró en julio.
-      </NotaPie>
+
     </PanelGlobal>
   );
 }

@@ -38,10 +38,9 @@ import {
   BotonIrATarea,
   GrupoPlegable,
   Lienzo,
-  NotaPie,
   PanelGlobal,
-  ReglaOrden,
   VacioGlobal,
+
 } from './piezas';
 
 export function VistaTerminadas({ documento }: { documento: Documento }) {
@@ -94,8 +93,22 @@ export function VistaTerminadas({ documento }: { documento: Documento }) {
   return (
     <PanelGlobal etiqueta="Terminadas">
       <header className="cab">
-        <h2 className="cab__titulo">Terminadas · registro por sprint</h2>
+        <h2 className="cab__titulo">
+          Terminadas · {cuentaTareas(totalRegistrado)} en{' '}
+          {registro.length === 1 ? '1 sprint' : `${registro.length} sprints`}
+        </h2>
+        {/* La serie que llevaba la franja del orden: es el dato, no una explicación. */}
+        {registro.length > 0 && (
+          <span className="serie tabular">
+            {registro
+              .slice()
+              .reverse()
+              .map((s) => `${s.sprint.nombre.replace(/^Sprint\s+/i, '')}: ${s.total}`)
+              .join(' · ')}
+          </span>
+        )}
         <span className="crece" />
+
         <span className="cab__nota" role="status">
           {copiado === null
             ? ''
@@ -105,23 +118,6 @@ export function VistaTerminadas({ documento }: { documento: Documento }) {
         </span>
       </header>
 
-      <ReglaOrden>
-        Del sprint más reciente al más viejo; dentro de cada uno, agrupadas por proyecto.
-        {registro.length > 0 && (
-          <>
-            {' '}
-            Avance real:{' '}
-            <span className="serie tabular">
-              {registro
-                .slice()
-                .reverse()
-                .map((s) => `${s.sprint.nombre.replace(/^Sprint\s+/i, '')}: ${s.total}`)
-                .join(' · ')}
-            </span>{' '}
-            — {cuentaTareas(totalRegistrado)} en {registro.length === 1 ? '1 sprint' : `${registro.length} sprints`}
-          </>
-        )}
-      </ReglaOrden>
 
       <Lienzo>
         {registro.map((entrada, indice) => {
@@ -233,11 +229,7 @@ export function VistaTerminadas({ documento }: { documento: Documento }) {
         )}
       </Lienzo>
 
-      <NotaPie>
-        Son conteos de <b>tareas</b>, no de esfuerzo. Una tarea de dos horas y una de dos
-        semanas suman igual: la serie dice cuántas cosas se cerraron, no cuánto trabajo se
-        hizo. PM-care no estima, así que no hay velocidad ni proyección.
-      </NotaPie>
+
     </PanelGlobal>
   );
 }

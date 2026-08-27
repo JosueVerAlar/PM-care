@@ -66,20 +66,28 @@
 
    Ocupa su columna SIEMPRE, también vacía: si apareciera y desapareciera, el chevron
    bailaría entre la pestaña «Backlog» y «Terminadas», y entre una fila con hermanas y
-   una sin ellas. Se revela al pasar por encima o al enfocar, igual que «Al sprint» —y
-   que esté escondida no la vuelve inaccesible: `⌥↑` / `⌥↓` hacen lo mismo sin ella y son
-   lo único que funciona por debajo de 1040 px. */
+   una sin ellas.
+
+   E13 — y ahora se VE siempre. Estaba en `visibility: hidden` hasta el `:hover`, que es
+   justo lo que la literatura de menús contextuales nombra como error: esconder un control
+   para que la interfaz parezca ligera le cuesta descubribilidad medida. La prueba interna
+   era que la leyenda tenía que explicar el asa —«y por el asa (⠿) para reordenar»—
+   precisamente porque no se veía; si se ve, esa línea sobra, y esa línea es la que se
+   borró. Va en `--tinta-3`, el mismo tono que el chevron y la clave, que también están en
+   todos los renglones y no se leen como ruido.
+
+   Se queda a 12 px, por debajo del mínimo de 24×24 px de SC 2.5.8: la excepción
+   *Equivalent* la cubre porque `⌥↑` / `⌥↓` hacen lo mismo desde el teclado. Cuando llegue
+   el menú `⋯` de cada fila, Subir/Bajar vivirán además ahí. */
 .asa {
   flex: 0 0 var(--ancho-asa);
   display: flex; align-items: center; justify-content: center;
   align-self: stretch;
   color: var(--tinta-3);
-  visibility: hidden;
 }
 .asa[draggable="true"] { cursor: grab; }
-.fila:hover .asa,
-.fila:focus-within .asa { visibility: visible; }
 .asa:hover { color: var(--tinta-2); }
+
 
 /* La línea de inserción: dónde va a caer al soltar.
 
@@ -121,6 +129,23 @@
 .fila:hover .fila__accion,
 .fila:focus-within .fila__accion { visibility: visible; }
 .fila__accion:hover { background: var(--seleccion); color: var(--tinta-1); }
+
+/* E13 · el `＋` de épica e historia. **Visible siempre**, y con su hueco reservado también
+   cuando está deshabilitado: si desapareciera en solo lectura o en «Terminadas», el árbol
+   entero reflowearía al cambiar de pestaña.
+
+   24×24 px: es el mínimo de SC 2.5.8 y cabe hasta en la fila de tarea (26 px), aunque ahí
+   no se pinte. El icono sigue midiendo 12 px; lo que crece es la zona que se puede pulsar. */
+.fila__mas {
+  flex: 0 0 auto;
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px;
+  color: var(--tinta-3);
+}
+.fila__mas:hover:not(:disabled) { background: var(--seleccion); color: var(--tinta-1); }
+.fila__mas:disabled { opacity: .4; cursor: default; }
+
 
 /* El glifo de estado es un botón desde E7: un clic recorre pendiente → en curso → hecha.
    No cambia de color ni de forma por ser botón — sigue siendo el canal 1. */
@@ -188,12 +213,10 @@
 }
 .boton-peligro:hover { filter: brightness(1.1); }
 
-.mini {
-  height: 20px; padding: 0 8px; border-radius: 4px;
-  border: 1px solid var(--hairline); background: var(--fondo-panel);
-  font-size: 11px; color: var(--tinta-2); white-space: nowrap;
-}
-.mini:hover { background: var(--hover); color: var(--tinta-1); }
+/* `.mini` se declara UNA vez, en `globales.css`. Aquí estaba declarada otra vez con 20 px
+   en vez de 22, y cuál ganaba dependía del orden de carga de las hojas: el mismo botón
+   medía distinto según el archivo que lo pintara. */
+
 
 /* ── banda de edición al pie del árbol ────────────────────────── */
 

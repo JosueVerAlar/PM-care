@@ -30,8 +30,27 @@ const api = {
     ipcRenderer.on('almacen:estado', envoltorio)
     return () => ipcRenderer.removeListener('almacen:estado', envoltorio)
   },
+
+  /**
+   * E13 · el menú Edición ▸ Deshacer.
+   *
+   * Son los dos únicos canales que NO son de almacén: no mueven datos, mantienen
+   * sincronizado un ítem de menú que vive en el proceso principal con un estado que solo
+   * conoce la interfaz. Van en un solo sentido cada uno (`send`, no `invoke`) porque
+   * ninguno de los dos espera respuesta.
+   */
+  publicarDeshacer: (estado: { puede: boolean; etiqueta: string | null }) =>
+    ipcRenderer.send('menu:estado-deshacer', estado),
+
+  /** El usuario eligió Deshacer en el menú. Devuelve la función para desuscribir. */
+  alPedirDeshacer: (escucha: () => void) => {
+    const envoltorio = () => escucha()
+    ipcRenderer.on('menu:deshacer', envoltorio)
+    return () => ipcRenderer.removeListener('menu:deshacer', envoltorio)
+  },
 }
 
-contextBridge.exposeInMainWorld('pmcare', api)
+contextBridge.exposeInMainWorld
+('pmcare', api)
 
 export type ApiPmCare = typeof api

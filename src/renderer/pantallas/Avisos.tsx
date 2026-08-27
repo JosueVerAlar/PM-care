@@ -10,6 +10,9 @@
  * menos que dejar una ventana en blanco con un fallo en la consola.
  */
 
+import { useAccionesInterfaz } from '../estado/interfaz';
+
+
 export function Cargando() {
   return (
     <div className="pantalla" role="status" aria-live="polite">
@@ -43,16 +46,23 @@ export function FalloDelPuente({ mensaje, reintentar }: { mensaje: string; reint
   );
 }
 
-/** El documento cargó bien pero está vacío. Distinto de que el archivo esté roto. */
+/**
+ * El documento cargó bien pero está vacío. Distinto de que el archivo esté roto.
+ *
+ * E13 — el texto decía «crear uno desde la app llega en E7; mientras tanto se puede editar
+ * el JSON a mano». E7 se entregó hace cinco etapas: la app le estaba pidiendo al usuario
+ * que editara un archivo a mano para algo que ya sabe hacer. Ahora dice el paso, y lo abre.
+ */
 export function SinProyectos({ ruta }: { ruta: string }) {
+  const { verAdmin } = useAccionesInterfaz();
   return (
     <section className="panel" aria-label="Sin proyectos">
       <div className="vacio">
         <p className="vacio__titulo">Todavía no hay ningún proyecto</p>
-        <p className="vacio__nota">
-          El archivo se abrió sin problemas: simplemente no tiene proyectos capturados. Crear
-          uno desde la app llega en E7; mientras tanto se puede editar el JSON a mano.
-        </p>
+        <p className="vacio__nota">Un proyecto se da de alta con su clave y su nombre.</p>
+        <button type="button" className="boton" onClick={() => verAdmin('proyectos')}>
+          Dar de alta un proyecto
+        </button>
         <p className="vacio__dato">
           <code>{ruta}</code>
         </p>
@@ -60,3 +70,4 @@ export function SinProyectos({ ruta }: { ruta: string }) {
     </section>
   );
 }
+

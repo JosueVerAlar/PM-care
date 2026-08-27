@@ -22,14 +22,23 @@
  * - **La única confirmación de la app.** El diálogo se monta arriba del todo para que sea
  *   modal de verdad, y quien pide borrar solo publica la intención en el estado de
  *   interfaz.
- * - **A dónde va «Capturar».** El botón de la barra y la tecla `N` del árbol tienen que
- *   apuntar al mismo sitio, así que el destino se calcula una vez, aquí.
+ * - **El menú Edición ▸ Deshacer** (E13). El ítem vive en el proceso principal, pero lo
+ *   que hace y cómo se llama se deciden aquí: es el mismo `alDeshacer` de `⌘Z`, para que
+ *   el menú y la tecla no puedan divergir nunca.
+ *
+ * ## E13 — lo que YA NO se resuelve aquí
+ *
+ * «A dónde va Capturar» era un cálculo de esta pantalla porque el botón vivía en la barra
+ * superior y tenía que adivinar el destino desde la selección del árbol. Ahora cada `＋`
+ * está pegado a su contenedor y sabe su destino sin preguntarle a nadie, así que el
+ * cálculo desapareció en vez de mudarse.
  */
 
 import { useCallback, useEffect, useMemo } from 'react';
 
 import type { Documento, Proyecto } from '../compartido/modelo/tipos';
 import { BarraHerramientas } from './armazon/BarraHerramientas';
+
 import { BarraLateral } from './armazon/BarraLateral';
 import { DialogoConfirmar } from './componentes/DialogoConfirmar';
 import { ProveedorAlmacen, useAccionesAlmacen, useAlmacen } from './estado/almacen';
@@ -38,16 +47,16 @@ import {
   ProveedorInterfaz,
   useAccionesInterfaz,
   useInterfaz,
-  type ClaseNodo,
   type SeccionAdmin,
 } from './estado/interfaz';
 import { usePuedeDeshacer, useMutar, useSoloLectura } from './estado/mutaciones';
+
 import { Cargando, FalloDelPuente, SinProyectos, SinPuente } from './pantallas/Avisos';
 import { SoloLectura } from './pantallas/SoloLectura';
-import type { Diagnostico } from './puente/api';
+import { puente, type Diagnostico } from './puente/api';
 import { enCampoDeTexto, esDeshacer } from './util/atajos';
-import { buscarNodo } from './util/nodos';
 import { hoyLocal, nombreSinClave } from './util/presentacion';
+
 import { entradaAdmin, VistaAdministracion } from './vistas/administracion/VistaAdministracion';
 import { VistaCierre } from './vistas/cierre/VistaCierre';
 import { entradaGlobal } from './vistas/globales/registro';
@@ -121,28 +130,24 @@ function cuentaTareas(n: number): string {
   return n === 1 ? '1 tarea' : `${n} tareas`;
 }
 
-/** A dónde iría una captura ahora mismo, según lo que esté seleccionado en el árbol. */
-interface DestinoCaptura {
-  clase: ClaseNodo;
-  padreId: string;
-  /** Frase para el `title` del botón: «una tarea en Grupos de regularización». */
-  que: string;
-}
-
-function destinoDeCaptura(proyecto: Proyecto, nodoActivo: string | null): DestinoCaptura {
-  const nodo = nodoActivo === null ? null : buscarNodo(proyecto, nodoActivo);
-  if (nodo === null) {
-    return { clase: 'epica', padreId: proyecto.clave, que: `una épica en ${proyecto.clave}` };
-  }
-  if (nodo.clase === 'epica') {
-    return { clase: 'historia', padreId: nodo.epica.id, que: `una historia en ${nodo.epica.titulo}` };
-  }
-  // Desde una historia o desde una tarea se captura una TAREA en esa historia: la tarea
-  // es la hoja, así que «dentro de una tarea» no existe.
-  return { clase: 'tarea', padreId: nodo.historia.id, que: `una tarea en ${nodo.historia.titulo}` };
+/**
+ * Cómo se llama, en el menú, lo que se va a deshacer.
+ *
+ * [HIG] pide «Deshacer capturar SICOE-T14» y no «Deshacer»: sin el objeto, el ítem no
+ * deja predecir qué va a pasar. El texto sale del `contexto` con el que se mandó el
+ * comando —«Capturar historia», «Eliminar SICOE-T14»—, en minúscula porque va detrás del
+ * verbo. Sin etiqueta el ítem se queda con su nombre corto: la pila del proceso principal
+ * manda sobre si está habilitado, y esto solo lo NOMBRA.
+ */
+function etiquetaDeshacer(pila: readonly string[], puede: boolean): string | null {
+  if (!puede) return null;
+  const ultima = pila[pila.length - 1];
+  if (ultima === undefined || ultima === '') return null;
+  return ultima.charAt(0).toLowerCase() + ultima.slice(1);
 }
 
 function Aplicacion({
+
   documento,
   ruta,
   diagnostico,
@@ -152,12 +157,16 @@ function Aplicacion({
   /** No nulo solo en conflicto externo: el documento vale, pero no se escribe. */
   diagnostico: Diagnostico | null;
 }) {
-  const { vista, lateralColapsada, nodoActivo, aviso, confirmacion } = useInterfaz();
-  const { alternarLateral, redactar, avisar, confirmar } = useAccionesInterfaz();
+  const { vista, lateralColapsada, aviso, confirmacion, pilaDeshacer } = useInterfaz();
+  const { alternarLateral, avisar, confirmar, desapilarDeshacer, vaciarDeshacer } =
+    useAccionesInterfaz();
   const { deshacer } = useAccionesAlmacen();
-  const puedeDeshacer = usePuedeDeshacer();
   const soloLectura = useSoloLectura();
+  // Con el archivo en conflicto no se escribe nada, tampoco al revés: el ítem del menú va
+  // en gris igual que iba el botón que ocupaba la barra hasta E13.
+  const puedeDeshacer = usePuedeDeshacer() && !soloLectura;
   const mutar = useMutar();
+
 
   // La única lectura del reloj de toda la vista. El dominio recibe `hoy` como parámetro
   // para que «lleva 6 días bloqueada» se pueda probar sin viajar en el tiempo.
@@ -192,14 +201,20 @@ function Aplicacion({
           ? null
           : nombreSinClave(proyecto.clave, proyecto.nombre);
 
-  // --- ⌘Z ------------------------------------------------------------------
+  // --- ⌘Z y el menú Edición ------------------------------------------------
   const alDeshacer = useCallback(() => {
     void (async () => {
       const respuesta = await deshacer();
-      if (!respuesta.ok) avisar(`Deshacer: ${respuesta.mensaje}`);
-      else avisar(null);
+      if (!respuesta.ok) {
+        avisar(`Deshacer: ${respuesta.mensaje}`);
+        return;
+      }
+      avisar(null);
+      // Ese paso ya no está en la pila del proceso principal: su nombre tampoco.
+      desapilarDeshacer();
     })();
-  }, [avisar, deshacer]);
+  }, [avisar, desapilarDeshacer, deshacer]);
+
 
   useEffect(() => {
     const escucha = (evento: KeyboardEvent) => {
@@ -215,9 +230,29 @@ function Aplicacion({
     return () => window.removeEventListener('keydown', escucha);
   }, [alDeshacer]);
 
-  // --- «Capturar» ----------------------------------------------------------
-  const destino = proyecto === undefined ? null : destinoDeCaptura(proyecto, nodoActivo);
-  const puedeCapturar = destino !== null && !soloLectura && !ancha;
+  /**
+   * El ítem del menú Edición: lo ejecuta el proceso principal, lo hace ESTE `alDeshacer`.
+   *
+   * Sin esto el menú de macOS traería el `role: 'undo'` por omisión —el deshacer del campo
+   * de texto enfocado— en el sitio donde se busca el de la app, que es un «Deshacer» que
+   * hace otra cosa. El acelerador `⌘Z` se pinta en el menú pero NO se registra
+   * (`registerAccelerator: false` en el proceso principal), así que la tecla la sigue
+   * atendiendo el escucha de arriba con su excepción para los campos de texto.
+   */
+  useEffect(() => puente()?.alPedirDeshacer(alDeshacer), [alDeshacer]);
+
+  /** Qué dice el ítem y si está vivo. La pila del proceso principal es la que manda. */
+  const etiqueta = etiquetaDeshacer(pilaDeshacer, puedeDeshacer);
+  useEffect(() => {
+    puente()?.publicarDeshacer({ puede: puedeDeshacer, etiqueta });
+  }, [etiqueta, puedeDeshacer]);
+
+  // La pila de allá se vacía sola ante un cambio externo del archivo (regla 16). Cuando
+  // eso pasa, los nombres de aquí ya no describen nada que se pueda revertir.
+  useEffect(() => {
+    if (!puedeDeshacer) vaciarDeshacer();
+  }, [puedeDeshacer, vaciarDeshacer]);
+
 
   return (
     <div className={`app${lateralColapsada ? ' app--rail' : ''}`}>
@@ -227,15 +262,8 @@ function Aplicacion({
         lateralColapsada={lateralColapsada}
         alternarLateral={alternarLateral}
         soloLectura={diagnostico !== null}
-        puedeDeshacer={puedeDeshacer && !soloLectura}
-        deshacer={alDeshacer}
-        capturar={
-          puedeCapturar && destino !== null
-            ? () => redactar({ tipo: 'capturar', clase: destino.clase, padreId: destino.padreId })
-            : null
-        }
-        queSeCaptura={destino?.que ?? null}
       />
+
 
       {/* Conflicto externo: el documento sigue siendo válido, así que se puede seguir
           mirando. La franja dice que no se está escribiendo y ofrece las salidas. */}

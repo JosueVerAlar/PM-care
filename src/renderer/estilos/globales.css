@@ -28,17 +28,11 @@
   white-space: nowrap;
 }
 
-/* La nota al pie dice de qué NO habla la vista. Una vez, abajo, nunca por fila. */
-.nota-pie {
-  flex: 0 0 auto;
-  padding: 8px 16px;
-  border-top: 1px solid var(--hairline);
-  background: var(--fondo-cabecera);
-  font-size: 11px; line-height: 16px; color: var(--tinta-3);
-}
-.nota-pie b { color: var(--tinta-2); font-weight: 600; }
+/* `.nota-pie` se fue con los diez párrafos que la usaban (E13): explicaban el modelo a
+   quien inventó el modelo, y cada uno se comía la visibilidad de los datos de al lado. */
 
 .serie { color: var(--tinta-1); font-weight: 600; }
+
 
 /* Campo de filtro de la cabecera. La etiqueta va en `.solo-lectores`: el `placeholder`
    desaparece al escribir y no es un nombre accesible. */
@@ -88,12 +82,14 @@
 }
 .grupo--aparte { border-top: 2px solid var(--hairline); }
 
-/* Botón pequeño de acción dentro de una fila. */
+/* Botón pequeño de acción dentro de una fila. Declaración ÚNICA: `edicion.css` tenía otra
+   con 20 px y ganaba la que se cargara después. 24 px es el mínimo de SC 2.5.8. */
 .mini {
-  height: 22px; padding: 0 8px; border-radius: 4px;
+  height: 24px; padding: 0 8px; border-radius: 4px;
   border: 1px solid var(--hairline); background: var(--fondo-panel);
-  font-size: 11.5px; color: var(--tinta-2);
+  font-size: 11.5px; color: var(--tinta-2); white-space: nowrap;
 }
+
 .mini:hover:not(:disabled) { background: var(--hover); color: var(--tinta-1); }
 .mini--fuerte { color: var(--tinta-1); font-weight: 500; }
 

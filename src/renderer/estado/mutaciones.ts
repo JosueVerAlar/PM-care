@@ -81,7 +81,7 @@ export type Aplicar = (
 
 export function useAplicar(): Aplicar {
   const { aplicar } = useAccionesAlmacen();
-  const { avisar } = useAccionesInterfaz();
+  const { avisar, apilarDeshacer } = useAccionesInterfaz();
   const soloLectura = useSoloLectura();
 
   return useCallback(
@@ -93,8 +93,13 @@ export function useAplicar(): Aplicar {
       const respuesta = await aplicar(comando);
       if (respuesta.ok) {
         avisar(null);
+        // El proceso principal acaba de apilar el documento anterior; aquí se apunta CÓMO
+        // se llamaba, que es lo único que le falta al menú Edición para poder decir
+        // «Deshacer capturar SICOE-T14» en vez de «Deshacer» a secas.
+        apilarDeshacer(contexto);
         return respuesta.instantanea.documento;
       }
+
       // Un rechazo esperado no borra el aviso que hubiera puesto, ni pone uno nuevo: no
       // pasó nada, y «no pasó nada» no es una noticia.
       if (inocuo?.(respuesta)) return null;
@@ -102,8 +107,9 @@ export function useAplicar(): Aplicar {
       avisar(`${contexto}: ${respuesta.mensaje}${detalle}`);
       return null;
     },
-    [aplicar, avisar, soloLectura],
+    [apilarDeshacer, aplicar, avisar, soloLectura],
   );
+
 }
 
 export function useMutar(): Mutar {

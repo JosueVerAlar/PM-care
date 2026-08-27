@@ -39,7 +39,8 @@ import type { Documento } from '../../../compartido/modelo/tipos';
 import { Advertencia } from '../../componentes/iconos';
 import { useMutar, useSoloLectura } from '../../estado/mutaciones';
 import { cuenta, nombreSinClave, tareas as cuentaTareas } from '../../util/presentacion';
-import { Lienzo, NotaPie } from '../globales/piezas';
+import { Lienzo } from '../globales/piezas';
+
 import { Marca } from './piezas-admin';
 
 export function SeccionPersonas({ documento }: { documento: Documento }) {
@@ -229,11 +230,9 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
               Dadas de baja <span className="bloque__n tabular">{inactivas.length}</span>
             </p>
             <p className="bloque__nota">
-              Siguen en el documento y en toda su historia; dejan de recibir asignaciones nuevas
-              y salen de los equipos. Se reactivan en un clic —volver a sus equipos es una
-              decisión de hoy, así que no vuelve sola—. <b>Eliminar solo se ofrece aquí</b>, y
-              se rechaza si algo la nombra.
+              <b>Eliminar solo se ofrece aquí</b>, y se rechaza si algo la nombra.
             </p>
+
             {inactivas.length === 0 ? (
               <p className="bloque__nota">Nadie dado de baja.</p>
             ) : (
@@ -332,12 +331,7 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
         </div>
       </Lienzo>
 
-      <NotaPie>
-        {enVarios.length} de {activas.length} personas activas están en más de un equipo
-        {enVarios.length > 0 && ` (${enVarios.map((p) => p.nombre.split(' ')[0]).join(', ')})`}: es
-        el modelo, no un error. Dar de baja a alguien no reasigna sus tareas ni las cierra — su
-        historia es suya y sigue diciendo su nombre.
-      </NotaPie>
+
     </>
   );
 }

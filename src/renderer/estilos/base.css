@@ -270,18 +270,36 @@ button:disabled { cursor: default; opacity: .5; }
   text-transform: uppercase; color: var(--tinta-2);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* Es un botón, no un metadato: `--tinta-3` (3.6:1) no basta para texto accionable. */
+/* Es un botón, no un metadato: `--tinta-3` (3.6:1) no basta para texto accionable.
+   24 px de alto es el mínimo de SC 2.5.8 (Target Size), y no cuesta densidad: es un
+   control de cabecera, no un renglón de datos. */
 .cab__accion {
-  font-size: 11.5px; color: var(--tinta-2); padding: 3px 7px; border-radius: 4px;
+  display: inline-flex; align-items: center;
+  min-height: 24px;
+  font-size: 11.5px; color: var(--tinta-2); padding: 0 7px; border-radius: 4px;
   white-space: nowrap;
 }
 .cab__accion:hover { background: var(--hover); color: var(--tinta-1); }
 
+/* E13 · el único botón con relleno sólido de una cabecera: «＋ Nueva épica». Es la acción
+   primaria del panel del árbol y no tiene fila donde colgarse. Uno por vista, no dos. */
+.cab__primario {
+  display: inline-flex; align-items: center; gap: 5px;
+  min-height: 24px; padding: 0 10px; border-radius: 5px;
+  background: var(--solido-fondo); color: var(--solido-tinta);
+  font-size: 11.5px; font-weight: 600; white-space: nowrap;
+}
+.cab__primario:hover:not(:disabled) { opacity: .88; }
+.cab__primario:disabled { opacity: .35; }
+
 .alternador { display: flex; padding: 2px; background: var(--chip-fondo); border-radius: 5px; }
 .alternador button {
-  padding: 2px 8px; border-radius: 3px;
+  display: inline-flex; align-items: center;
+  min-height: 24px;
+  padding: 0 8px; border-radius: 3px;
   font-size: 11.5px; color: var(--tinta-2); white-space: nowrap;
 }
+
 .alternador button[aria-pressed="true"] {
   background: var(--fondo-panel); color: var(--tinta-1); font-weight: 500;
   box-shadow: 0 0 0 1px var(--hairline);

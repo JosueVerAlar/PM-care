@@ -200,11 +200,10 @@ function FormularioCaptura({
           Cerrar
         </button>
       </div>
-      <p className="pie-edicion__pista">
-        {ultimo === null
-          ? 'Enter captura y deja el campo listo para la siguiente. Esc cierra.'
-          : `Capturada «${ultimo}». Sigue escribiendo para capturar otra.`}
-      </p>
+      {/* E13 · solo la CONFIRMACIÓN de lo que acaba de pasar. La explicación de que Enter
+          encadena y Esc cierra se fue: el primer Enter lo enseña mejor que la frase. */}
+      {ultimo !== null && <p className="pie-edicion__pista">Capturada «{ultimo}».</p>}
+
     </div>
   );
 }

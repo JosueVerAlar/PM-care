@@ -46,7 +46,8 @@ import { useMutar, useSoloLectura } from '../../estado/mutaciones';
 import { cuenta, fechaCorta } from '../../util/presentacion';
 import { FormularioCompromiso } from '../proyecto/FormularioCompromiso';
 import { CapturaEnSprint } from './CapturaEnSprint';
-import { Lienzo, NotaPie, PanelGlobal, VacioGlobal } from './piezas';
+import { Lienzo, PanelGlobal, VacioGlobal } from './piezas';
+
 
 export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; hoy: Fecha }) {
   const { soloMio, yo, redaccion } = useInterfaz();
@@ -331,11 +332,7 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
         )}
       </Lienzo>
 
-      <NotaPie>
-        La migaja empieza por el proyecto porque aquí las tareas vienen mezcladas: saber de
-        dónde es cada una va antes que saber de qué épica cuelga. Lo capturado directamente en
-        el sprint nace marcado como no planeado en los proyectos que ya cerraron su planeación.
-      </NotaPie>
+
     </PanelGlobal>
   );
 }

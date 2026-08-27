@@ -26,19 +26,24 @@ export function PanelGlobal({ etiqueta, children }: { etiqueta: string; children
 }
 
 /**
- * La franja que explica el orden.
+ * La franja que dice el orden, en una frase corta.
  *
  * No es decoración: un orden que nadie explica confunde más que el alfabético, porque el
  * usuario supone que es alfabético y concluye que la app está rota.
+ *
+ * E13 — sobrevive en las DOS vistas donde el orden es información: Panorama, donde lo
+ * elige un selector y cambia, y Bloqueos, donde el orden ES el dato. En las otras tres
+ * describía una convención evidente y se borró. Las cifras que llevaba dentro no se
+ * perdieron: subieron a la cabecera, donde son dato y no prosa.
+ *
+ * `NotaPie` vivía aquí al lado y ya no existe: diez párrafos permanentes explicando el
+ * modelo a quien inventó el modelo. Lo que era regla del producto está en `CLAUDE.md`; lo
+ * que era ayuda de lectura se resuelve en la propia pantalla o no se resuelve.
  */
 export function ReglaOrden({ children }: { children: ReactNode }) {
   return <div className="regla-orden">{children}</div>;
 }
 
-/** Lo que la vista NO dice. Va al pie, una vez, no repetido en cada fila. */
-export function NotaPie({ children }: { children: ReactNode }) {
-  return <p className="nota-pie">{children}</p>;
-}
 
 /** El cuerpo con scroll. Siempre `flex: 1` para que el pie quede anclado abajo. */
 export function Lienzo({ children }: { children: ReactNode }) {

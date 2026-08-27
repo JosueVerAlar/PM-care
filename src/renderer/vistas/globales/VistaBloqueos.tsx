@@ -47,7 +47,7 @@ import {
   GrupoPlegable,
   Lienzo,
   MigajaTarea,
-  NotaPie,
+
   PanelGlobal,
   ReglaOrden,
   VacioGlobal,
@@ -101,7 +101,14 @@ export function VistaBloqueos({ documento, hoy }: { documento: Documento; hoy: F
         <h2 className="cab__titulo">
           {resumen.total === 1 ? '1 bloqueo abierto' : `${resumen.total} bloqueos abiertos`}
         </h2>
+        {/* Las tres cifras que llevaba la franja del orden. Aquí son dato, no prosa. */}
+        <span className="cab__nota tabular">
+          {resumen.proyectos === 1 ? '1 proyecto' : `${resumen.proyectos} proyectos`} · el más
+          viejo, {dias(resumen.diasMaximo ?? 0)} · {resumen.enSprintActivo} de {resumen.total} en el
+          sprint
+        </span>
         <span className="crece" />
+
         <span className="cab__nota">Agrupar por</span>
         <div className="alternador" role="group" aria-label="Criterio de agrupación">
           <button
@@ -121,12 +128,8 @@ export function VistaBloqueos({ documento, hoy }: { documento: Documento; hoy: F
         </div>
       </header>
 
-      <ReglaOrden>
-        Grupos y filas ordenados por <b>días detenido</b>, del más viejo al más nuevo. El más
-        viejo lleva {dias(resumen.diasMaximo ?? 0)} · en{' '}
-        {resumen.proyectos === 1 ? '1 proyecto' : `${resumen.proyectos} proyectos`} ·{' '}
-        {resumen.enSprintActivo} de {resumen.total} están comprometidos en el sprint activo
-      </ReglaOrden>
+      <ReglaOrden>Más días detenido, primero.</ReglaOrden>
+
 
       <Lienzo>
         {grupos.map((grupo) => {
@@ -160,11 +163,7 @@ export function VistaBloqueos({ documento, hoy }: { documento: Documento; hoy: F
         })}
       </Lienzo>
 
-      <NotaPie>
-        «Bloqueada» es una bandera, no un estado: cada tarea conserva su glifo propio —
-        pendiente o en curso — para saber a qué vuelve al desbloquearse. Los días se cuentan
-        desde que se marcó el bloqueo, no desde que el problema empezó.
-      </NotaPie>
+
     </PanelGlobal>
   );
 }

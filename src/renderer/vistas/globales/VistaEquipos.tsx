@@ -33,7 +33,8 @@ import {
 import type { Documento } from '../../../compartido/modelo/tipos';
 import { useAccionesInterfaz } from '../../estado/interfaz';
 import { cuenta, nombreSinClave, tareas as cuentaTareas } from '../../util/presentacion';
-import { Lienzo, NotaPie, PanelGlobal, ReglaOrden, VacioGlobal } from './piezas';
+import { Lienzo, PanelGlobal, VacioGlobal } from './piezas';
+
 
 export function VistaEquipos({ documento }: { documento: Documento }) {
   const { verProyecto } = useAccionesInterfaz();
@@ -75,10 +76,6 @@ export function VistaEquipos({ documento }: { documento: Documento }) {
         </h2>
       </header>
 
-      <ReglaOrden>
-        Una persona puede estar en varios proyectos, con rol distinto en cada uno. La cifra de
-        la derecha es su carga abierta <b>en ese proyecto</b>.
-      </ReglaOrden>
 
       <Lienzo>
         {enVarios.length > 0 && (
@@ -108,10 +105,7 @@ export function VistaEquipos({ documento }: { documento: Documento }) {
                 </li>
               ))}
             </ul>
-            <p className="seccion__aclaracion">
-              Estar en varios equipos no es un problema por sí mismo; es el contexto que
-              explica por qué su carga se ve repartida en la vista de Carga por persona.
-            </p>
+
           </section>
         )}
 
@@ -214,12 +208,7 @@ export function VistaEquipos({ documento }: { documento: Documento }) {
         )}
       </Lienzo>
 
-      <NotaPie>
-        Esta vista es de <b>consulta</b>. Dar de alta personas, armar equipos, cambiar roles y
-        cerrar proyectos se hace en <b>Administración</b>, al final de la barra lateral. El
-        equipo no restringe quién puede ser responsable de una tarea: una tarea vieja puede
-        apuntar a alguien que ya salió, y eso es correcto.
-      </NotaPie>
+
     </PanelGlobal>
   );
 }

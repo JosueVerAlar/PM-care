@@ -119,4 +119,6 @@
 }
 .leyenda__item { display: flex; align-items: center; gap: 5px; }
 .leyenda__banda { width: 3px; height: 12px; border-radius: 1px; background: var(--nuevo-banda); }
-.leyenda__nota { flex-basis: 100%; color: var(--tinta-3); }
+/* `.leyenda__nota` se fue con sus dos frases: explicaban el modelo y el asa escondida, y
+   el asa ya no se esconde (E13). */
+

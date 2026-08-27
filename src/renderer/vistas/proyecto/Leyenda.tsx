@@ -2,15 +2,21 @@
  * La leyenda al pie del árbol.
  *
  * Existe porque los tres canales visuales solo funcionan si se sabe leerlos, y porque el
- * color de estado nunca viaja solo: aquí cada glifo aparece con su nombre. La nota final
- * dice en una línea las dos cosas que más se malinterpretan del tablero — que el bloqueo
- * es bandera y no estado, y que las canceladas no entran en ningún denominador.
+ * color de estado nunca viaja solo: aquí cada glifo aparece con su nombre.
  *
- * Desde E7 lleva además la fila de atajos. No es adorno ni ayuda opcional: `S` es la vía
- * PRINCIPAL para comprometer una tarea —y la única cuando la ventana es angosta y el
- * panel del sprint no se pinta—, así que tiene que estar a la vista de quien todavía no
- * lo sabe. Se oculta en la pestaña «Terminadas», donde ninguno de esos atajos aplica.
+ * Lleva además la fila de atajos. No es adorno ni ayuda opcional: es lo único que dice
+ * qué tecla hace qué, y el usuario pidió expresamente conservarlo. Se oculta en la
+ * pestaña «Terminadas», donde ninguno de esos atajos aplica.
+ *
+ * ## E13 — lo que se fue
+ *
+ * Los dos renglones de nota que explicaban el MODELO —que el bloqueo es bandera y no
+ * estado, que las canceladas no cuentan, que se arrastra por el texto y por el asa—. Las
+ * dos primeras son reglas del producto y no cambian por leerlas cada día; la tercera hacía
+ * falta solo porque el asa estaba escondida, y ahora se ve. Un texto se queda si nombra un
+ * control o una tecla; se va si explica una regla.
  */
+
 
 import { ChipNeutro } from '../../componentes/Chips';
 import { CuadroBloqueo, Glifo, type FormaEstado } from '../../componentes/iconos';
@@ -71,17 +77,7 @@ export function Leyenda({ editable }: { editable: boolean }) {
         </p>
       )}
 
-      <span className="leyenda__nota">
-        El bloqueo es bandera, no estado: la tarea conserva su glifo. Los contenedores
-        derivan el suyo; las canceladas no cuentan.
-        {editable && (
-          <>
-            {' '}
-            Se arrastra por el texto para mandar al sprint y por el asa (⠿) para reordenar
-            entre hermanas: una épica se lleva sus historias y sus tareas.
-          </>
-        )}
-      </span>
     </footer>
+
   );
 }

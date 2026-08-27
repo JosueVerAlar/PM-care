@@ -41,7 +41,8 @@ import type { Documento } from '../../../compartido/modelo/tipos';
 import { Equis, Mas } from '../../componentes/iconos';
 import { useMutar, useSoloLectura } from '../../estado/mutaciones';
 import { cuenta, nombreSinClave } from '../../util/presentacion';
-import { Lienzo, NotaPie } from '../globales/piezas';
+import { Lienzo } from '../globales/piezas';
+
 
 export function SeccionEquipos({ documento }: { documento: Documento }) {
   const soloLectura = useSoloLectura();
@@ -98,12 +99,6 @@ export function SeccionEquipos({ documento }: { documento: Documento }) {
       <Lienzo>
         <div className="adm">
           <div className="bloque bloque--ancho">
-            <p className="bloque__nota">
-              Las personas son un catálogo global: aquí se elige quién de ese catálogo forma el
-              equipo de cada proyecto, y con qué rol. La misma persona puede estar en varios
-              proyectos con roles distintos. Dar de alta a alguien nuevo se hace una sola vez, en
-              la sección Personas.
-            </p>
 
             {activos.length === 0 ? (
               <p className="bloque__nota">
@@ -132,12 +127,7 @@ export function SeccionEquipos({ documento }: { documento: Documento }) {
         </div>
       </Lienzo>
 
-      <NotaPie>
-        El equipo <b>no restringe</b> quién puede ser responsable de una tarea: una tarea vieja
-        puede apuntar a alguien que ya salió del equipo, y eso es correcto. Lo que sí hace es
-        contestar «¿quién está dedicado a esto hoy?», que es la pregunta que se descuadra sola si
-        nadie la mantiene.
-      </NotaPie>
+
     </>
   );
 }

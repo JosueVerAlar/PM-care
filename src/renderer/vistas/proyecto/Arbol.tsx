@@ -36,7 +36,23 @@
  * 1040 px el panel del sprint no se pinta y arrastrar es imposible con cualquier
  * librería; ahí `S` es lo único que hay. Ver `util/arrastre.ts`.
  *
- * ## Los dos arrastres, y cómo se distinguen sin adivinar (regla 10)
+ * ## E13 — el `＋` de cada contenedor
+ *
+ * `N` era el único camino cómodo para capturar, y una tecla que nada en pantalla menciona
+ * no es un atajo: es un requisito de memoria. Cada épica y cada historia llevan ahora su
+ * propio `＋`, **visible siempre**, con el destino escrito en su nombre accesible y la
+ * tecla al lado. `N` no cambia y pasa a ser lo que debía ser: la vía rápida de quien ya
+ * se la sabe.
+ *
+ * La tarea NO lo lleva: es la hoja, son dos tercios de las filas y las más estrechas.
+ * Una tarea hermana se captura desde el `＋` de su historia o con `N` sobre ella.
+ *
+ * El botón se queda —en gris— cuando no se puede escribir. Si desapareciera, el árbol
+ * entero cambiaría de forma al entrar y salir de solo lectura o de la pestaña
+ * «Terminadas», y un control que se esconde no enseña que la función existe.
+ *
+ * ## Los dos arrastres
+, y cómo se distinguen sin adivinar (regla 10)
  *
  * Sobre las mismas filas conviven dos gestos que quieren decir cosas distintas: mandar
  * una tarea AL SPRINT y REORDENAR dentro del árbol. Que se distingan no se resuelve con
@@ -83,8 +99,9 @@ import type {
   Tarea,
 } from '../../../compartido/modelo/tipos';
 import { ChipBloqueo, ChipNeutro, ChipNuevo, ContadorBloqueos } from '../../componentes/Chips';
-import { Asa, Chevron, Glifo } from '../../componentes/iconos';
+import { Asa, Chevron, Glifo, Mas } from '../../componentes/iconos';
 import { Medidor } from '../../componentes/Medidor';
+
 import { useAccionesOrden } from '../../estado/acciones-orden';
 import { useAccionesSprint } from '../../estado/acciones-sprint';
 import { useAccionesInterfaz, useInterfaz } from '../../estado/interfaz';
@@ -252,11 +269,13 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
   const {
     alternarNodo: alternar,
     enfocarNodo,
+    expandir,
     irANodo,
     redactar,
     confirmar,
     avisar,
   } = useAccionesInterfaz();
+
   const mutar = useMutar();
   const acciones = useAccionesSprint(sprint);
   const accionesOrden = useAccionesOrden();
@@ -450,7 +469,26 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
     [redactar],
   );
 
+  /**
+   * Lo que hace el `＋` de la fila, que es un poco más que la tecla `N`.
+   *
+   * `N` se pulsa sobre la fila que ya tiene el foco; el `＋` se pulsa con el ratón sobre
+   * una fila cualquiera, así que primero la marca como la elegida —o el árbol seguiría
+   * resaltando otra mientras se captura aquí— y la DESPLIEGA. Desplegar es la mitad de la
+   * queja que originó esto: se pedía capturar dentro de algo que estaba cerrado y no se
+   * veía dónde iba a caer lo nuevo.
+   */
+  const capturarConBoton = useCallback(
+    (fila: Fila) => {
+      enfocarNodo(fila.id);
+      if (fila.tipo !== 'tarea' && fila.expandible) expandir([fila.id]);
+      capturarEn(fila);
+    },
+    [capturarEn, enfocarNodo, expandir],
+  );
+
   const alternarBloqueo = useCallback(
+
     (tarea: Tarea) => {
       if (estaBloqueada(tarea)) {
         void mutar({ comando: 'desbloquear', tareaId: tarea.id }, `Desbloquear ${tarea.id}`);
@@ -660,7 +698,9 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
             indicador={indicador !== null && indicador.id === fila.id ? indicador.borde : null}
             alternar={alternar}
             enfocar={enfocarNodo}
+            capturar={capturarConBoton}
             cambiarEstado={cambiarEstado}
+
             registrar={(nodo) => {
               if (nodo === null) nodos.current.delete(fila.id);
               else nodos.current.set(fila.id, nodo);
@@ -794,9 +834,12 @@ interface PropsFila {
   indicador: Borde | null;
   alternar: (id: string) => void;
   enfocar: (id: string) => void;
+  /** Abre la captura dentro de esta fila. Solo lo usan las que pueden tener hijos. */
+  capturar: (fila: Fila) => void;
   cambiarEstado: (tarea: Tarea, estado: EstadoTarea) => void;
   registrar: (nodo: HTMLDivElement | null) => void;
 }
+
 
 function FilaArbol({
   fila,
@@ -811,9 +854,11 @@ function FilaArbol({
   indicador,
   alternar,
   enfocar,
+  capturar,
   cambiarEstado,
   registrar,
 }: PropsFila) {
+
   const { arrastre } = useInterfaz();
   const { arrastrar } = useAccionesInterfaz();
 
@@ -962,6 +1007,10 @@ function FilaArbol({
   const esEpica = fila.tipo === 'epica';
   const titulo = esEpica ? fila.epica.titulo : fila.historia.titulo;
   const derivado = estadoDerivado(fila.avance);
+  // El destino, dicho entero: el `＋` de la barra superior obligaba a mirar un `title`
+  // para saber dónde iba a caer lo nuevo, y ese era medio problema.
+  const queCaptura = esEpica ? `Nueva historia en «${titulo}»` : `Nueva tarea en «${titulo}»`;
+
   // El botón de lote de la historia: mandar sus tareas abiertas de una vez. Es la forma
   // de meter «una historia entera» sin romper la regla 10 — no se arrastra la historia,
   // se mandan sus tareas.
@@ -1024,7 +1073,28 @@ function FilaArbol({
           Al sprint · {lote.length}
         </button>
       )}
+      {/* E13 · la acción, pegada a la cosa sobre la que actúa. Sin parada de tabulador
+          propia: el árbol tiene una sola y 300 filas × 1 botón serían 300 más. */}
+      <button
+        type="button"
+        className="fila__mas"
+        tabIndex={-1}
+        disabled={!editable}
+        title={
+          editable
+            ? `${queCaptura} · tecla N`
+            : `${queCaptura}: no disponible en esta pestaña ni en solo lectura`
+        }
+        aria-label={editable ? `${queCaptura} · tecla N` : `${queCaptura} (no disponible)`}
+        onClick={(evento) => {
+          evento.stopPropagation();
+          capturar(fila);
+        }}
+      >
+        <Mas />
+      </button>
       <Medidor avance={fila.avance} conBarra={esEpica} />
+
       <span className="clave">{fila.id}</span>
     </div>
   );

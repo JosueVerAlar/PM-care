@@ -40,7 +40,8 @@ import type { Documento } from '../../../compartido/modelo/tipos';
 import { useMutar, useSoloLectura } from '../../estado/mutaciones';
 import { cuenta, fechaCorta, nombreSinClave } from '../../util/presentacion';
 import { Advertencia, Candado } from '../../componentes/iconos';
-import { Lienzo, NotaPie } from '../globales/piezas';
+import { Lienzo } from '../globales/piezas';
+
 
 export function SeccionProyectos({ documento }: { documento: Documento }) {
   const mutar = useMutar();
@@ -192,10 +193,9 @@ export function SeccionProyectos({ documento }: { documento: Documento }) {
               Cerrados <span className="bloque__n tabular">{cerrados.length}</span>
             </p>
             <p className="bloque__nota">
-              Conservan todas sus tareas y su historial, y dejan de aparecer en el Panorama, en
-              el sprint y en la carga por persona. Se pueden reabrir en un clic.{' '}
               <b>Eliminar solo se ofrece aquí:</b> para borrar un proyecto hay que cerrarlo antes.
             </p>
+
             {cerrados.length === 0 ? (
               <p className="bloque__nota">Ningún proyecto cerrado todavía.</p>
             ) : (
@@ -248,11 +248,7 @@ export function SeccionProyectos({ documento }: { documento: Documento }) {
         </div>
       </Lienzo>
 
-      <NotaPie>
-        Cerrar es reversible y conserva la historia. Eliminar no es ninguna de las dos cosas, y
-        por eso vive en otra sección y pide escribir la clave a mano. No hay deshacer desde la
-        app para un borrado ya escrito: se recupera restaurando un respaldo anterior.
-      </NotaPie>
+
     </>
   );
 }

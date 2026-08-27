@@ -23,7 +23,9 @@ import { useMemo, useRef, useState } from 'react';
 import { avanceDeProyecto, sprintActivo } from '../../../compartido/dominio/derivar';
 import { estaHecha } from '../../../compartido/dominio/clasificar';
 import type { Documento, Fecha, Proyecto } from '../../../compartido/modelo/tipos';
+import { Mas } from '../../componentes/iconos';
 import { Medidor } from '../../componentes/Medidor';
+
 import { useAccionesSprint } from '../../estado/acciones-sprint';
 import { useAccionesInterfaz, useInterfaz } from '../../estado/interfaz';
 import { useSoloLectura } from '../../estado/mutaciones';
@@ -44,8 +46,9 @@ export function VistaProyecto({
   hoy: Fecha;
 }) {
   const { expandidos, pestana, soloEsteProyecto, arrastre } = useInterfaz();
-  const { expandir, colapsarTodo, cambiarPestana, cambiarAlcanceSprint, arrastrar } =
+  const { expandir, colapsarTodo, cambiarPestana, cambiarAlcanceSprint, arrastrar, redactar } =
     useAccionesInterfaz();
+
   const soloLectura = useSoloLectura();
   const dosPaneles = useDosPaneles();
 
@@ -143,7 +146,25 @@ export function VistaProyecto({
           >
             {hayAlgoAbierto ? 'Colapsar todo' : 'Expandir todo'}
           </button>
+
+          {/* E13 · la ÚNICA captura que no cuelga de ninguna fila: una épica no tiene
+              padre donde poner un `＋`. Es también la única acción con relleno sólido del
+              panel — un solo primario a la vista, o no hay ninguno. */}
+          <button
+            type="button"
+            className="cab__primario"
+            disabled={!editable}
+            title={
+              editable
+                ? `Capturar una épica en ${proyecto.clave}`
+                : 'Aquí no se captura: la pestaña Terminadas es un registro, y en solo lectura no se escribe.'
+            }
+            onClick={() => redactar({ tipo: 'capturar', clase: 'epica', padreId: proyecto.clave })}
+          >
+            <Mas /> Nueva épica
+          </button>
         </header>
+
 
         {/* La zona de soltar es el CUERPO, no la sección: así la pestaña «Terminadas»,
             que vive en la cabecera, nunca es un destino. */}

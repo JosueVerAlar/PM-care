@@ -33,7 +33,8 @@ import {
   explicarVersion,
   permiteEscritura,
 } from '../../compartido/modelo/version';
-import { requiereFlushInmediato, type Comando } from '../comandos/tipos';
+import { requiereFlushInmediato, type Comando, type NombreComando } from '../comandos/tipos';
+
 import { reducir } from '../comandos/reductor';
 import type { EntradaHistorial, FuenteEvento } from '../historial/registrar';
 import { registrar } from '../historial/registrar';
@@ -56,6 +57,77 @@ export const DEBOUNCE_MS = 500;
 
 /** Tope de la pila de deshacer (D1 del plan). 20 pasos, snapshots del documento. */
 export const TOPE_DESHACER = 20;
+
+/**
+ * Cómo se llama cada comando cuando se va a DESHACER.
+ *
+ * El menú Edición de macOS pide el objeto: «Deshacer capturar SICOE-T14», no «Deshacer».
+ * El nombre tiene que salir de aquí y no del renderer: la interfaz solo se entera de los
+ * comandos que ella misma manda y solo de los que le contestan `ok`, y esta pila crece
+ * también cuando el guardado falla —se apila ANTES de escribir, que es lo correcto por la
+ * regla 5— y cuando deshace alguien que no pasó por su instrumentación. Dos pilas
+ * paralelas se descuadran un paso y ya no vuelven a cuadrar; una sola no puede.
+ *
+ * El `Record<NombreComando, …>` es la aserción de cobertura: añadir un comando al esquema
+ * sin darle verbo aquí **no compila**. Sin eso, el comando nuevo saldría como «undefined»
+ * en un menú del sistema.
+ */
+const VERBO_DESHACER: Record<NombreComando, string> = {
+  crearProyecto: 'crear el proyecto',
+  editarProyecto: 'editar el proyecto',
+  cerrarProyecto: 'cerrar el proyecto',
+  reabrirProyecto: 'reabrir el proyecto',
+  eliminarProyecto: 'eliminar el proyecto',
+  cerrarPlaneacion: 'cerrar la planeación',
+  reabrirPlaneacion: 'reabrir la planeación',
+  crearPersona: 'dar de alta a alguien',
+  editarPersona: 'editar a esa persona',
+  desactivarPersona: 'dar de baja a esa persona',
+  reactivarPersona: 'reactivar a esa persona',
+  eliminarPersona: 'eliminar a esa persona',
+  fijarUsuario: 'cambiar quién eres',
+  editarEquipo: 'editar el equipo',
+  crearEpica: 'capturar',
+  editarEpica: 'renombrar',
+  eliminarEpica: 'eliminar',
+  reordenarEpica: 'reordenar',
+  crearHistoria: 'capturar',
+  editarHistoria: 'renombrar',
+  eliminarHistoria: 'eliminar',
+  reordenarHistoria: 'reordenar',
+  crearTarea: 'capturar',
+  editarTarea: 'editar',
+  eliminarTarea: 'eliminar',
+  reordenarTarea: 'reordenar',
+  cambiarEstado: 'cambiar el estado de',
+  moverAlSprint: 'mandar al sprint',
+  sacarDelSprint: 'sacar del sprint',
+  cerrarSprint: 'cerrar el sprint',
+  activarSprint: 'activar el sprint',
+  bloquear: 'bloquear',
+  desbloquear: 'desbloquear',
+};
+
+/**
+ * El nombre de lo que revertiría el siguiente «Deshacer».
+ *
+ * Sale del evento que el reductor ya produjo, así que no hay una segunda fuente que
+ * mantener. Un evento de sistema —restaurar un respaldo— no tiene verbo en la tabla: se
+ * usa su resumen, que ya está escrito para leerse.
+ */
+function etiquetaDeshacer(evento: EntradaHistorial): string {
+  const verbo = VERBO_DESHACER[evento.comando as NombreComando];
+  if (verbo === undefined) return evento.resumen;
+  const objeto = evento.item_id ?? evento.sprint_id ?? evento.proyecto_id;
+  return objeto === null ? verbo : `${verbo} ${objeto}`;
+}
+
+/** Un paso deshacible: el documento anterior y cómo se llamaba lo que lo cambió. */
+interface PasoDeshacer {
+  documento: Documento;
+  etiqueta: string;
+}
+
 
 export type MotivoSoloLectura =
   | 'json-invalido'
@@ -86,6 +158,13 @@ export interface InstantaneaAlmacen {
   documento: Documento | null;
   diagnostico: Diagnostico | null;
   puedeDeshacer: boolean;
+  /**
+   * Cómo se llama lo que revertiría el siguiente «Deshacer» («capturar SICOE-T14»), o
+   * `null` si no hay nada que revertir. Es texto para pintar, nunca una decisión: quien
+   * decide si se puede deshacer es `puedeDeshacer`.
+   */
+  etiquetaDeshacer: string | null;
+
   /** Hay cambios en memoria que aún no llegaron al disco. */
   hayPendientes: boolean;
   ruta: string;
@@ -119,7 +198,8 @@ export class Repositorio {
   /** Eventos aún no anexados. Se vacían tras un guardado exitoso, nunca antes. */
   private eventosPendientes: EntradaHistorial[] = [];
 
-  private readonly pilaDeshacer: Documento[] = [];
+  private readonly pilaDeshacer: PasoDeshacer[] = [];
+
 
   private readonly marcaSesion: string;
   private readonly reloj: () => Instante;
@@ -332,6 +412,8 @@ export class Repositorio {
       documento: this.documento,
       diagnostico: this.diagnostico,
       puedeDeshacer: this.pilaDeshacer.length > 0,
+      etiquetaDeshacer: this.pilaDeshacer[this.pilaDeshacer.length - 1]?.etiqueta ?? null,
+
       hayPendientes: this.pendiente !== null || this.enVuelo !== null,
       ruta: this.rutas.documento,
       directorio: this.rutas.directorio,
@@ -376,8 +458,9 @@ export class Repositorio {
       return respuesta;
     }
 
-    this.apilarParaDeshacer(previo);
+    this.apilarParaDeshacer(previo, etiquetaDeshacer(resultado.evento));
     this.documento = resultado.documento;
+
     this.eventosPendientes.push(resultado.evento);
 
     const guardado = await this.programar(requiereFlushInmediato(comando));
@@ -393,10 +476,11 @@ export class Repositorio {
    * guardar operaciones inversas, y a cambio no hay forma de que deshacer produzca un
    * documento que nunca existió: el estado anterior ES el estado anterior.
    */
-  private apilarParaDeshacer(documento: Documento): void {
-    this.pilaDeshacer.push(documento);
+  private apilarParaDeshacer(documento: Documento, etiqueta: string): void {
+    this.pilaDeshacer.push({ documento, etiqueta });
     if (this.pilaDeshacer.length > TOPE_DESHACER) this.pilaDeshacer.shift();
   }
+
 
   async deshacer(): Promise<RespuestaComando> {
     if (this.diagnostico !== null) {
@@ -406,7 +490,8 @@ export class Repositorio {
     if (anterior === undefined) {
       return { ok: false, codigo: 'invalido', mensaje: 'No hay nada que deshacer.' };
     }
-    this.documento = anterior;
+    this.documento = anterior.documento;
+
     this.eventosPendientes.push(
       eventoDeSistema(this.reloj(), 'deshacer', 'sistema', 'Deshacer: se restauró el estado anterior'),
     );

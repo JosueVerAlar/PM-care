@@ -52,7 +52,16 @@ export interface ApiPmCare {
   version(): Promise<string>;
   /** Avisos que empuja el proceso principal. Devuelve la función para desuscribir. */
   alCambiarEstado(escucha: (instantanea: InstantaneaAlmacen) => void): () => void;
+
+  /**
+   * E13 — le dice al menú Edición si su «Deshacer» está vivo y cómo se llama lo que
+   * revertiría. `etiqueta` en `null` deja el ítem con su nombre corto.
+   */
+  publicarDeshacer(estado: { puede: boolean; etiqueta: string | null }): void;
+  /** El menú Edición pidió deshacer. Devuelve la función para desuscribir. */
+  alPedirDeshacer(escucha: () => void): () => void;
 }
+
 
 declare global {
   interface Window {
