@@ -53,6 +53,15 @@ en un solo lugar.
    el JSON de un contenedor.
 2. **Contenedor sin tareas → `null`.** Se pinta «sin desglosar». Nunca `0%`, nunca `NaN`,
    nunca `"NaN"`. *Verificable:* `derivar()` sobre una épica vacía devuelve `null`.
+   **Y lo que no está desglosado tampoco se declara terminado:** un contenedor con un
+   descendiente sin desglosar nunca es `hecha`, aunque todas sus tareas lo estén. Es la
+   misma mentira que el `0%`: una historia sin tareas no dice que no haya trabajo, dice que
+   nadie lo ha desglosado todavía, y el verde esconde justo lo que falta planear. `Avance`
+   lleva `contenedoresSinDesglosar` (historias sin tareas; para un proyecto, además épicas
+   sin historias) y la vista lo escribe al lado: «6/6 · 1 sin desglosar». Negar el verde sin
+   decir por qué sería peor que el defecto. Una historia cuyas tareas están todas canceladas
+   sí se desglosó —se descartó el trabajo— y no cuenta. *Verificable:* una épica con 6 de 6
+   hechas y una historia vacía da `en_movimiento` y `contenedoresSinDesglosar === 1`.
 3. **Ningún porcentaje se muestra sin su conteo crudo al lado** (`60% · 3 de 5`). Con menos
    de 5 tareas se omite el porcentaje y solo va el conteo. *Verificable:* revisión de vista;
    no hay `%` sin conteo hermano en el DOM.
@@ -122,7 +131,11 @@ en un solo lugar.
   conserva su avance propio; si el bloqueo reemplazara el estado, al desbloquear no se
   sabría a qué volver.
 - Definición ejecutable de **en movimiento**:
-  `hojas > 0 && (hechas + en_curso) > 0 && hechas < hojas`.
+  `hojas > 0 && (hechas + en_curso) > 0 && (hechas < hojas || contenedoresSinDesglosar > 0)`.
+  El segundo término es la regla 2: 6 de 6 hechas con una historia sin abrir sigue en
+  movimiento. Los cuatro estados derivados no cambian — no hay un quinto para «terminada
+  hasta donde está planeada», porque el conteo lo dice mejor que un color y añadirlo
+  obligaría a rehacer la validación de contraste y daltonismo de la paleta.
 - Botón de captura: **«Capturar»**, no «Agregar».
 - Mensajes de commit con la decisión dentro:
   `feat: E3 — escritura atómica con respaldos rotativos (regla 6)`.

@@ -32,6 +32,22 @@ export interface Avance {
   canceladas: number;
   /** `null` cuando no hay tareas contables (regla 2). Nunca 0, nunca NaN. */
   pct: number | null;
+  /**
+   * Contenedores DESCENDIENTES que nadie ha desglosado todavía: historias sin ninguna
+   * tarea, y —para un proyecto— también épicas sin ninguna historia.
+   *
+   * No es un conteo de tareas como el resto de los campos; por eso lleva "contenedores"
+   * en el nombre y no se suma a `hojas`. Un contenedor sin desglosar no aporta hojas
+   * justamente porque no se sabe cuántas serán, y ese "no se sabe" es el dato.
+   *
+   * Nunca se cuenta a sí mismo: una épica sin historias tiene 0 aquí y `hojas === 0`,
+   * que ya la deja en `sin_desglosar`. Esto mide lo que le falta planear a un contenedor
+   * que por lo demás ya parece terminado (regla 2).
+   *
+   * Se expone para que la vista pueda escribir «6/6 · 1 sin desglosar»: negar el verde
+   * sin decir por qué sería peor que el defecto que arregla.
+   */
+  contenedoresSinDesglosar: number;
 }
 
 /** Etiquetas en pantalla: Sin desglosar · Pendiente · En movimiento · Hecha. */
@@ -44,6 +60,7 @@ export const AVANCE_VACIO: Avance = {
   pendientes: 0,
   canceladas: 0,
   pct: null,
+  contenedoresSinDesglosar: 0,
 };
 
 /**
@@ -62,8 +79,16 @@ export function mostrarPct(avance: Avance): boolean {
  * El porcentaje se redondea pero se topa en 99 mientras quede algo abierto: 199 de 200
  * redondea a 100, y una barra al 100% junto a un estado "en movimiento" se lee como un
  * error de la app. El 100 se reserva para `hechas === hojas` (reglas 4 y 5).
+ *
+ * `contenedoresSinDesglosar` no se puede deducir de una lista plana de tareas —lo que
+ * falta por desglosar es justo lo que no está en la lista—, así que lo aporta quien sí
+ * ve el árbol. Por omisión 0: un conjunto suelto de tareas (los items de un sprint, la
+ * carga de una persona) no tiene contenedores debajo y no hay nada que le falte planear.
  */
-export function contarTareas(tareas: readonly Tarea[]): Avance {
+export function contarTareas(
+  tareas: readonly Tarea[],
+  contenedoresSinDesglosar = 0,
+): Avance {
   let hechas = 0;
   let enCurso = 0;
   let pendientes = 0;
@@ -90,7 +115,7 @@ export function contarTareas(tareas: readonly Tarea[]): Avance {
   const pct =
     hojas === 0 ? null : hechas === hojas ? 100 : Math.min(99, Math.round((hechas / hojas) * 100));
 
-  return { hojas, hechas, enCurso, pendientes, canceladas, pct };
+  return { hojas, hechas, enCurso, pendientes, canceladas, pct, contenedoresSinDesglosar };
 }
 
 /**
@@ -115,30 +140,78 @@ export function tareasDeProyecto(proyecto: Proyecto): Tarea[] {
   return tareas;
 }
 
+/**
+ * "Sin desglosar" es literalmente NO TENER HIJOS, no "no tener hojas contables".
+ *
+ * La distinción importa en un caso real: una historia con dos tareas canceladas también
+ * da `hojas === 0`, pero esa sí se desglosó — se desglosó y luego se descartó el trabajo.
+ * No falta planearla, así que no debe impedir que su épica se declare terminada. La que
+ * lo impide es la historia que nadie ha abierto todavía: ahí no se sabe si lo que falta
+ * son dos tareas o veinte.
+ */
+export function sinDesglosarDeEpica(epica: Epica): number {
+  let cuantos = 0;
+  for (const historia of epica.historias) if (historia.tareas.length === 0) cuantos += 1;
+  return cuantos;
+}
+
+/**
+ * Cuenta los dos niveles: épicas sin ninguna historia e historias sin ninguna tarea.
+ *
+ * Una épica con tres historias vacías aporta 3, no 1 ni 4: ella sí está desglosada
+ * —tiene historias—, y lo que falta por planear son sus tres historias. El número que
+ * la vista enseña es "cuántas cosas hay que abrir", y son tres.
+ */
+export function sinDesglosarDeProyecto(proyecto: Proyecto): number {
+  let cuantos = 0;
+  for (const epica of proyecto.epicas) {
+    if (epica.historias.length === 0) cuantos += 1;
+    else cuantos += sinDesglosarDeEpica(epica);
+  }
+  return cuantos;
+}
+
+/** Una historia solo tiene tareas debajo, y una tarea no se desglosa: siempre 0. */
 export function avanceDeHistoria(historia: Historia): Avance {
-  return contarTareas(historia.tareas);
+  return contarTareas(historia.tareas, 0);
 }
 
 export function avanceDeEpica(epica: Epica): Avance {
-  return contarTareas(tareasDeEpica(epica));
+  return contarTareas(tareasDeEpica(epica), sinDesglosarDeEpica(epica));
 }
 
 export function avanceDeProyecto(proyecto: Proyecto): Avance {
-  return contarTareas(tareasDeProyecto(proyecto));
+  return contarTareas(tareasDeProyecto(proyecto), sinDesglosarDeProyecto(proyecto));
 }
 
 /**
  * Estado heredado de un contenedor. Se deriva siempre; nunca se persiste.
  *
- * "En movimiento" es exactamente `hojas > 0 && (hechas + enCurso) > 0 && hechas < hojas`.
+ * "En movimiento" es exactamente
+ * `hojas > 0 && (hechas + enCurso) > 0 && (hechas < hojas || contenedoresSinDesglosar > 0)`.
+ *
+ * ## Por qué `hecha` exige que no quede nada sin desglosar
+ *
+ * Una épica con sus 6 tareas cerradas y una historia que nadie ha abierto NO está
+ * terminada: está terminada *hasta donde alguien se ha molestado en planearla*. Declararla
+ * `hecha` es la misma mentira que pintar `0 %` en un contenedor vacío, y la regla 2 la
+ * prohíbe por el mismo motivo — una historia sin tareas no significa que no haya trabajo,
+ * significa que nadie lo ha desglosado todavía. El verde ahí esconde justo lo que hay que
+ * hacer a continuación: abrir esa historia.
+ *
+ * Cae en `en_movimiento` y no en un estado nuevo: hay avance real y no está terminado, que
+ * es exactamente lo que ese valor significa. La paleta validada solo soporta cuatro
+ * estados, y un quinto obligaría a rehacer la validación de contraste y daltonismo para
+ * decir algo que el conteo ya dice mejor. Lo que la vista pinta al lado —«6/6 · 1 sin
+ * desglosar»— es lo que informa; el color solo tiene que dejar de mentir.
  *
  * Límite conocido: un contenedor cuyas tareas están todas canceladas da `hojas === 0` y
  * por tanto `sin_desglosar`. La vista distingue ese caso mirando `avance.canceladas > 0`;
- * no se añade un quinto estado porque la paleta validada solo soporta cuatro.
+ * tampoco ahí se añade un quinto estado.
  */
 export function estadoDerivado(avance: Avance): EstadoDerivado {
   if (avance.hojas === 0) return 'sin_desglosar';
-  if (avance.hechas === avance.hojas) return 'hecha';
+  if (avance.hechas === avance.hojas && avance.contenedoresSinDesglosar === 0) return 'hecha';
   if (avance.hechas + avance.enCurso > 0) return 'en_movimiento';
   return 'pendiente';
 }

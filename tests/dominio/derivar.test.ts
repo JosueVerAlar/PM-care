@@ -28,7 +28,7 @@ import {
   tareasDeProyecto,
 } from '../../src/compartido/dominio/derivar';
 import { validarDocumento } from '../../src/compartido/modelo/esquema';
-import type { Documento, Epica } from '../../src/compartido/modelo/tipos';
+import type { Documento, Epica, Proyecto } from '../../src/compartido/modelo/tipos';
 import {
   repetir,
   tareasConEstados,
@@ -51,7 +51,16 @@ describe('contarTareas', () => {
     const avance = contarTareas(
       tareasConEstados(['hecha', 'hecha', 'en_curso', 'pendiente', 'cancelada']),
     );
-    expect(avance).toEqual({ hojas: 4, hechas: 2, enCurso: 1, pendientes: 1, canceladas: 1, pct: 50 });
+    expect(avance).toEqual({
+      hojas: 4,
+      hechas: 2,
+      enCurso: 1,
+      pendientes: 1,
+      canceladas: 1,
+      pct: 50,
+      // Una lista suelta de tareas no tiene contenedores debajo: nada que desglosar.
+      contenedoresSinDesglosar: 0,
+    });
   });
 
   it('regla 5: las canceladas quedan fuera del denominador', () => {
@@ -152,13 +161,13 @@ describe('regla 4: verde solo si el estado es hecha, jamás por redondeo', () =>
     // prueba desacopla las dos cosas: `estadoDerivado` recibe un avance cualquiera y no
     // debe fiarse del número que traiga. Sin ella, cambiar la condición a `pct === 100`
     // pasa desapercibido hasta el día que alguien quite el tope.
-    const mentiroso: Avance = { hojas: 200, hechas: 199, enCurso: 1, pendientes: 0, canceladas: 0, pct: 100 };
+    const mentiroso: Avance = { hojas: 200, hechas: 199, enCurso: 1, pendientes: 0, canceladas: 0, pct: 100, contenedoresSinDesglosar: 0 };
     expect(estadoDerivado(mentiroso)).toBe('en_movimiento');
     expect(estadoDerivado(mentiroso)).not.toBe('hecha');
   });
 
   it('estadoDerivado tampoco cree en un pct null cuando el conteo dice que está todo hecho', () => {
-    const mentiroso: Avance = { hojas: 3, hechas: 3, enCurso: 0, pendientes: 0, canceladas: 0, pct: null };
+    const mentiroso: Avance = { hojas: 3, hechas: 3, enCurso: 0, pendientes: 0, canceladas: 0, pct: null, contenedoresSinDesglosar: 0 };
     expect(estadoDerivado(mentiroso)).toBe('hecha');
   });
 
@@ -211,6 +220,109 @@ describe('regla 4: verde solo si el estado es hecha, jamás por redondeo', () =>
       ],
     });
     expect(estadoDerivado(avanceDeEpica(epica))).toBe('hecha');
+  });
+});
+
+// --- lo que falta por desglosar ---------------------------------------------
+
+describe('regla 2: una historia sin desglosar impide el verde de su épica', () => {
+  /**
+   * El defecto que esta sección arregla: la épica tenía sus tareas cerradas y una historia
+   * que nadie había abierto, y se pintaba «Completa». Es la misma mentira que un `0 %` en
+   * un contenedor vacío — una historia sin tareas no dice que no haya trabajo, dice que
+   * nadie lo ha desglosado todavía— y esconde justo lo siguiente que hay que hacer.
+   */
+  const epicaDelDefecto = () =>
+    unaEpicaCon([['hecha', 'hecha', 'hecha'], ['hecha', 'hecha', 'hecha'], []]);
+
+  it('6 de 6 hechas con una historia vacía NO es hecha', () => {
+    const avance = avanceDeEpica(epicaDelDefecto());
+    expect(avance.hechas).toBe(6);
+    expect(avance.hojas).toBe(6);
+    expect(estadoDerivado(avance)).not.toBe('hecha');
+  });
+
+  it('cae en en_movimiento, no en un quinto estado: hay avance y no está terminado', () => {
+    expect(estadoDerivado(avanceDeEpica(epicaDelDefecto()))).toBe('en_movimiento');
+  });
+
+  it('el avance dice CUÁNTAS faltan, para poder escribir «6/6 · 1 sin desglosar»', () => {
+    // Negar el verde sin explicar por qué sería peor que el defecto: la vista necesita el
+    // número, no solo la ausencia de color.
+    expect(avanceDeEpica(epicaDelDefecto()).contenedoresSinDesglosar).toBe(1);
+  });
+
+  it('el pct sigue siendo 100 y eso está bien: el que deja de mentir es el estado', () => {
+    // Bajarlo a 99 sería inventar un avance (regla 5: el pct sale del agregado de las
+    // hojas, y una historia sin desglosar no tiene hojas que agregar). El caso es
+    // exactamente el que la regla 4 anticipa: pct 100 y aun así nada de verde.
+    const avance = avanceDeEpica(epicaDelDefecto());
+    expect(avance.pct).toBe(100);
+    expect(estadoDerivado(avance)).not.toBe('hecha');
+  });
+
+  it('dos historias vacías cuentan dos, no una', () => {
+    const epica = unaEpicaCon([['hecha', 'hecha'], [], []]);
+    expect(avanceDeEpica(epica).contenedoresSinDesglosar).toBe(2);
+  });
+
+  it('sin historias vacías el conteo es 0 y el verde llega igual que antes', () => {
+    const epica = unaEpicaCon([['hecha', 'hecha'], ['hecha']]);
+    const avance = avanceDeEpica(epica);
+    expect(avance.contenedoresSinDesglosar).toBe(0);
+    expect(estadoDerivado(avance)).toBe('hecha');
+  });
+
+  it('una historia DESGLOSADA y luego cancelada entera no cuenta como sin desglosar', () => {
+    // Aquí está el riesgo de pasarse de estricto. Esta historia sí se planeó; lo que se
+    // decidió fue no hacerla. No falta abrir nada, así que la épica sí está terminada.
+    const epica = unaEpicaCon([['hecha', 'hecha', 'hecha'], ['cancelada', 'cancelada']]);
+    const avance = avanceDeEpica(epica);
+    expect(avance.hojas).toBe(3);
+    expect(avance.canceladas).toBe(2);
+    expect(avance.contenedoresSinDesglosar).toBe(0);
+    expect(estadoDerivado(avance)).toBe('hecha');
+  });
+
+  it('una historia nunca se cuenta a sí misma: sus hijos son tareas, y una tarea no se desglosa', () => {
+    expect(avanceDeHistoria(unaHistoria()).contenedoresSinDesglosar).toBe(0);
+    expect(avanceDeHistoria(unaHistoriaCon(['hecha'])).contenedoresSinDesglosar).toBe(0);
+  });
+
+  it('la épica sin historias no se cuenta a sí misma: ya es sin_desglosar por no tener hojas', () => {
+    const avance = avanceDeEpica(unaEpica());
+    expect(avance.contenedoresSinDesglosar).toBe(0);
+    expect(estadoDerivado(avance)).toBe('sin_desglosar');
+  });
+
+  it('con todo pendiente y una historia vacía sigue siendo pendiente, no en_movimiento', () => {
+    // Lo que falta por desglosar quita el verde; no inventa movimiento donde no lo hay.
+    const epica = unaEpicaCon([['pendiente', 'pendiente'], []]);
+    expect(estadoDerivado(avanceDeEpica(epica))).toBe('pendiente');
+  });
+
+  it('el proyecto cuenta los dos niveles: épicas sin historias e historias sin tareas', () => {
+    const proyecto = unProyecto({
+      epicas: [
+        unaEpica(), // sin historias: cuenta 1
+        unaEpicaCon([['hecha'], [], []]), // dos historias vacías: cuentan 2
+      ],
+    });
+    const avance = avanceDeProyecto(proyecto);
+    expect(avance.contenedoresSinDesglosar).toBe(3);
+    expect(estadoDerivado(avance)).toBe('en_movimiento');
+  });
+
+  it('una épica con tres historias vacías aporta 3 al proyecto, no 1: lo que falta abrir son tres', () => {
+    const proyecto = unProyecto({ epicas: [unaEpicaCon([[], [], []])] });
+    expect(avanceDeProyecto(proyecto).contenedoresSinDesglosar).toBe(3);
+  });
+
+  it('un conjunto suelto de tareas (sprint, carga) nunca se vuelve estricto: contenedores 0', () => {
+    // `contarTareas` la usan sprint.ts y administracion.ts sobre listas planas. Ahí no hay
+    // contenedores debajo y no debe aparecer un "sin desglosar" de la nada.
+    expect(contarTareas(tareasConEstados(repetir('hecha', 3))).contenedoresSinDesglosar).toBe(0);
+    expect(estadoDerivado(contarTareas(tareasConEstados(repetir('hecha', 3))))).toBe('hecha');
   });
 });
 
@@ -377,7 +489,15 @@ describe('mostrarPct: ningún porcentaje se muestra sin su conteo crudo', () => 
   });
 
   it('AVANCE_VACIO es el cero del tipo: todo en 0 y pct null', () => {
-    expect(AVANCE_VACIO).toEqual({ hojas: 0, hechas: 0, enCurso: 0, pendientes: 0, canceladas: 0, pct: null });
+    expect(AVANCE_VACIO).toEqual({
+      hojas: 0,
+      hechas: 0,
+      enCurso: 0,
+      pendientes: 0,
+      canceladas: 0,
+      pct: null,
+      contenedoresSinDesglosar: 0,
+    });
     expect(mostrarPct(AVANCE_VACIO)).toBe(false);
   });
 });
@@ -564,8 +684,12 @@ describe('invariantes sobre 300 árboles generados', () => {
     for (const semilla of SEMILLAS) {
       for (const { donde, avance } of contenedores(semilla).filas) {
         expect(avance.pct === 100, donde).toBe(avance.hojas > 0 && avance.hechas === avance.hojas);
+        // El pct sigue dependiendo solo de las hojas —no hay forma honesta de meter en un
+        // porcentaje lo que nadie ha desglosado—, pero el VERDE además exige que no quede
+        // ningún contenedor sin abrir. Aquí es donde los dos criterios dejan de coincidir,
+        // que es justamente lo que la regla 4 quiere: el color no lo decide el número.
         expect(estadoDerivado(avance) === 'hecha', donde).toBe(
-          avance.hojas > 0 && avance.hechas === avance.hojas,
+          avance.hojas > 0 && avance.hechas === avance.hojas && avance.contenedoresSinDesglosar === 0,
         );
       }
     }
@@ -651,6 +775,60 @@ describe('datos/ejemplo.json', () => {
     for (const epica of doc.proyectos.flatMap((p) => p.epicas)) {
       expect(promedioDeHistorias(epica), epica.id).toBe(avanceDeEpica(epica).pct);
     }
+  });
+
+  it('SICOE-E1 tiene exactamente una historia sin desglosar: SICOE-H3', () => {
+    const epica = doc.proyectos.flatMap((p) => p.epicas).find((e) => e.id === 'SICOE-E1');
+    expect(epica?.historias.filter((h) => h.tareas.length === 0).map((h) => h.id)).toEqual([
+      'SICOE-H3',
+    ]);
+    expect(avanceDeEpica(epica as Epica).contenedoresSinDesglosar).toBe(1);
+  });
+
+  it('el proyecto SICOE cuenta 2 sin desglosar: la épica SICOE-E5 vacía y la historia SICOE-H3', () => {
+    const proyecto = doc.proyectos.find((p) => p.clave === 'SICOE');
+    expect(avanceDeProyecto(proyecto as Proyecto).contenedoresSinDesglosar).toBe(2);
+  });
+
+  it('el fixture NO contiene todavía el caso del defecto: ninguna épica real cambia de estado', () => {
+    // Se deja escrito a propósito. Hoy ninguna épica del fixture tiene todas sus tareas
+    // hechas Y una historia sin desglosar, así que estos datos NO protegen la corrección:
+    // lo hacen los casos construidos de arriba. Si algún día el fixture sí produce ese
+    // caso, esta prueba se pone en rojo y hay que cambiarla por una que lo use.
+    for (const proyecto of doc.proyectos) {
+      for (const epica of proyecto.epicas) {
+        const avance = avanceDeEpica(epica);
+        expect(avance.hechas === avance.hojas && avance.contenedoresSinDesglosar > 0, epica.id).toBe(
+          false,
+        );
+      }
+    }
+  });
+
+  it('el defecto sí es alcanzable con estos datos: cerrar las 5 tareas de SICOE-E1 no la pone verde', () => {
+    // Reproducción sobre el árbol real, con una copia en memoria: `datos/` no se toca.
+    // Antes de la corrección esta épica se declaraba «hecha» con SICOE-H3 sin abrir.
+    const original = doc.proyectos.flatMap((p) => p.epicas).find((e) => e.id === 'SICOE-E1') as Epica;
+    const cerrada: Epica = {
+      ...original,
+      historias: original.historias.map((historia) => ({
+        ...historia,
+        tareas: historia.tareas.map((tarea) => ({ ...tarea, estado: 'hecha' as const })),
+      })),
+    };
+    const avance = avanceDeEpica(cerrada);
+    expect(avance.hechas).toBe(5);
+    expect(avance.hojas).toBe(5);
+    expect(avance.contenedoresSinDesglosar).toBe(1);
+    expect(estadoDerivado(avance)).toBe('en_movimiento');
+    expect(estadoDerivado(avance)).not.toBe('hecha');
+  });
+
+  it('no se pasa de estricto: INFRA-E2, terminada de verdad, sigue en hecha', () => {
+    const epica = doc.proyectos.flatMap((p) => p.epicas).find((e) => e.id === 'INFRA-E2');
+    const avance = avanceDeEpica(epica as Epica);
+    expect(avance.contenedoresSinDesglosar).toBe(0);
+    expect(estadoDerivado(avance)).toBe('hecha');
   });
 
   it('el sprint activo del fixture es único y sus items apuntan a tareas que existen', () => {
