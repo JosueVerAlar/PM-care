@@ -301,6 +301,15 @@ button:disabled { cursor: default; opacity: .5; }
 
 .conteo-solo { flex: 0 0 84px; text-align: right; font-size: 11px; color: var(--tinta-2); }
 
+/* «5/5 · 1 sin desglosar» — la coletilla que explica por qué no hay verde.
+   Va en --tinta-2, el MISMO tono que el conteo, no en el --tinta-3 de los metadatos:
+   es la mitad que da sentido a la otra mitad, y a 3.6:1 se leería como una nota al pie
+   de algo que en realidad es la información principal de esa fila.
+   Con coletilla la caja crece: los 84 px fijos existen para alinear tres variantes de
+   la MISMA cifra, y esto no es una cifra más sino una frase. */
+.medidor--falta, .conteo-solo--falta { flex: 0 0 auto; }
+.medidor__falta { font-size: 11px; color: var(--tinta-2); white-space: nowrap; }
+
 /* Contenedor sin hojas: ni medidor ni 0 %. Se dice lo que pasa. */
 .sin-desglosar {
   flex: 0 0 84px; text-align: right;

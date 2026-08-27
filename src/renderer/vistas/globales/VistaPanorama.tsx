@@ -278,8 +278,23 @@ function TarjetaProyecto({
         {/* El medidor es quien cumple las reglas 2 y 3: nunca un % sin su conteo, nunca
             0 % para un contenedor vacío. Esta tarjeta no calcula nada. */}
         <Medidor avance={tarjeta.avance} />
-        <span className="tarjeta-proy__sep">·</span>
-        <span className="tabular">{cuentaTareas(tarjeta.abiertas)} abiertas</span>
+        {/* Con coletilla, las abiertas bajan a su propio renglón y pierden el `·`.
+            La condición sale del DATO y no del ancho, así que la tarjeta se ve igual en
+            cualquier tamaño de rejilla: o una línea con punto, o dos sin él. Dejando el
+            `·` suelto entre los dos, el punto se quedaba solo al final del primer
+            renglón y «12 tareas abiertas» se partía por la mitad. */}
+        <span
+          className={
+            tarjeta.avance.contenedoresSinDesglosar > 0
+              ? 'tarjeta-proy__abiertas tarjeta-proy__abiertas--renglon'
+              : 'tarjeta-proy__abiertas'
+          }
+        >
+          {tarjeta.avance.contenedoresSinDesglosar > 0 ? null : (
+            <span className="tarjeta-proy__sep">· </span>
+          )}
+          {cuentaTareas(tarjeta.abiertas)} abiertas
+        </span>
       </span>
 
       <span className="tarjeta-proy__pie">

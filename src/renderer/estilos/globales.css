@@ -297,7 +297,15 @@
 .tarjeta-proy__avance {
   display: flex; align-items: center; gap: 8px;
   font-size: 11.5px; color: var(--tinta-2);
+  /* Envuelve por renglones enteros. La coletilla «· 2 sin desglosar» alarga esta línea
+     lo bastante como para que en una tarjeta de la rejilla ya no quepa todo seguido, y
+     sin esto el flex encogía «12 tareas abiertas» hasta partirla en dos. */
+  flex-wrap: wrap; row-gap: 2px;
 }
+.tarjeta-proy__abiertas { flex: 0 0 auto; white-space: nowrap; }
+/* Renglón propio: los 2px de `row-gap` lo mantienen pegado al medidor y a ocho
+   del pie, así que sigue leyéndose como parte del avance. */
+.tarjeta-proy__abiertas--renglon { flex-basis: 100%; }
 /* El medidor de la tarjeta no compite por la columna fija de 84 px del árbol. */
 .tarjeta-proy__avance .medidor,
 .tarjeta-proy__avance .conteo-solo,
