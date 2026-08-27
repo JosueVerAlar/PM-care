@@ -44,7 +44,7 @@ import { Lienzo, NotaPie, PanelGlobal, VacioGlobal } from './piezas';
 
 export function VistaCarga({ documento, hoy }: { documento: Documento; hoy: Fecha }) {
   const [orden, setOrden] = useState<OrdenCarga>('total');
-  const { verGlobal } = useAccionesInterfaz();
+  const { verAdmin } = useAccionesInterfaz();
 
   const sprint = useMemo(() => sprintActivo(documento), [documento]);
   const cargas = useMemo(() => cargaPorPersona(documento, hoy), [documento, hoy]);
@@ -70,12 +70,11 @@ export function VistaCarga({ documento, hoy }: { documento: Documento; hoy: Fech
           queHacer={
             <>
               Las personas son un catálogo global y los equipos se arman por proyecto tomando
-              de ahí. Sin personas no hay a quién asignarle nada: dalas de alta en el archivo
-              de datos —la administración llega en E12— y después asigna responsables desde el
-              sprint.
+              de ahí. Sin personas no hay a quién asignarle nada: dalas de alta en{' '}
+              <b>Administración · Personas</b> y después asigna responsables desde el sprint.
             </>
           }
-          accion={{ texto: 'Ir al sprint', alPulsar: () => verGlobal('sprint') }}
+          accion={{ texto: 'Dar de alta personas', alPulsar: () => verAdmin('personas') }}
         />
       </PanelGlobal>
     );

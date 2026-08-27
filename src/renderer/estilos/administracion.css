@@ -163,7 +163,10 @@
 /* ── CONFIRMACIÓN EN LÍNEA (cerrar) — barata y reversible ────── */
 
 .confirmar {
-  grid-column: 1 / -1; grid-row: 3;
+  /* Sin `grid-row` fijo: es el último hijo del DOM y la colocación automática ya lo pone
+     al final. Fijarlo a la fila 3 chocaba con las acciones cuando la fila se parte en
+     estrecho, y las dos cajas acababan encima. */
+  grid-column: 1 / -1;
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
   margin-top: 9px; padding: 9px 10px;
   border-radius: 5px; background: var(--fondo-cabecera);
@@ -306,11 +309,25 @@ p.equipo__nombre:hover { text-decoration: none; }
 /* Bajo 1040 px la tabla de personas pierde la columna de equipos como COLUMNA y la
    pone debajo, sangrada: partirla en dos líneas conserva el dato, esconderla lo pierde. */
 @media (max-width: 1040px) {
+  /* Tres columnas y colocación EXPLÍCITA. Con colocación automática, el bloque de
+     equipos —que ocupa todo el ancho— reinicia el flujo y manda la carga y los botones
+     a columnas que no les tocan: la cifra queda aplastada en 30 px y los botones debajo
+     del nombre. Nombrar la celda de cada pieza es más largo de escribir y no se rompe. */
   .tabla-cab,
-  .fila-persona { grid-template-columns: 30px minmax(0, 1fr) 96px auto; }
-  .tabla-cab > :nth-child(3) { display: none; }
-  .fila-persona__equipos { grid-column: 1 / -1; padding-left: 41px; }
+  .fila-persona { grid-template-columns: 30px minmax(0, 1fr) auto; }
+  .tabla-cab > :nth-child(3),
+  .tabla-cab > :nth-child(5) { display: none; }
+
+  .fila-persona__inicial { grid-column: 1; grid-row: 1 / span 2; }
+  .fila-persona__nombre { grid-column: 2; grid-row: 1; }
+  .fila-persona__acciones { grid-column: 3; grid-row: 1 / span 2; }
+  .fila-persona__carga { grid-column: 2; grid-row: 2; text-align: left; }
+  .fila-persona__equipos { grid-column: 1 / -1; grid-row: 3; padding-left: 41px; }
+
   .fila-proy { grid-template-columns: 34px minmax(0, 1fr); }
+  /* La fila 3 hay que nombrarla: la regla ancha fija `grid-row: 1 / span 2` para que los
+     botones queden centrados frente al nombre y la meta, y heredarla en estrecho los
+     dibujaría ENCIMA de las dos. La confirmación y la zona de peligro caen solas después. */
   .fila-proy__acciones { grid-column: 1 / -1; grid-row: 3; padding-left: 45px; }
   .quien-soy__etq { display: none; }
 }

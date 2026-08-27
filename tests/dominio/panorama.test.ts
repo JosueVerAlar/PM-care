@@ -316,10 +316,10 @@ describe('panorama: las tres formas de ordenar', () => {
 });
 
 describe('lo que este módulo NO defiende', () => {
-  it('un proyecto TERMINADO con un bloqueo sin cerrar se queda en «atención requerida» para siempre', () => {
-    // Caracterización, no aprobación. `estaBloqueada` no mira el estado de la tarea, así
-    // que la tarjeta queda con «0 abiertas · 1 bloqueada» y el proyecto encabeza la vista
-    // sin que quede nada que hacer en él. Va al reporte para que se decida.
+  it('un proyecto TERMINADO con un bloqueo sin cerrar ya no pide atención', () => {
+    // Era el caso que dejaba un proyecto acabado encabezando el Panorama para siempre.
+    // `estaBloqueada` ahora exige que la tarea siga abierta: el bloqueo permanece en el
+    // documento como historia, pero deja de contar como trabajo detenido.
     const proyecto = proyectoCon('FIN', 'Terminado', [
       unaTarea({
         clave: 'FIN',
@@ -331,9 +331,9 @@ describe('lo que este módulo NO defiende', () => {
     const doc = unDocumento({ proyectos: [proyecto] });
     const tarjeta = tarjetaDeProyecto(doc, proyecto, HOY);
     expect(tarjeta.abiertas).toBe(0);
-    expect(tarjeta.bloqueadas).toBe(1);
-    expect(tarjeta.bloqueoMasViejo).toBe(117);
-    expect(panorama(doc, HOY, 'atencion').conBloqueos.map((t) => t.clave)).toEqual(['FIN']);
+    expect(tarjeta.bloqueadas).toBe(0);
+    expect(tarjeta.bloqueoMasViejo).toBeNull();
+    expect(panorama(doc, HOY, 'atencion').conBloqueos.map((t) => t.clave)).toEqual([]);
   });
 });
 

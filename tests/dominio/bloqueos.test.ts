@@ -189,16 +189,17 @@ describe('filasDeBloqueos', () => {
     expect(filasDeBloqueos(doc, HOY).map((f) => f.dias)).toEqual([0]);
   });
 
-  it('una tarea hecha con el bloqueo sin cerrar sigue apareciendo: el bloqueo es ortogonal al estado', () => {
-    // Documentado, no celebrado: `paraVistaBloqueos` no mira el estado. Si algún día se
-    // decide que una hecha no debe salir, esta prueba es la que lo dice.
+  it('una tarea HECHA con el bloqueo sin cerrar ya NO aparece: si se terminó, nada la detiene', () => {
+    // Decidido tras el reporte de qa: el bloqueo sigue siendo ortogonal al estado, pero
+    // una tarea cerrada dejó de pedir atención aunque su bloqueo nunca se cerrara
+    // formalmente. Sin esto, un proyecto terminado encabeza el Panorama para siempre.
     const tarea = unaTarea({
       clave: 'ALFA',
       estado: 'hecha',
       bloqueos: [unBloqueo({ bloqueada_en: '2026-08-20T09:00:00-06:00' })],
     });
     const doc = unDocumento({ proyectos: [proyectoCon('ALFA', 'Alfa', [tarea])] });
-    expect(filasDeBloqueos(doc, HOY)).toHaveLength(1);
+    expect(filasDeBloqueos(doc, HOY)).toHaveLength(0);
   });
 });
 
@@ -353,17 +354,16 @@ describe('resumenDeBloqueos', () => {
 });
 
 describe('lo que este módulo NO defiende', () => {
-  it('un bloqueo fechado en el futuro produce días NEGATIVOS', () => {
-    // Caracterización, no aprobación: `diasSinMovimiento` del Panorama topa en 0 con
-    // `Math.max` y esto no. Con una fecha escrita a mano en el futuro la vista dice
-    // «-5 días detenido» y el bloqueo se hunde al final del orden. Va al reporte.
+  it('un bloqueo fechado en el futuro se topa en 0, no da días negativos', () => {
+    // El archivo se edita a mano. Antes esto daba «-5 días detenido» y hundía el bloqueo
+    // al final de una vista ordenada por antigüedad, justo donde nadie lo vería.
     const tarea = unaTarea({
       clave: 'ALFA',
       bloqueos: [unBloqueo({ bloqueada_en: '2026-08-31T09:00:00-06:00' })],
     });
     const doc = unDocumento({ proyectos: [proyectoCon('ALFA', 'Alfa', [tarea])] });
     const filas = filasDeBloqueos(doc, HOY);
-    expect(filas.map((f) => f.dias)).toEqual([-5]);
-    expect(resumenDeBloqueos(filas).diasMaximo).toBe(-5);
+    expect(filas.map((f) => f.dias)).toEqual([0]);
+    expect(resumenDeBloqueos(filas).diasMaximo).toBe(0);
   });
 });

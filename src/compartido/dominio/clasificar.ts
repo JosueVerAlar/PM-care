@@ -58,16 +58,32 @@ export function bloqueoAbierto(tarea: Tarea): Bloqueo | null {
 /**
  * Bloqueada es ortogonal al estado: la tarea sigue siendo `en_curso` o `pendiente` y
  * conserva su avance. Por eso esto es un predicado y no un valor del enum.
+ *
+ * Pero una tarea CERRADA ya no está bloqueada, aunque su bloqueo nunca se cerrara
+ * formalmente: si se terminó, lo que la detenía dejó de detenerla. Sin esta guarda, una
+ * tarea hecha con el bloqueo abierto deja su proyecto encabezando el Panorama para
+ * siempre, pidiendo atención sobre algo donde no queda nada que hacer.
+ *
+ * Se resuelve aquí y no cerrando el bloqueo en el reductor a propósito: cerrarlo
+ * inventaría una fecha de resolución que quizá nunca ocurrió — la tarea pudo terminarse
+ * por otra vía. El registro histórico queda como fue; lo que cambia es a qué le pedimos
+ * atención hoy.
  */
 export function estaBloqueada(tarea: Tarea): boolean {
-  return bloqueoAbierto(tarea) !== null;
+  return estaAbierta(tarea) && bloqueoAbierto(tarea) !== null;
 }
 
-/** Días que lleva atorada. `null` si no está bloqueada. */
+/**
+ * Días que lleva atorada. `null` si no está bloqueada.
+ *
+ * Topado en 0: el archivo se edita a mano, y un `bloqueada_en` con fecha futura pintaba
+ * «−5 días detenido» y hundía ese bloqueo al final de una vista ordenada por antigüedad,
+ * justo donde nadie lo vería.
+ */
 export function diasBloqueada(tarea: Tarea, hoy: Fecha): number | null {
   const bloqueo = bloqueoAbierto(tarea);
   if (!bloqueo) return null;
-  return diasEntre(fechaDe(bloqueo.bloqueada_en), hoy);
+  return Math.max(0, diasEntre(fechaDe(bloqueo.bloqueada_en), hoy));
 }
 
 /**

@@ -27,7 +27,14 @@
  */
 
 import type { Documento, Fecha, Instante, Proyecto } from '../modelo/tipos';
-import { diasBloqueada, diasEntre, estaAbierta, fechaDe, senalesDeProyecto } from './clasificar';
+import {
+  diasBloqueada,
+  diasEntre,
+  estaAbierta,
+  estaBloqueada,
+  fechaDe,
+  senalesDeProyecto,
+} from './clasificar';
 import { avanceDeProyecto, tareasDeProyecto, type Avance } from './derivar';
 
 export type OrdenPanorama = 'atencion' | 'quieto' | 'nombre';
@@ -114,6 +121,11 @@ export function tarjetaDeProyecto(
   let abiertas = 0;
   for (const tarea of tareasDeProyecto(proyecto)) {
     if (estaAbierta(tarea)) abiertas += 1;
+    // Se pregunta por `estaBloqueada` y no solo por los días: una tarea cerrada con su
+    // bloqueo sin cerrar conserva el bloqueo en el documento, pero ya no detiene nada.
+    // Sin esta guarda la tarjeta decía «0 bloqueadas» y a la vez «el más viejo lleva 117
+    // días», que es incoherente y hacía que un proyecto acabado encabezara el Panorama.
+    if (!estaBloqueada(tarea)) continue;
     const dias = diasBloqueada(tarea, hoy);
     if (dias !== null && (bloqueoMasViejo === null || dias > bloqueoMasViejo)) {
       bloqueoMasViejo = dias;

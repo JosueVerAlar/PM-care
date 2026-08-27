@@ -139,11 +139,13 @@ describe('bloqueo: bandera con historial, no estado', () => {
     expect(bloqueoAbierto(tarea)?.motivo).toBe('vigente');
   });
 
-  it('bloqueada y hecha a la vez: el modelo lo permite y sale en las dos vistas', () => {
-    // Hallazgo, no capricho: cerrar una tarea no cierra su bloqueo, así que la misma
-    // tarea aparece en Bloqueos y en Terminadas. Ver el reporte de E4.
+  it('el bloqueo del MODELO se conserva, pero una tarea hecha no cuenta como bloqueada', () => {
+    // El registro histórico no se toca: el bloqueo sigue abierto en el documento, porque
+    // cerrarlo inventaría una fecha de resolución que quizá nunca ocurrió. Lo que cambia
+    // es a qué le pedimos atención hoy: si la tarea se terminó, nada la detiene.
     const tarea = unaTarea({ estado: 'hecha', bloqueos: [unBloqueo()] });
-    expect(estaBloqueada(tarea)).toBe(true);
+    expect(tarea.bloqueos).toHaveLength(1);
+    expect(estaBloqueada(tarea)).toBe(false);
     expect(estaHecha(tarea)).toBe(true);
   });
 
@@ -161,9 +163,9 @@ describe('bloqueo: bandera con historial, no estado', () => {
     expect(diasBloqueada(tarea, HOY)).toBe(0);
   });
 
-  it('con la fecha de bloqueo en el futuro devuelve negativo: nadie lo tapa', () => {
+  it('con la fecha de bloqueo en el futuro se topa en 0, no devuelve negativo', () => {
     const tarea = unaTarea({ bloqueos: [unBloqueo({ bloqueada_en: '2026-09-02T10:00:00-06:00' })] });
-    expect(diasBloqueada(tarea, HOY)).toBe(-7);
+    expect(diasBloqueada(tarea, HOY)).toBe(0);
   });
 });
 

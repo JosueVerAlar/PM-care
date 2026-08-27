@@ -42,7 +42,7 @@ const EN_LA_FRANJA = 3;
 
 export function VistaPanorama({ documento, hoy }: { documento: Documento; hoy: Fecha }) {
   const [orden, setOrden] = useState<OrdenPanorama>('atencion');
-  const { verProyecto, verGlobal } = useAccionesInterfaz();
+  const { verProyecto, verGlobal, verAdmin } = useAccionesInterfaz();
 
   const vista = useMemo(() => panorama(documento, hoy, orden), [documento, hoy, orden]);
   const bloqueos = useMemo(() => filasDeBloqueos(documento, hoy), [documento, hoy]);
@@ -57,11 +57,12 @@ export function VistaPanorama({ documento, hoy }: { documento: Documento; hoy: F
           titulo="No hay ningún proyecto que mirar"
           queHacer={
             <>
-              Todos los proyectos están archivados, o todavía no hay ninguno. Los proyectos se
-              dan de alta editando el archivo de datos —la pantalla de administración llega en
-              E12—; después, captura sus épicas y tareas desde el árbol.
+              Todos los proyectos están archivados, o todavía no hay ninguno. Se dan de alta
+              en <b>Administración · Proyectos</b>, que es también donde se reabre uno cerrado;
+              después, captura sus épicas y tareas desde el árbol.
             </>
           }
+          accion={{ texto: 'Ir a Administración · Proyectos', alPulsar: () => verAdmin('proyectos') }}
         />
       </PanelGlobal>
     );

@@ -16,11 +16,12 @@
  * primera sección lee la MISMA relación desde la persona. No se duplica ningún dato: las
  * dos salen de `proyecto.equipo`.
  *
- * ## Solo consulta
+ * ## Solo consulta, y ahora con a dónde ir
  *
- * Dar de alta, quitar del equipo o cambiar un rol es E12. Esta pantalla no trae botones
- * que no hagan nada: un control desactivado sin explicación es peor que la ausencia del
- * control.
+ * Dar de alta, quitar del equipo o cambiar un rol se hace en **Administración · Equipos**
+ * (E12). Esta pantalla sigue siendo de lectura: contesta «¿quién está en qué?» de un
+ * vistazo y cruza la información desde la persona, que es lo que la de edición —una
+ * tarjeta por proyecto— no puede enseñar. El pie dice a dónde ir a cambiarlo.
  */
 
 import { useMemo } from 'react';
@@ -55,8 +56,9 @@ export function VistaEquipos({ documento }: { documento: Documento }) {
           queHacer={
             <>
               Un equipo es la lista de miembros de un proyecto, y sus miembros salen del
-              catálogo global de personas. Da de alta a las personas en el archivo de datos —la
-              administración llega en E12— y después arma el equipo de cada proyecto.
+              catálogo global de personas. Da de alta a las personas en{' '}
+              <b>Administración · Personas</b> y después arma el equipo de cada proyecto en{' '}
+              <b>Administración · Equipos</b>.
             </>
           }
         />
@@ -214,7 +216,7 @@ export function VistaEquipos({ documento }: { documento: Documento }) {
 
       <NotaPie>
         Esta vista es de <b>consulta</b>. Dar de alta personas, armar equipos, cambiar roles y
-        cerrar proyectos llegan en E12; hasta entonces se editan en el archivo de datos. El
+        cerrar proyectos se hace en <b>Administración</b>, al final de la barra lateral. El
         equipo no restringe quién puede ser responsable de una tarea: una tarea vieja puede
         apuntar a alguien que ya salió, y eso es correcto.
       </NotaPie>
