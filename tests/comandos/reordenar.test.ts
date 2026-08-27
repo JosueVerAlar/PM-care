@@ -574,13 +574,26 @@ describe('mover una épica se lleva TODA su rama, con los mismos ids (regla 10)'
 // --- 6. reordenar no toca NADA más ------------------------------------------
 
 describe('reordenar no cambia ningún hecho: el documento entero, no un campo', () => {
+  /**
+   * Los reordenamientos de este bloque se piden en un instante DISTINTO del que construyó
+   * el árbol. No es un detalle: los constructores por comandos sellan `creada_en` con
+   * `AHORA`, así que un reductor que reescribiera esa marca con el instante recibido la
+   * dejaría en el mismo valor y la comparación del documento entero saldría verde por
+   * coincidencia. Con un mes de diferencia, cualquier marca reescrita salta.
+   */
+  const UN_MES_DESPUES = '2026-09-26T18:00:00-06:00';
+
   it('reordenarEpica deja el documento idéntico salvo el splice de proyecto.epicas', () => {
     // La épica que se mueve lleva rama —dos historias y tres tareas— a propósito: con una
     // épica vacía, un comando que escribiera algo DENTRO de la rama al moverla no tendría
     // dónde escribirlo y esta comparación saldría verde sin haber mirado nada.
     const doc = arbol([[2, 1], [1], [0]]);
     const { documento } = exigirOk(
-      reducirSinMutar(doc, { comando: 'reordenarEpica', proyecto: CLAVE, epicaId: 'PM-E1', aIndice: 2 }),
+      reducirSinMutar(
+        doc,
+        { comando: 'reordenarEpica', proyecto: CLAVE, epicaId: 'PM-E1', aIndice: 2 },
+        UN_MES_DESPUES,
+      ),
     );
     expect(documento).toEqual(soloReubicando(doc, (d) => d.proyectos[0]!.epicas, 0, 2));
   });
@@ -588,12 +601,11 @@ describe('reordenar no cambia ningún hecho: el documento entero, no un campo', 
   it('reordenarHistoria deja el documento idéntico salvo el splice de epica.historias', () => {
     const doc = arbol([[2, 1, 3], [1]]);
     const { documento } = exigirOk(
-      reducirSinMutar(doc, {
-        comando: 'reordenarHistoria',
-        epicaId: 'PM-E1',
-        historiaId: 'PM-H3',
-        aIndice: 0,
-      }),
+      reducirSinMutar(
+        doc,
+        { comando: 'reordenarHistoria', epicaId: 'PM-E1', historiaId: 'PM-H3', aIndice: 0 },
+        UN_MES_DESPUES,
+      ),
     );
     expect(documento).toEqual(
       soloReubicando(doc, (d) => d.proyectos[0]!.epicas[0]!.historias, 2, 0),
@@ -603,12 +615,11 @@ describe('reordenar no cambia ningún hecho: el documento entero, no un campo', 
   it('reordenarTarea deja el documento idéntico salvo el splice de historia.tareas', () => {
     const doc = arbol([[4, 2]]);
     const { documento } = exigirOk(
-      reducirSinMutar(doc, {
-        comando: 'reordenarTarea',
-        historiaId: 'PM-H1',
-        tareaId: 'PM-T4',
-        aIndice: 1,
-      }),
+      reducirSinMutar(
+        doc,
+        { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T4', aIndice: 1 },
+        UN_MES_DESPUES,
+      ),
     );
     expect(documento).toEqual(
       soloReubicando(doc, (d) => d.proyectos[0]!.epicas[0]!.historias[0]!.tareas, 3, 1),
@@ -630,12 +641,11 @@ describe('reordenar no cambia ningún hecho: el documento entero, no un campo', 
     ]);
 
     const { documento } = exigirOk(
-      reducirSinMutar(doc, {
-        comando: 'reordenarTarea',
-        historiaId: 'PM-H1',
-        tareaId: 'PM-T3',
-        aIndice: 0,
-      }),
+      reducirSinMutar(
+        doc,
+        { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T3', aIndice: 0 },
+        UN_MES_DESPUES,
+      ),
     );
     expect(documento).toEqual(
       soloReubicando(doc, (d) => d.proyectos[0]!.epicas[0]!.historias[0]!.tareas, 2, 0),
@@ -651,12 +661,11 @@ describe('reordenar no cambia ningún hecho: el documento entero, no un campo', 
     });
 
     const { documento } = exigirOk(
-      reducirSinMutar(doc, {
-        comando: 'reordenarTarea',
-        historiaId: 'PM-H1',
-        tareaId: 'PM-T2',
-        aIndice: 0,
-      }),
+      reducirSinMutar(
+        doc,
+        { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T2', aIndice: 0 },
+        UN_MES_DESPUES,
+      ),
     );
     const primera = documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0] as
       | Record<string, unknown>
@@ -781,9 +790,10 @@ describe('reordenar no escribe marcas de tiempo, así que el proyecto sigue igua
         { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T1', aIndice: 1 },
         { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T1', aIndice: 0 },
         { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T2', aIndice: 0 },
-        // PM-E1 y no PM-E2: la que se mueve tiene que llevar tareas dentro, o una marca
-        // escrita al mover la rama no tendría dónde aparecer.
-        { comando: 'reordenarEpica', proyecto: CLAVE, epicaId: 'PM-E1', aIndice: 1 },
+        // La épica que cierra la ráfaga es PM-E1 y no la vacía PM-E2: si al mover una
+        // rama se escribiera una marca de tiempo dentro, en una épica sin tareas no
+        // tendría dónde aparecer y la medición saldría verde sin haber mirado nada.
+        { comando: 'reordenarEpica', proyecto: CLAVE, epicaId: 'PM-E1', aIndice: 0 },
       ],
       // Un mes DESPUÉS. Si algún comando escribiera una marca de tiempo, el proyecto
       // pasaría a estar quieto 0 días y esta prueba se pondría roja.
@@ -800,7 +810,9 @@ describe('reordenar no escribe marcas de tiempo, así que el proyecto sigue igua
       doc,
       [
         { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T2', aIndice: 0 },
-        { comando: 'reordenarEpica', proyecto: CLAVE, epicaId: 'PM-E2', aIndice: 0 },
+        // Se mueve PM-E1, que lleva dos historias y tres tareas. Mover la épica vacía no
+        // demostraría que las marcas de las tareas no se tocan: no habría ninguna dentro.
+        { comando: 'reordenarEpica', proyecto: CLAVE, epicaId: 'PM-E1', aIndice: 1 },
       ],
       '2026-12-31T23:59:00-06:00',
     );
