@@ -26,7 +26,7 @@ veces, a cuál de sus ~11 proyectos le tiene que meter mano hoy.
 | E9 | Bloqueos | `backend` + `frontend` | E7 | Mediano | ⬜ |
 | E10 | Terminadas, Panorama y Backlog del área | `frontend` + `data` | E7 | Grande | ⬜ |
 | E11 | Carga por persona y Equipos | `frontend` + `data` | E7 | Mediano | ⬜ |
-| E12 | Empaquetado | `infra` | E8–E11 | Mediano | ⬜ |
+| E12 | Empaquetado | `infra` | E8–E11 | Mediano | ✅ |
 | E13 | Uso real | usuario + `pm` | E12 | — | ⬜ |
 
 **Camino crítico:** E1 → E2 → E3 → E5 → E6 → E7 → E8 → E12 → E13.
@@ -217,7 +217,7 @@ estado; una tarea sin responsable no desaparece, cae en «sin asignar».
 ---
 
 ## E12 · Empaquetado
-**Estado:** ⬜ pendiente · **Agente:** `infra` · **Depende de:** E8–E11 · **Tamaño:** mediano
+**Estado:** ✅ terminada · **Agente:** `infra` · **Depende de:** E8–E11 · **Tamaño:** mediano
 
 **Entrega:** `.app` para arm64, ícono, primer arranque limpio.
 
@@ -322,6 +322,39 @@ puntos u horas · adjuntos y comentarios en las tareas.
 ---
 
 ## Bitácora
+
+**2026-08-27 · E12 empaquetado, verificada sobre el `.app` y no sobre el build.**
+
+- El `.app` pesa **299 MB** y abre por doble clic desde una sesión limpia; carga
+  `datos/ejemplo.json` copiado a un directorio temporal, pinta el árbol y un cambio
+  hecho dentro **sobrevive a cerrar y reabrir** (documento, `historial.jsonl` y dos
+  respaldos en disco).
+- **La CSP estricta llega al paquete.** Leída en ejecución desde el `.app`, no del
+  código: `default-src 'none'; … connect-src 'none'; …`. Un `fetch` a internet dentro de
+  la app empaquetada muere con violación de `connect-src`.
+- **La CSP de desarrollo apuntaba al puerto equivocado** (5173, heredado del valor por
+  omisión de Vite; el servidor corre en 5190). Ahora el origen sale de la URL real, así
+  que no puede volver a divergir.
+- **Un fallo al preparar la carpeta de datos dejaba la app sin ventana y sin mensaje.**
+  `abrir()` no atrapaba `EACCES`/`EPERM`, la promesa se rompía sin dueño y el usuario
+  veía la app rebotar en el Dock y desaparecer. Ahora sale un diálogo que nombra la
+  carpeta, explica cómo dar el permiso y ofrece abrir el panel de Privacidad. Verificado
+  contra un directorio sin permiso de escritura: el proceso queda esperando en
+  `-[NSAlert runModal]`, sin ventana en blanco.
+- **Gatekeeper.** Sin cuenta de Apple, el paquete queda sin firmar (`skipped macOS
+  application code signing`) y su sello de recursos no valida (`spctl`: rechazado). Da
+  igual mientras el `.app` se construya en el mismo Mac: no lleva marca de cuarentena y
+  abre con doble clic. Si se copia desde otro Mac, macOS lo bloquea; lo que sí desbloquea
+  —probado— es `xattr -dr com.apple.quarantine`.
+- **El primer arranque no pide ningún permiso de macOS** con la ruta por omisión: la
+  carpeta vive en la Biblioteca, que no está bajo TCC. El permiso solo aparece si
+  `PMCARE_DIRECTORIO_DATOS` apunta a Documentos, Escritorio o Descargas.
+- **D2 sigue abierta**: la pregunta de iCloud no tiene respuesta del usuario. El README
+  documenta las dos opciones y cómo pasar de una a otra sin decidir por él.
+- Pendiente deliberado: **ícono propio** (va el de Electron por omisión) y decidir si el
+  paquete se firma **ad hoc** — sin cuenta de Apple ni certificado — para que, copiada a
+  otro Mac, macOS diga «no se pudo verificar el desarrollador» en vez de tratarla como
+  dañada.
 
 **2026-08-26 · E0 a E4 terminadas y verificadas.**
 

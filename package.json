@@ -27,7 +27,8 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
-      "target": "dir"
+      "target": "dir",
+      "identity": "-"
     }
   },
   "dependencies": {

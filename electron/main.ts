@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session, shell, nativeTheme } from 'electron'
+import { app, BrowserWindow, dialog, session, shell, nativeTheme } from 'electron'
 import path from 'node:path'
 import { directorioDeDatos, rutasEn } from '../src/principal/almacen/rutas'
 import { Repositorio } from '../src/principal/almacen/repositorio'
@@ -19,12 +19,17 @@ const enDesarrollo = !app.isPackaged
  */
 function politicaDeContenido(): string {
   if (enDesarrollo) {
+    // El origen sale de la URL real del servidor de Vite (5190 en este proyecto, no el
+    // 5173 por omisión). Escrito a mano, el día que cambia el puerto la CSP bloquea el
+    // recargado en caliente y parece un bug del código.
+    const origen = urlDesarrollo ? new URL(urlDesarrollo).origin : 'http://localhost:5190'
+    const socket = origen.replace(/^http/, 'ws')
     return [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",
-      "connect-src 'self' ws://localhost:5173 http://localhost:5173",
+      `connect-src 'self' ${origen} ${socket}`,
     ].join('; ')
   }
   return [
@@ -78,6 +83,72 @@ function crearVentana(): void {
   })
 }
 
+/** Códigos de `fs` que significan «no te dejo», incluido el «denegar» del diálogo de macOS. */
+function esFalloDePermiso(error: unknown): boolean {
+  const codigo = (error as { code?: string } | null)?.code
+  return codigo === 'EPERM' || codigo === 'EACCES' || codigo === 'EROFS'
+}
+
+/**
+ * El único mensaje de error que el usuario puede ver antes de que exista una ventana.
+ * Va en cristiano y con los pasos exactos: aquí no hay interfaz donde reintentar, así
+ * que si el texto no basta, el usuario se queda sin app y sin saber por qué.
+ */
+function explicarFalloDeCarpeta(directorio: string, error: unknown): void {
+  const detalleTecnico = error instanceof Error ? error.message : String(error)
+  const porVariable = process.env.PMCARE_DIRECTORIO_DATOS?.trim()
+    ? `Esa carpeta viene de la variable PMCARE_DIRECTORIO_DATOS. Si la quitas, PM-care vuelve a usar su carpeta propia dentro de tu Biblioteca, que no pide permisos.`
+    : `Esa es la carpeta propia de PM-care dentro de tu Biblioteca.`
+
+  const permiso = esFalloDePermiso(error)
+
+  const detalle = permiso
+    ? [
+        `macOS no le dio permiso a PM-care para escribir en:`,
+        directorio,
+        ``,
+        `Sin esa carpeta la app no puede guardar nada. Preferimos no abrir a abrir y perder lo que escribas.`,
+        ``,
+        `Cómo darle permiso:`,
+        `1. Abre Ajustes del Sistema › Privacidad y seguridad › Archivos y carpetas.`,
+        `2. Busca PM-care en la lista y activa la carpeta de arriba.`,
+        `3. Vuelve a abrir PM-care.`,
+        ``,
+        porVariable,
+        ``,
+        `Detalle técnico: ${detalleTecnico}`,
+      ].join('\n')
+    : [
+        `PM-care no pudo preparar su carpeta de datos:`,
+        directorio,
+        ``,
+        `Qué suele ser: la ruta apunta a un disco que no está conectado, a una carpeta de iCloud que aún no se ha descargado, o el disco está lleno.`,
+        ``,
+        porVariable,
+        ``,
+        `Detalle técnico: ${detalleTecnico}`,
+      ].join('\n')
+
+  const botones = permiso ? ['Abrir Ajustes de Privacidad', 'Salir'] : ['Salir']
+  // Sin ventana propia, el diálogo puede nacer detrás de lo que el usuario tenga abierto:
+  // un error que no se ve es un arranque que no pasó nada.
+  app.focus({ steal: true })
+  const elegido = dialog.showMessageBoxSync({
+    type: 'error',
+    title: 'PM-care no pudo abrir su carpeta de datos',
+    message: 'PM-care no pudo abrir su carpeta de datos',
+    detail: detalle,
+    buttons: botones,
+    defaultId: 0,
+    cancelId: botones.length - 1,
+  })
+
+  if (permiso && elegido === 0) {
+    // Enlace local del sistema, no red: abre el panel exacto, no los Ajustes a secas.
+    void shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_FilesAndFolders')
+  }
+}
+
 void app.whenReady().then(async () => {
   session.defaultSession.webRequest.onHeadersReceived((detalles, responder) => {
     responder({
@@ -88,14 +159,28 @@ void app.whenReady().then(async () => {
     })
   })
 
-  repositorio = new Repositorio(rutasEn(directorioDeDatos(app.getPath('userData'))))
+  const directorio = directorioDeDatos(app.getPath('userData'))
+  repositorio = new Repositorio(rutasEn(directorio))
   registrarManejadores({
     repositorio,
     ventanas: () => BrowserWindow.getAllWindows(),
   })
   // Abrir antes de la ventana: si el archivo está roto, la interfaz nace ya en modo
   // solo lectura en vez de parpadear entre estados.
-  await repositorio.abrir()
+  //
+  // Un archivo ilegible NO llega aquí como excepción: el repositorio lo convierte en
+  // diagnóstico y la app abre en solo lectura. Lo que sí revienta es no poder ni crear
+  // la carpeta —macOS niega el acceso, el disco de la variable de entorno no está
+  // montado—, y eso hay que atajarlo: sin este `catch` la promesa se rompe sin dueño, la
+  // ventana nunca se crea y el usuario ve la app rebotar en el Dock y desaparecer sin un
+  // solo mensaje. Es el primer minuto de uso; ahí se decide si la vuelve a abrir.
+  try {
+    await repositorio.abrir()
+  } catch (error) {
+    explicarFalloDeCarpeta(directorio, error)
+    app.exit(1)
+    return
+  }
 
   crearVentana()
 
