@@ -58,6 +58,52 @@
   box-shadow: 0 4px 12px rgb(0 0 0 / .18);
 }
 
+/* ── E13 · REORDENAR DENTRO DEL ÁRBOL ─────────────────────────── */
+
+/* El asa es el gesto entero: se agarra el CUERPO de la fila para mandar la tarea al
+   sprint y el ASA para reordenar. Dos sitios distintos del mismo renglón, para que no
+   haya que adivinar cuál de los dos arrastres se empezó.
+
+   Ocupa su columna SIEMPRE, también vacía: si apareciera y desapareciera, el chevron
+   bailaría entre la pestaña «Backlog» y «Terminadas», y entre una fila con hermanas y
+   una sin ellas. Se revela al pasar por encima o al enfocar, igual que «Al sprint» —y
+   que esté escondida no la vuelve inaccesible: `⌥↑` / `⌥↓` hacen lo mismo sin ella y son
+   lo único que funciona por debajo de 1040 px. */
+.asa {
+  flex: 0 0 var(--ancho-asa);
+  display: flex; align-items: center; justify-content: center;
+  align-self: stretch;
+  color: var(--tinta-3);
+  visibility: hidden;
+}
+.asa[draggable="true"] { cursor: grab; }
+.fila:hover .asa,
+.fila:focus-within .asa { visibility: visible; }
+.asa:hover { color: var(--tinta-2); }
+
+/* La línea de inserción: dónde va a caer al soltar.
+
+   Se dibuja con `--foco`, el mismo azul del borde de la zona de soltar del sprint: es
+   superficie e intención, no un estado de tarea. Los tres canales (glifo, banda,
+   bandera) siguen queriendo decir lo que decían.
+
+   Empieza a la altura del chevron del NIVEL de la fila, no en el borde del panel. Es lo
+   que desambigua «después de esta historia» de «antes de su primera tarea» cuando la
+   historia está desplegada: la línea de la historia va sangrada al nivel de historia, y
+   las tareas que hay debajo viven 16 px más adentro. */
+.fila[data-inserta]::after {
+  content: "";
+  position: absolute; right: 12px;
+  height: 2px; border-radius: 1px;
+  background: var(--foco);
+  pointer-events: none;
+}
+.fila--epica[data-inserta]::after    { left: var(--sangria-1); }
+.fila--historia[data-inserta]::after { left: var(--sangria-2); }
+.fila--tarea[data-inserta]::after    { left: var(--sangria-3); }
+.fila[data-inserta="antes"]::after   { top: 0; }
+.fila[data-inserta="despues"]::after { bottom: 0; }
+
 /* ── acción por fila ──────────────────────────────────────────── */
 
 /* «Al sprint» aparece al pasar por encima o al enfocar la fila. Que esté escondido no lo

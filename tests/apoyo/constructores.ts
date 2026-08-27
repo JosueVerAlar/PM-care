@@ -159,6 +159,7 @@ export function unSprint(over: Partial<Sprint> = {}): Sprint {
 export function unDocumento(over: Partial<Documento> = {}): Documento {
   return {
     esquema_version: ESQUEMA_VERSION,
+    usuario: null,
     personas: [],
     proyectos: [],
     sprints: [],

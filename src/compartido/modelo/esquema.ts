@@ -302,6 +302,26 @@ export const EsquemaSprint = z
 const FormaDocumento = z
   .object({
     esquema_version: z.number().int().positive(),
+    /**
+     * Quién usa esta copia de la app: el id de una de `personas`. `null` = todavía no se
+     * dijo.
+     *
+     * Existe porque «Solo lo mío» necesita saber a quién se refiere «mío», y eso no se
+     * puede deducir del documento sin adivinar: la persona que aparece en más equipos es
+     * una heurística que hoy acierta y mañana no, y que además se recalcula en cada
+     * arranque porque no queda escrita en ninguna parte.
+     *
+     * Aditivo con `.default(null)` (no sube `ESQUEMA_VERSION`): los documentos escritos
+     * antes de que este campo existiera siguen validando sin tocarlos, y la interfaz que
+     * no lo encuentre simplemente no ofrece el conmutador.
+     *
+     * Que apunte a una persona QUE EXISTE se comprueba en `validacionesCruzadas`. Que
+     * apunte a una persona ACTIVA no se comprueba aquí a propósito: eso es una invariante
+     * del lado que escribe (`fijarUsuario` la exige, `desactivarPersona` y
+     * `eliminarPersona` limpian el campo), y meterla en el esquema haría que un archivo
+     * editado a mano abriera en solo lectura por algo que no rompe nada (regla 13).
+     */
+    usuario: z.string().min(1).nullable().default(null),
     personas: z.array(EsquemaPersona).default([]),
     proyectos: z.array(EsquemaProyecto).default([]),
     /** En la raíz: un sprint del usuario cruza proyectos. A lo sumo uno `activo`. */
@@ -326,6 +346,12 @@ function validacionesCruzadas(
     personas.add(persona.id);
   });
   const personaConocida = (id: string | null) => id === null || personas.has(id);
+
+  // Un `usuario` que nombra a alguien que no está en `personas` deja el conmutador «Solo
+  // lo mío» filtrando por un fantasma: cero resultados y ninguna explicación.
+  if (!personaConocida(doc.usuario)) {
+    anotar(['usuario'], `el usuario de la app es "${doc.usuario}", que no está en personas`);
+  }
 
   const claves = new Set<string>();
   const idsDeTarea = new Set<string>();
@@ -466,6 +492,7 @@ function formatearRuta(ruta: readonly PropertyKey[]): string {
 export function documentoVacio(): z.infer<typeof EsquemaDocumento> {
   return {
     esquema_version: ESQUEMA_VERSION,
+    usuario: null,
     personas: [],
     proyectos: [],
     sprints: [],

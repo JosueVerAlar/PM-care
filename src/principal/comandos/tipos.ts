@@ -117,6 +117,43 @@ const EliminarProyecto = z
   })
   .strict();
 
+// --- planeación inicial -----------------------------------------------------
+
+/**
+ * Fija `planeacion_cerrada_en` al día de hoy: **lo capturado a partir de aquí nace
+ * marcado como no planeado**, sin que el usuario tenga que acordarse de marcar nada.
+ *
+ * Es la puerta que le faltaba a una mecánica que el modelo ya soportaba: el campo existía
+ * y `crearTarea` lo consultaba, pero ningún comando lo escribía, así que un proyecto que
+ * nunca cerró su planeación marcaba todo como planeado y no había forma de forzarlo.
+ *
+ * El campo se llama `proyecto` y no `clave` porque así lo pidió el contrato acordado con
+ * `frontend`. Nótese que los comandos del ciclo de vida del proyecto (`cerrarProyecto`,
+ * `reabrirProyecto`) usan `clave`; si algún día se unifican, se unifican los dos lados a
+ * la vez.
+ *
+ * **Límite conocido, y es de un día:** la marca es una FECHA, y `crearTarea` considera
+ * planeado todo lo capturado *hasta* esa fecha inclusive. Así que cerrar la planeación
+ * hoy no marca lo que se capture hoy mismo por la tarde; eso empieza mañana. Para el
+ * mismo día está `planeada` explícito en `crearTarea`.
+ */
+const CerrarPlaneacion = z
+  .object({ comando: z.literal('cerrarPlaneacion'), proyecto: Clave })
+  .strict();
+
+/**
+ * Vuelve a dejar `planeacion_cerrada_en` en `null`: se estaba planeando todavía.
+ *
+ * **No reclasifica nada.** Las tareas capturadas mientras la planeación estuvo cerrada
+ * conservan su `planeada: false`. Ver el reductor para el argumento completo; en corto:
+ * `planeada` es un hecho del momento de la captura (regla 17, procedencia y no estado) y
+ * reescribirlo hacia atrás borraría el único dato que distingue lo previsto de lo que se
+ * coló.
+ */
+const ReabrirPlaneacion = z
+  .object({ comando: z.literal('reabrirPlaneacion'), proyecto: Clave })
+  .strict();
+
 // --- personas ---------------------------------------------------------------
 
 /**
@@ -166,6 +203,23 @@ const ReactivarPersona = z
 /** Solo si no tiene NADA asignado, ni en el presente ni en la historia. Ver el reductor. */
 const EliminarPersona = z.object({ comando: z.literal('eliminarPersona'), id: Id }).strict();
 
+// --- usuario de la app ------------------------------------------------------
+
+/**
+ * Dice cuál de las personas es quien usa esta copia de la app. Es lo que responde «¿a
+ * quién se refiere *mío*?» en el conmutador «Solo lo mío» del Sprint global.
+ *
+ * `id` es OBLIGATORIO y nullable, al revés que los campos de los comandos de edición: no
+ * hay «ausente = no tocar» que valga en un comando cuyo único trabajo es tocar este
+ * campo. `null` lo borra —la app vuelve a no saber quién la usa— y es la forma de
+ * deshacerlo a mano sin editar el JSON.
+ *
+ * La persona tiene que existir y estar activa; ver el reductor.
+ */
+const FijarUsuario = z
+  .object({ comando: z.literal('fijarUsuario'), id: Id.nullable() })
+  .strict();
+
 // --- árbol: épicas ----------------------------------------------------------
 
 const CrearEpica = z
@@ -189,6 +243,53 @@ const EditarEpica = z
 
 const EliminarEpica = z.object({ comando: z.literal('eliminarEpica'), id: Id }).strict();
 
+/**
+ * Índice de destino en la lista del padre, **contado sobre la lista ya sin el elemento que
+ * se mueve**: llevar la primera de cinco épicas al final es `aIndice: 4`, no `5`. Es la
+ * misma cuenta que hace `moverAlSprint` con un item que ya está en el sprint, y es la que
+ * sale sola de una interfaz de arrastre que pinta huecos ENTRE filas.
+ *
+ * Aquí se exige entero y no negativo; **pasarse por arriba no se rechaza, se topa** al
+ * último hueco (ver `indiceDeDestino` en el reductor). La asimetría es deliberada: un
+ * arrastre puede calcular un índice de más por un píxel al soltar al final de la lista, y
+ * eso tiene que funcionar. Un `-1` o un `NaN`, en cambio, no los produce ningún arrastre
+ * bien formado —son el centinela de un `findIndex` que no encontró nada, o una división
+ * rota—, así que ahí sí conviene el rechazo ruidoso.
+ */
+const AIndice = z.number().int().nonnegative();
+
+/**
+ * Cambia el orden de una épica dentro de su proyecto. **Es el comando que prioriza.**
+ *
+ * ## La rama entera se mueve con la épica, por construcción
+ *
+ * La épica ES un elemento de `proyecto.epicas[]` y sus historias —y las tareas de cada
+ * historia— cuelgan de ella. Mover el elemento mueve el subárbol completo porque no hay
+ * nada más que mover: no existe ninguna lista paralela de historias, ni un índice de
+ * tareas por proyecto, ni un orden persistido aparte del propio anidamiento.
+ *
+ * **Esa garantía es el encargo, no un efecto secundario.** El usuario pidió «arrastrar el
+ * orden una sola vez con todas sus historias y las tareas o subtareas». El día que a
+ * alguien le tiente aplanar el árbol para acelerar una vista —una lista de historias en la
+ * raíz del proyecto con un `epica_id`, un mapa de tareas por id— este comando deja de
+ * cumplir lo que promete y hay que reescribirlo entero. Si ese día llega, se cambia esto
+ * primero y a conciencia, no de pasada.
+ *
+ * `proyecto` es redundante con `epicaId` (los ids son únicos en todo el documento y el
+ * reductor sabría encontrar la épica sin él) y aun así se pide: es la afirmación «creo que
+ * esta épica cuelga de este proyecto». Si no coincide, el comando se rechaza en vez de
+ * reordenar en otro sitio. Y es lo que separa esto de «mover entre padres», que no existe.
+ */
+const ReordenarEpica = z
+  .object({
+    comando: z.literal('reordenarEpica'),
+    /** Clave del proyecto. Mismo nombre de campo que en `crearEpica` y `editarEquipo`. */
+    proyecto: z.string().min(1),
+    epicaId: Id,
+    aIndice: AIndice,
+  })
+  .strict();
+
 // --- árbol: historias -------------------------------------------------------
 
 const CrearHistoria = z
@@ -211,6 +312,22 @@ const EditarHistoria = z
 
 const EliminarHistoria = z.object({ comando: z.literal('eliminarHistoria'), id: Id }).strict();
 
+/**
+ * Cambia el orden de una historia dentro de su épica. Se lleva sus tareas por el mismo
+ * motivo estructural que `reordenarEpica` se lleva la rama: cuelgan de ella.
+ *
+ * `epicaId` es la afirmación de padre, igual que `proyecto` allá: reordenar nunca saca a
+ * una historia de su épica.
+ */
+const ReordenarHistoria = z
+  .object({
+    comando: z.literal('reordenarHistoria'),
+    epicaId: Id,
+    historiaId: Id,
+    aIndice: AIndice,
+  })
+  .strict();
+
 // --- árbol: tareas ----------------------------------------------------------
 
 const CrearTarea = z
@@ -222,6 +339,27 @@ const CrearTarea = z
     responsable: Responsable.optional(),
     prioridad: EsquemaPrioridad.nullable().optional(),
     fechaLimite: FechaLimite.optional(),
+    /**
+     * Fuerza la procedencia en vez de dejar que la decida `planeacion_cerrada_en`.
+     *
+     * **Ausente = la decide el proyecto**, que es el caso normal y el que hace que la
+     * mecánica funcione sin que el usuario se acuerde de nada. Presente = el usuario (o
+     * la vista) sabe algo que la fecha no sabe:
+     *
+     * - `false` en un proyecto que nunca cerró su planeación: **la captura directa en el
+     *   sprint**. Algo que entra al sprint sin haber pasado por el backlog no estaba
+     *   contemplado, por definición, y es la mejor señal de trabajo emergente que tiene
+     *   el producto. Sin este campo, esa señal se perdía entera en los proyectos que no
+     *   cerraron su planeación.
+     * - `true` con la planeación ya cerrada: algo que SÍ estaba en el plan y se capturó
+     *   tarde. Existe la dirección contraria porque la corrección honesta va en los dos
+     *   sentidos; un campo que solo permite marcar «emergente» acabaría usándose para
+     *   contar lo que a uno le conviene.
+     *
+     * No es `nullable`: `null` no significaría nada distinto de «ausente» y tener dos
+     * formas de decir lo mismo es cómo se escriben dos ramas que divergen.
+     */
+    planeada: z.boolean().optional(),
   })
   .strict();
 
@@ -238,6 +376,23 @@ const EditarTarea = z
   .strict();
 
 const EliminarTarea = z.object({ comando: z.literal('eliminarTarea'), id: Id }).strict();
+
+/**
+ * Cambia el orden de una tarea dentro de su historia.
+ *
+ * **No toca ningún sprint.** El orden del árbol y el orden de `sprint.items` son dos cosas
+ * distintas: el primero dice cómo está organizado el trabajo, el segundo qué se
+ * comprometió y en qué prioridad. Reordenar aquí no reordena allá, y `moverAlSprint` con
+ * `posicion` sigue siendo el único comando que toca el orden del sprint.
+ */
+const ReordenarTarea = z
+  .object({
+    comando: z.literal('reordenarTarea'),
+    historiaId: Id,
+    tareaId: Id,
+    aIndice: AIndice,
+  })
+  .strict();
 
 /**
  * Comando propio y no un `editarTarea` con un campo más: es la mutación más frecuente de
@@ -353,20 +508,26 @@ export const EsquemaComando = z.discriminatedUnion('comando', [
   CerrarProyecto,
   ReabrirProyecto,
   EliminarProyecto,
+  CerrarPlaneacion,
+  ReabrirPlaneacion,
   CrearPersona,
   EditarPersona,
   DesactivarPersona,
   ReactivarPersona,
   EliminarPersona,
+  FijarUsuario,
   CrearEpica,
   EditarEpica,
   EliminarEpica,
+  ReordenarEpica,
   CrearHistoria,
   EditarHistoria,
   EliminarHistoria,
+  ReordenarHistoria,
   CrearTarea,
   EditarTarea,
   EliminarTarea,
+  ReordenarTarea,
   CambiarEstado,
   MoverAlSprint,
   SacarDelSprint,
@@ -387,6 +548,11 @@ export type NombreComando = Comando['comando'];
  * Cambiar de estado y crear o eliminar algo duelen: son las acciones tras las que el
  * usuario cierra la ventana dando por hecho que quedó guardado. Editar un título no,
  * porque casi siempre viene seguido de más tecleo.
+ *
+ * Los tres `reordenar*` quedan FUERA por lo mismo que editar un título: priorizar es una
+ * ráfaga de arrastres seguidos, no un acto que termine en «listo, cierro». Dejarlos al
+ * debounce hace además que diez arrastres seguidos se anexen a la bitácora en una sola
+ * escritura en vez de diez.
  */
 const INMEDIATOS = new Set<NombreComando>([
   'cambiarEstado',
@@ -409,6 +575,13 @@ const INMEDIATOS = new Set<NombreComando>([
   'desactivarPersona',
   'reactivarPersona',
   'eliminarPersona',
+  // Cerrar la planeación cambia cómo nace TODO lo que se capture después; perderlo por
+  // medio segundo dejaría al usuario capturando con una regla distinta de la que cree.
+  'cerrarPlaneacion',
+  'reabrirPlaneacion',
+  // Se fija una vez en la vida de la app. Que no sobreviva a cerrar la ventana es
+  // exactamente el problema que este campo viene a resolver.
+  'fijarUsuario',
 ]);
 
 export function requiereFlushInmediato(comando: Comando): boolean {

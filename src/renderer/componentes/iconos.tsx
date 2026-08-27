@@ -112,6 +112,30 @@ export function Chevron({ abierto, vacio }: { abierto: boolean; vacio: boolean }
   );
 }
 
+/**
+ * El asa de reordenar: seis puntos.
+ *
+ * Es el gesto entero. Arrastrar la fila por el TEXTO manda la tarea al sprint; arrastrarla
+ * por el asa la reordena entre sus hermanas. Que sean dos sitios distintos del mismo
+ * renglón es lo que hace que no haya que adivinar cuál de los dos arrastres se empezó.
+ *
+ * DECORATIVO y sin parada de tabulador: el árbol tiene una sola (roving tabindex) y este
+ * puñado de puntos no puede abrir trescientas más. El camino por teclado no es el asa,
+ * son `⌥↑` / `⌥↓` sobre la fila enfocada, que además funcionan en ventana angosta.
+ */
+export function Asa() {
+  return (
+    <svg width="10" height="14" viewBox="0 0 10 14" aria-hidden="true" fill="currentColor">
+      <circle cx="3.4" cy="3.6" r="1.05" />
+      <circle cx="6.6" cy="3.6" r="1.05" />
+      <circle cx="3.4" cy="7" r="1.05" />
+      <circle cx="6.6" cy="7" r="1.05" />
+      <circle cx="3.4" cy="10.4" r="1.05" />
+      <circle cx="6.6" cy="10.4" r="1.05" />
+    </svg>
+  );
+}
+
 /** Cuadrito del canal de bloqueo. Siempre acompañado de la palabra o de un número. */
 export function CuadroBloqueo() {
   return (

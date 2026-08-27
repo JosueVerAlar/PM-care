@@ -42,7 +42,25 @@ export function usePuedeDeshacer(): boolean {
  * se antepone al mensaje del reductor. Un «no existe la persona "x"» a secas no le dice
  * a nadie qué acción se quedó sin hacer.
  */
-export type Mutar = (comando: Comando, contexto: string) => Promise<boolean>;
+export type Mutar = (comando: Comando, contexto: string, inocuo?: EsInocuo) => Promise<boolean>;
+
+/**
+ * Rechazos que para quien los provocó no son un fallo, sino «no pasó nada».
+ *
+ * Existe por un caso concreto y muy frecuente: **soltar algo donde ya estaba**. El
+ * reductor lo rechaza a propósito —un comando que no cambia nada no debe apilarse en
+ * deshacer ni escribir bitácora—, pero eso es una decisión del modelo, no un error del
+ * usuario. Pintarlo de rojo enseñaría que el gesto más común de un arrastre está mal.
+ *
+ * Se pasa un predicado en vez de una lista de códigos porque `invalido` cubre también
+ * rechazos que SÍ hay que contar (arrastrar entre padres distintos, por ejemplo): quien
+ * manda el comando es el único que sabe cuál de sus rechazos era el desenlace esperado.
+ *
+ * **No es la defensa principal.** Quien reordena comprueba antes si el destino coincide
+ * con el origen y ni siquiera manda el comando (ver `util/orden.ts`); esto solo cubre la
+ * carrera de que el documento haya cambiado bajo los pies entre el arrastre y el envío.
+ */
+export type EsInocuo = (fallo: { codigo: string; mensaje: string }) => boolean;
 
 /**
  * Igual que `useMutar`, pero devuelve el DOCUMENTO resultante en vez de un booleano.
@@ -55,7 +73,11 @@ export type Mutar = (comando: Comando, contexto: string) => Promise<boolean>;
  * `useMutar` está construido encima: un solo camino de escritura, una sola forma de
  * avisar de un fallo (regla 5: no se revierte nada, se cuenta lo que pasó).
  */
-export type Aplicar = (comando: Comando, contexto: string) => Promise<Documento | null>;
+export type Aplicar = (
+  comando: Comando,
+  contexto: string,
+  inocuo?: EsInocuo,
+) => Promise<Documento | null>;
 
 export function useAplicar(): Aplicar {
   const { aplicar } = useAccionesAlmacen();
@@ -63,7 +85,7 @@ export function useAplicar(): Aplicar {
   const soloLectura = useSoloLectura();
 
   return useCallback(
-    async (comando, contexto) => {
+    async (comando, contexto, inocuo) => {
       if (soloLectura) {
         avisar(`${contexto}: la app está en solo lectura y no escribió nada.`);
         return null;
@@ -73,6 +95,9 @@ export function useAplicar(): Aplicar {
         avisar(null);
         return respuesta.instantanea.documento;
       }
+      // Un rechazo esperado no borra el aviso que hubiera puesto, ni pone uno nuevo: no
+      // pasó nada, y «no pasó nada» no es una noticia.
+      if (inocuo?.(respuesta)) return null;
       const detalle = respuesta.detalles?.length ? ` (${respuesta.detalles.join('; ')})` : '';
       avisar(`${contexto}: ${respuesta.mensaje}${detalle}`);
       return null;
@@ -84,7 +109,7 @@ export function useAplicar(): Aplicar {
 export function useMutar(): Mutar {
   const aplicar = useAplicar();
   return useCallback(
-    async (comando, contexto) => (await aplicar(comando, contexto)) !== null,
+    async (comando, contexto, inocuo) => (await aplicar(comando, contexto, inocuo)) !== null,
     [aplicar],
   );
 }

@@ -71,7 +71,16 @@ en un solo lugar.
 9. **Las mutaciones van por comandos con nombre** (`moverAlSprint`, `cerrarSprint`,
    `bloquear`, `capturar`). *Verificable:* el renderer nunca envía el documento completo por
    IPC; grep de `enviar(` no debe mostrar payloads del documento entero.
-10. **Solo se arrastran tareas.** Nunca épicas ni historias.
+10. **Dos arrastres distintos, y no se mezclan.**
+    - **Al sprint solo se arrastran tareas.** Nunca épicas ni historias: los tres campos del
+      compromiso (quién, para cuándo, qué) solo tienen sentido en algo ejecutable. Para
+      mandar una historia entera hay un botón que envía sus tareas en lote.
+    - **Dentro del árbol se reordenan épicas, historias y tareas**, cada una entre sus
+      hermanas. Mover una épica se lleva **toda su rama** por construcción: es un elemento
+      del arreglo y sus historias cuelgan de ella. Esa garantía es lo que el usuario pidió y
+      no puede romperse por ninguna optimización que aplane el árbol.
+    - Reordenar **no cambia ningún hecho**: ni ids, ni estados, ni items de sprint, ni marcas
+      de tiempo. Por eso no cuenta como movimiento del proyecto.
 11. **Seguridad de Electron:** `contextIsolation: true`, `nodeIntegration: false`,
     `sandbox: true`, **CSP por cabecera** (no solo `<meta>`) con `connect-src 'none'`. La CSP
     relajada solo bajo `!app.isPackaged`. *Verificable:* prueba que lee la cabecera en el

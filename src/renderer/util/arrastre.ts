@@ -32,9 +32,29 @@
  */
 export const TIPO_TAREA = 'application/x-pmcare-tarea';
 
+/**
+ * Tipo MIME del OTRO arrastre: reordenar dentro del árbol (regla 10, segundo párrafo).
+ *
+ * Son dos gestos distintos sobre las mismas filas y no se mezclan **en ninguna capa**:
+ * empiezan en sitios distintos (el asa contra el cuerpo de la fila), viajan con tipos
+ * MIME distintos, y por eso ninguna zona de soltar puede confundirlos. El panel del
+ * sprint pregunta por `TIPO_TAREA` y una épica arrastrada para priorizar no lo lleva:
+ * aunque el cursor pase por encima, el panel ni se ilumina ni acepta nada. Y al revés,
+ * una tarea arrastrada hacia el sprint no dibuja ninguna línea de inserción en el árbol.
+ *
+ * Que el tipo sea consultable durante `dragover` —el dato no lo es— es justo lo que
+ * permite que esa decisión se tome antes de soltar, que es cuando el usuario mira.
+ */
+export const TIPO_ORDEN = 'application/x-pmcare-orden';
+
 /** ¿Este arrastre es nuestro? Se puede preguntar en `dragover`, a diferencia del dato. */
 export function esArrastreDeTarea(dt: DataTransfer | null): boolean {
   return dt !== null && [...dt.types].includes(TIPO_TAREA);
+}
+
+/** ¿Es el arrastre de reordenar? Misma pregunta, el otro gesto. */
+export function esArrastreDeOrden(dt: DataTransfer | null): boolean {
+  return dt !== null && [...dt.types].includes(TIPO_ORDEN);
 }
 
 /**

@@ -44,10 +44,10 @@ import { type Aleatorio, elegir, entero, prng } from '../apoyo/generador';
 // --- 1. pureza --------------------------------------------------------------
 
 /**
- * Un caso por cada uno de los 27 comandos: el payload, y si se espera que pase o falle.
+ * Un caso por cada uno de los 33 comandos: el payload, y si se espera que pase o falle.
  *
  * La tabla se comprueba completa contra la unión discriminada: si `backend` añade el
- * comando 28 y no lo pone aquí, la prueba de cobertura se pone en rojo. Eso es lo que
+ * comando 31 y no lo pone aquí, la prueba de cobertura se pone en rojo. Eso es lo que
  * evita que la próxima capa de comandos vuelva a nacer sin red.
  */
 function casosPorComando(): { comando: Comando; doc: Documento }[] {
@@ -65,7 +65,13 @@ function casosPorComando(): { comando: Comando; doc: Documento }[] {
     ],
   };
   const cerrado = aplicar(conSprints, { comando: 'cerrarProyecto', clave: 'PM' });
+  const planeacionCerrada = aplicar(conSprints, { comando: 'cerrarPlaneacion', proyecto: 'PM' });
   const sinAna = aplicar(conSprints, { comando: 'desactivarPersona', id: 'ana' });
+  /** Dos épicas y dos historias en la primera: sin hermanos no hay orden que cambiar. */
+  const dosEpicas = aplicarTodos(conSprints, [
+    { comando: 'crearEpica', proyecto: 'PM', titulo: 'Segunda épica' },
+    { comando: 'crearHistoria', epicaId: 'PM-E1', titulo: 'Segunda historia' },
+  ]);
 
   return [
     { comando: { comando: 'crearProyecto', clave: 'OTRO', nombre: 'Otro' }, doc: conSprints },
@@ -73,20 +79,30 @@ function casosPorComando(): { comando: Comando; doc: Documento }[] {
     { comando: { comando: 'cerrarProyecto', clave: 'PM' }, doc: conSprints },
     { comando: { comando: 'reabrirProyecto', clave: 'PM' }, doc: cerrado },
     { comando: { comando: 'eliminarProyecto', clave: 'PM', confirmacion: 'PM' }, doc: conSprints },
+    { comando: { comando: 'cerrarPlaneacion', proyecto: 'PM' }, doc: conSprints },
+    // Reabrir exige que esté cerrada; sobre `conSprints` solo mediría el rechazo.
+    { comando: { comando: 'reabrirPlaneacion', proyecto: 'PM' }, doc: planeacionCerrada },
     { comando: { comando: 'crearPersona', nombre: 'Carla' }, doc: conSprints },
     { comando: { comando: 'editarPersona', id: 'ana', nombre: 'Ana María' }, doc: conSprints },
     { comando: { comando: 'desactivarPersona', id: 'ana' }, doc: conSprints },
     { comando: { comando: 'reactivarPersona', id: 'ana' }, doc: sinAna },
     { comando: { comando: 'eliminarPersona', id: 'beto' }, doc: conSprints },
+    { comando: { comando: 'fijarUsuario', id: 'ana' }, doc: conSprints },
     { comando: { comando: 'crearEpica', proyecto: 'PM', titulo: 'Otra' }, doc: conSprints },
     { comando: { comando: 'editarEpica', id: 'PM-E1', titulo: 'Otra' }, doc: conSprints },
     { comando: { comando: 'eliminarEpica', id: 'PM-E1' }, doc: conSprints },
+    // Con una sola épica el único destino posible es la posición en la que ya está, así
+    // que el caso se arma sobre `dosEpicas`: un reordenamiento que no reordena nada no
+    // ejercita ni el `splice` ni la pureza de lo que se movió.
+    { comando: { comando: 'reordenarEpica', proyecto: 'PM', epicaId: 'PM-E2', aIndice: 0 }, doc: dosEpicas },
     { comando: { comando: 'crearHistoria', epicaId: 'PM-E1', titulo: 'Otra' }, doc: conSprints },
     { comando: { comando: 'editarHistoria', id: 'PM-H1', titulo: 'Otra' }, doc: conSprints },
     { comando: { comando: 'eliminarHistoria', id: 'PM-H1' }, doc: conSprints },
+    { comando: { comando: 'reordenarHistoria', epicaId: 'PM-E1', historiaId: 'PM-H2', aIndice: 0 }, doc: dosEpicas },
     { comando: { comando: 'crearTarea', historiaId: 'PM-H1', titulo: 'Otra' }, doc: conSprints },
     { comando: { comando: 'editarTarea', id: 'PM-T1', titulo: 'Otra' }, doc: conSprints },
     { comando: { comando: 'eliminarTarea', id: 'PM-T2' }, doc: conSprints },
+    { comando: { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T2', aIndice: 0 }, doc: conSprints },
     { comando: { comando: 'cambiarEstado', id: 'PM-T1', estado: 'hecha' }, doc: conSprints },
     { comando: { comando: 'moverAlSprint', tareaId: 'PM-T2', sprintId: 'S-1' }, doc: conSprints },
     { comando: { comando: 'sacarDelSprint', tareaId: 'PM-T1', sprintId: 'S-1' }, doc: conSprints },
@@ -104,13 +120,13 @@ function casosPorComando(): { comando: Comando; doc: Documento }[] {
   ];
 }
 
-describe('la tabla de casos cubre los 27 comandos', () => {
+describe('la tabla de casos cubre los 33 comandos', () => {
   it('no falta ninguno de la unión discriminada: un comando nuevo sin caso pone esto en rojo', () => {
     const conCaso = new Set(casosPorComando().map((c) => c.comando.comando));
     const declarados = EsquemaComando.options.map(
       (opcion) => opcion.shape.comando.value as NombreComando,
     );
-    expect(declarados).toHaveLength(27);
+    expect(declarados).toHaveLength(33);
     expect([...declarados].filter((n) => !conCaso.has(n))).toEqual([]);
   });
 });
@@ -244,6 +260,12 @@ interface Inventario {
   tareas: string[];
   personas: string[];
   sprints: { id: string; estado: string }[];
+  /**
+   * De cada épica, historia y tarea, el id de su padre. Lo necesitan los `reordenar*`:
+   * exigen nombrar el padre y rechazan el que no coincide, así que sin esto el generador
+   * nombraría casi siempre el equivocado y la máquina volvería a medir solo rechazos.
+   */
+  padre: Map<string, string>;
 }
 
 function inventariar(doc: Documento): Inventario {
@@ -254,14 +276,20 @@ function inventariar(doc: Documento): Inventario {
     tareas: [],
     personas: doc.personas.map((p) => p.id),
     sprints: doc.sprints.map((s) => ({ id: s.id, estado: s.estado })),
+    padre: new Map(),
   };
   for (const proyecto of doc.proyectos) {
     inv.proyectos.push(proyecto.clave);
     for (const epica of proyecto.epicas) {
       inv.epicas.push(epica.id);
+      inv.padre.set(epica.id, proyecto.clave);
       for (const historia of epica.historias) {
         inv.historias.push(historia.id);
-        for (const tarea of historia.tareas) inv.tareas.push(tarea.id);
+        inv.padre.set(historia.id, epica.id);
+        for (const tarea of historia.tareas) {
+          inv.tareas.push(tarea.id);
+          inv.padre.set(tarea.id, historia.id);
+        }
       }
     }
   }
@@ -303,6 +331,10 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
   const planeado = inv.sprints.filter((s) => s.estado === 'planeado');
   const sprintActivable = planeado.length > 0 && rng() < 0.8 ? elegir(rng, planeado).id : sprint;
   const talVez = <T>(valor: T): T | undefined => (rng() < 0.5 ? valor : undefined);
+  // El padre de verdad casi siempre, y uno equivocado de vez en cuando: así se ejercitan
+  // los dos lados de `reordenar*`, el que mueve y el que rechaza «no cuelga de ahí».
+  const padreDe = (id: string, inventado: string): string =>
+    (rng() < 0.85 ? inv.padre.get(id) : undefined) ?? inventado;
 
   const opciones: (() => Comando)[] = [
     () => ({ comando: 'crearProyecto', clave: nuevaClave(), nombre: 'Generado' }),
@@ -310,6 +342,11 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
     () => ({ comando: 'cerrarProyecto', clave: proyecto }),
     () => ({ comando: 'reabrirProyecto', clave: proyecto }),
     () => ({ comando: 'eliminarProyecto', clave: proyecto, confirmacion: proyecto }),
+    () => ({ comando: 'cerrarPlaneacion', proyecto }),
+    () => ({ comando: 'reabrirPlaneacion', proyecto }),
+    // `null` de vez en cuando: soltar el usuario es una rama propia y tiene que
+    // sobrevivir a la máquina igual que fijarlo.
+    () => ({ comando: 'fijarUsuario', id: rng() < 0.2 ? null : persona }),
     () => ({
       comando: 'crearPersona',
       nombre: elegir(rng, NOMBRES),
@@ -327,6 +364,12 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
     () => ({ comando: 'crearEpica', proyecto, titulo: `Épica ${entero(rng, 1, 99)}` }),
     () => ({ comando: 'editarEpica', id: unId(inv.epicas, 'FANTASMA-E1'), titulo: 'Editada' }),
     () => ({ comando: 'eliminarEpica', id: unId(inv.epicas, 'FANTASMA-E1') }),
+    () => {
+      const epicaId = unId(inv.epicas, 'FANTASMA-E1');
+      // El índice se pide a veces más allá del final a propósito: topar en vez de
+      // rechazar (decisión 1) tiene que sobrevivir a la máquina, no solo a un caso.
+      return { comando: 'reordenarEpica', proyecto: padreDe(epicaId, proyecto), epicaId, aIndice: entero(rng, 0, 6) };
+    },
     () => ({
       comando: 'crearHistoria',
       epicaId: unId(inv.epicas, 'FANTASMA-E1'),
@@ -334,6 +377,15 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
     }),
     () => ({ comando: 'editarHistoria', id: unId(inv.historias, 'FANTASMA-H1'), titulo: 'Editada' }),
     () => ({ comando: 'eliminarHistoria', id: unId(inv.historias, 'FANTASMA-H1') }),
+    () => {
+      const historiaId = unId(inv.historias, 'FANTASMA-H1');
+      return {
+        comando: 'reordenarHistoria',
+        epicaId: padreDe(historiaId, 'FANTASMA-E1'),
+        historiaId,
+        aIndice: entero(rng, 0, 6),
+      };
+    },
     () => ({
       comando: 'crearTarea',
       historiaId: unId(inv.historias, 'FANTASMA-H1'),
@@ -350,6 +402,12 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
       prioridad: talVez(rng() < 0.3 ? null : elegir(rng, PRIORIDADES)),
     }),
     () => ({ comando: 'eliminarTarea', id: tarea }),
+    () => ({
+      comando: 'reordenarTarea',
+      historiaId: padreDe(tarea, 'FANTASMA-H1'),
+      tareaId: tarea,
+      aIndice: entero(rng, 0, 6),
+    }),
     () => ({ comando: 'cambiarEstado', id: tarea, estado: elegir(rng, ESTADOS) }),
     () => ({
       comando: 'moverAlSprint',
@@ -645,7 +703,7 @@ describe('la red de seguridad del reductor', () => {
 });
 
 describe('la secuencia generada de verdad llega a algún sitio', () => {
-  it('los 27 comandos se aplican con ÉXITO al menos una vez: sin esto la máquina mediría solo rechazos', () => {
+  it('los 30 comandos se aplican con ÉXITO al menos una vez: sin esto la máquina mediría solo rechazos', () => {
     // La trampa que esta prueba cierra: un generador que propone comandos imposibles deja
     // las invariantes de arriba en verde sin haber ejecutado nunca el cuerpo de un `case`.
     const exitos = new Set<string>();

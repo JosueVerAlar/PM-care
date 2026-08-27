@@ -31,6 +31,10 @@ const ATAJOS: { tecla: string; que: string }[] = [
   { tecla: 'B', que: 'bloqueo' },
   { tecla: 'C', que: 'cancelar' },
   { tecla: '⌫', que: 'eliminar' },
+  // El equivalente por teclado del arrastre por el asa. Va en la leyenda por lo mismo que
+  // `S`: el asa solo se ve al pasar por encima, y en ventana angosta arrastrar no es una
+  // opción cómoda. Quien no descubra el asa tiene que poder reordenar igual.
+  { tecla: '⌥↑↓', que: 'reordenar' },
   { tecla: '⌘Z', que: 'deshacer' },
 ];
 
@@ -70,6 +74,13 @@ export function Leyenda({ editable }: { editable: boolean }) {
       <span className="leyenda__nota">
         El bloqueo es bandera, no estado: la tarea conserva su glifo. Los contenedores
         derivan el suyo; las canceladas no cuentan.
+        {editable && (
+          <>
+            {' '}
+            Se arrastra por el texto para mandar al sprint y por el asa (⠿) para reordenar
+            entre hermanas: una épica se lleva sus historias y sus tareas.
+          </>
+        )}
       </span>
     </footer>
   );

@@ -25,7 +25,7 @@ import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 
 import { fechaDe } from '../../compartido/dominio/clasificar';
-import { validarDocumento } from '../../compartido/modelo/esquema';
+import { documentoVacio, validarDocumento } from '../../compartido/modelo/esquema';
 import type { Documento, Instante } from '../../compartido/modelo/tipos';
 import {
   ESQUEMA_VERSION,
@@ -308,12 +308,10 @@ export class Repositorio {
    * «reparación» de un archivo que sí existe (regla 13).
    */
   private async crearPrimerDocumento(): Promise<void> {
-    const vacio: Documento = {
-      esquema_version: ESQUEMA_VERSION,
-      personas: [],
-      proyectos: [],
-      sprints: [],
-    };
+    // Se pide a `documentoVacio()` en vez de repetir aquí la forma de la raíz: dos
+    // literales del documento vacío divergen el día que la raíz estrena un campo, y el
+    // que se quede corto es justo el que se escribe en el primer arranque.
+    const vacio: Documento = documentoVacio();
     await escribirAtomico(this.rutas.documento, serializar(vacio));
     this.documento = vacio;
     this.huellaEsperada = await huellaDe(this.rutas.documento);

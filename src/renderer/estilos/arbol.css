@@ -14,6 +14,10 @@
 }
 
 .fila {
+  /* El asa de reordenar vive DENTRO de la sangría, no encima de ella: la columna se le
+     resta a la que ya había, así que el chevron sigue empezando exactamente donde
+     empezaba en E6 y la jerarquía por sangría no se mueve ni un píxel. */
+  --ancho-asa: 12px;
   position: relative;
   display: flex; align-items: center; gap: 6px;
   width: 100%; padding-right: 12px;
@@ -30,9 +34,9 @@
 .fila[aria-selected="true"] .conteo-solo,
 .fila[aria-selected="true"] .sin-desglosar { color: var(--tinta-2); }
 
-.fila--epica    { height: var(--alto-epica);    padding-left: var(--sangria-1); font-weight: 600; }
-.fila--historia { height: var(--alto-historia); padding-left: var(--sangria-2); font-weight: 500; color: var(--tinta-2); }
-.fila--tarea    { height: var(--alto-tarea);    padding-left: var(--sangria-3); font-weight: 400; }
+.fila--epica    { height: var(--alto-epica);    padding-left: calc(var(--sangria-1) - var(--ancho-asa)); font-weight: 600; }
+.fila--historia { height: var(--alto-historia); padding-left: calc(var(--sangria-2) - var(--ancho-asa)); font-weight: 500; color: var(--tinta-2); }
+.fila--tarea    { height: var(--alto-tarea);    padding-left: calc(var(--sangria-3) - var(--ancho-asa)); font-weight: 400; }
 
 .fila__texto {
   flex: 1; min-width: 0;
@@ -73,6 +77,26 @@
 .glifo--hecha        { color: var(--estado-hecha); }
 .glifo--cancelada    { color: var(--estado-cancelada); }
 .glifo--sindesglosar { color: var(--estado-sindesglosar); }
+
+/* ── ÉPICA (E HISTORIA) TERMINADA — el enganche, sin la estética ─────
+   La fila lleva `data-derivado="hecha"` cuando TODAS sus tareas contables cerraron; las
+   tareas llevan `data-estado`. El cálculo ya lo daba (`estadoDerivado`), pero hasta ahora
+   solo llegaba al glifo de 14 px.
+
+   Aquí NO se pinta nada todavía a propósito: el tratamiento llega con el rediseño de tema
+   de `diseno`, y adelantarlo con los tokens de hoy —que no tienen ningún verde de fondo,
+   solo `--estado-hecha` como tinta— obligaría a inventar un token que después habría que
+   deshacer. El selector es este y no hace falta tocar ningún .tsx para rellenarlo:
+
+     .fila--epica[data-derivado="hecha"] { … }
+     .fila--historia[data-derivado="hecha"] { … }
+
+   La restricción que va con el encargo, para quien lo rellene: en un proyecto con cinco
+   épicas cerradas, cinco bloques verdes sólidos convierten el panel en un semáforo y
+   hacen que lo TERMINADO —que ya no pide ninguna decisión— grite más que lo pendiente,
+   que es lo único que se mira para decidir. El verde tiene que RECULAR: leerse de un
+   vistazo como «esto ya no me toca» y no como una alarma. Y la regla 4 sigue mandando:
+   verde solo con `data-derivado="hecha"`, jamás porque el porcentaje redondee a 100. */
 
 /* Columna fija: todas las claves alineadas a la derecha en los tres niveles. */
 .clave {

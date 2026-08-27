@@ -191,7 +191,7 @@ export function unDocumentoAleatorio(rng: Aleatorio, semilla: number): Documento
     };
   });
 
-  return { esquema_version: ESQUEMA_VERSION, personas, proyectos, sprints };
+  return { esquema_version: ESQUEMA_VERSION, usuario: null, personas, proyectos, sprints };
 }
 
 /**

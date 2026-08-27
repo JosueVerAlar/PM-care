@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="es" data-tema="oscuro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PM-care · propuesta de identidad «Arco»</title>
+<!--
+  ══════════════════════════════════════════════════════════════════════════
+  PROPUESTA DE IDENTIDAD VISUAL — «ARCO»
+  NO reemplaza nada. Se abre AL LADO de maqueta/index.html y vistas.html,
+  que siguen siendo la referencia de lo implementado.
+  Sin dependencias, sin fuentes externas, sin red. Se abre con doble clic.
+  ══════════════════════════════════════════════════════════════════════════
+
+  QUÉ CAMBIA Y QUÉ NO
+
+  CAMBIA (solo valores de token, ningún componente):
+    · superficies con temperatura (hue OKLCH 262) en vez de gris neutro
+    · un acento eléctrico —cian «arco»— que vive SOLO en interacción
+    · tipografía técnica en metadatos: mono del sistema para claves,
+      conteos, fechas y etiquetas de cabecera
+    · tratamiento nuevo para el contenedor COMPLETO (épica o historia)
+
+  NO CAMBIA (es lo que costó ganar; se volvió a medir entero):
+    · los tres canales: estado = forma del glifo · procedencia = banda de
+      3px al borde · bloqueo = bandera con palabra + tira de motivo
+    · la densidad: ~30 filas por pantalla, tres niveles a 13px/18px
+    · nada depende solo del color
+    · ningún porcentaje sin su conteo crudo; contenedor vacío = «sin desglosar»
+    · verde solo si el estado es «hecha», nunca por redondeo
+
+  EL ACENTO NO ROBA NINGÚN CANAL — cómo se garantizó
+    El círculo cromático ya estaba lleno: con cuatro señales vivas (esmeralda,
+    azul, ámbar, rojo) NINGÚN quinto matiz alcanzaba separación segura; el
+    mejor de un barrido de 60 matices se quedaba en ΔE 12.5, y encima pegado
+    al azul de «en curso». La salida fue cambiar de eje: el acento se separa
+    por LUMINANCIA, no por matiz. En oscuro es más claro que cualquier estado
+    (OKLCH L 0.855 contra 0.66-0.76); en claro, más oscuro que todos
+    (L 0.36 contra 0.44-0.54). Separación mínima medida: 12.7 en oscuro,
+    10.9 en claro. Además el acento solo dibuja LÍNEAS y FONDOS, nunca un
+    glifo redondo de 14px: no comparte forma con el canal de estado.
+
+  DATOS
+    REALES de docs/datos-reales-sicoe.md y datos/ejemplo.json: épicas, claves,
+    títulos, responsables, estados, sprints, bloqueos y carga.
+    DE MAQUETA, marcado en cada bloque: las HISTORIAS (Jira no tiene ese
+    nivel) y el cierre PROYECTADO de la épica SICOE-13 —hoy va 9/11— para
+    poder enseñar el tratamiento de «completa», que por definición es un
+    estado futuro.
+-->
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   1. TOKENS
+   Paleta «Arco». Definida en OKLCH y resuelta a sRGB con script; validada
+   en WCAG (cada par real de texto/fondo) y en separación CVD (deuteranopia,
+   protanopia, tritanopia) sobre OKLab. Nada de hex fuera de esta sección.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── superficies · hue 262, croma bajo: temperatura sin colorear ── */
+  --fondo-app:         #FCFDFF;
+  --fondo-panel:       #FCFDFF;
+  --fondo-lateral:     #EDF1F8;
+  --fondo-cabecera:    #F6F8FD;
+  --fondo-elevado:     #FFFFFF;
+  --hairline:          #C9D0DC;
+  --hairline-fuerte:   #B7BECB;
+  --hover:             #EBF0FA;
+  --seleccion:         #D8E0EF;
+
+  /* ── tinta ── (contrastes sobre --fondo-panel) */
+  --tinta-1:           #181E29;   /* 16.4:1 */
+  --tinta-2:           #535B6A;   /*  6.7:1 */
+  --tinta-3:           #666E7A;   /*  5.1:1 — metadatos a 11px, ahora sí AA */
+
+  /* ── ACENTO · canal de INTERACCIÓN, jamás de estado ──
+     En claro es un petróleo profundo: más oscuro que cualquier estado. */
+  --acento:            #00464D;   /* 12.3:1 */
+  --acento-apagado:    #1E767F;
+  --acento-tenue:      #D1F2F5;
+  --acento-contra:     #FCFDFF;
+
+  /* ── CANAL 1 · estado — la forma manda; el color solo confirma ── */
+  --estado-hecha:      #006443;   /* 7.1:1 */
+  --estado-curso:      #345BC0;   /* 6.1:1 */
+  --estado-pendiente:  #666E7A;
+  --estado-cancelada:  #666E7A;
+  --estado-sindesglosar: #7F8590;
+
+  /* ── CANAL 2 · procedencia — banda de 3px en x 0–3 ── */
+  --nuevo-banda:       #B68B16;   /* 3.1:1 — elemento gráfico, nunca texto */
+  --nuevo-fondo:       #FFF0D2;
+  --nuevo-tinta:       #634800;   /* 7.6:1 sobre --nuevo-fondo */
+
+  /* ── CANAL 3 · bloqueo — bandera con palabra + tira con motivo ── */
+  --bloqueo-banda:     #BA2936;   /* 6.0:1 */
+  --bloqueo-fondo:     #FFECEB;
+  --bloqueo-tinta:     #932A30;   /* 7.1:1 sobre --bloqueo-fondo */
+
+  /* ── NUEVO · contenedor COMPLETO — reconocer y retirarse ── */
+  --completa-lavado:   #E5F8EE;   /* fondo de la fila: 1.09:1 vs panel */
+  --completa-guia:     #6F9D85;   /* guía de rama, 1px: 3.0:1 */
+  --completa-fondo:    #D2F5E2;
+  --completa-tinta:    #005C3D;   /* 6.9:1 sobre --completa-fondo */
+
+  /* ── chips y medidor ── */
+  --chip-fondo:        #E3E8F2;
+  --chip-tinta:        #535B6A;
+  --medidor-pista:     #D8DEE9;
+  --medidor-relleno:   #70757D;   /* NEUTRO: el verde está reservado */
+  --reparto-a:         #70757D;   /* 5.0:1 — segmentos de la barra de carga */
+  --reparto-b:         #9BA1AC;   /* 3.0:1 — no codifican identidad */
+
+  /* ── métrica · idéntica al sistema vigente ── */
+  --alto-epica: 32px;
+  --alto-historia: 28px;
+  --alto-tarea: 26px;
+  --sangria-1: 12px;
+  --sangria-2: 28px;
+  --sangria-3: 44px;
+  --ancho-lateral: 216px;
+  --ancho-rail: 48px;
+  --guia-x: 20px;          /* NUEVO: x de la guía de rama completa */
+
+  /* ── tipografía ── */
+  --fuente: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+  --fuente-tec: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Cascadia Mono", monospace;
+}
+
+/* Oscuro por preferencia del sistema (cuando no hay elección explícita) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    --fondo-app:         #11151C;
+    --fondo-panel:       #11151C;
+    --fondo-lateral:     #1A1F27;
+    --fondo-cabecera:    #161A22;
+    --fondo-elevado:     #1F252E;
+    --hairline:          #2E333C;
+    --hairline-fuerte:   #3F4551;
+    --hover:             #1D222B;
+    --seleccion:         #2A313D;
+    --tinta-1:           #EBEFF4;
+    --tinta-2:           #A7ADB7;
+    --tinta-3:           #90959F;
+    --acento:            #5AE7EC;
+    --acento-apagado:    #3A9DA0;
+    --acento-tenue:      #0C3D3F;
+    --acento-contra:     #0B0F18;
+    --estado-hecha:      #49CC95;
+    --estado-curso:      #618DF3;
+    --estado-pendiente:  #90959F;
+    --estado-cancelada:  #90959F;
+    --estado-sindesglosar: #7C8089;
+    --nuevo-banda:       #D7AA42;
+    --nuevo-fondo:       #382C11;
+    --nuevo-tinta:       #E6C686;
+    --bloqueo-banda:     #F0555B;
+    --bloqueo-fondo:     #431F1F;
+    --bloqueo-tinta:     #F9ADAA;
+    --completa-lavado:   #13231B;
+    --completa-guia:     #4B735F;
+    --completa-fondo:    #143526;
+    --completa-tinta:    #94DDB9;
+    --chip-fondo:        #262C35;
+    --chip-tinta:        #B2B8C1;
+    --medidor-pista:     #292E37;
+    --medidor-relleno:   #878C96;
+    --reparto-a:         #878C96;
+    --reparto-b:         #5E636D;
+  }
+}
+
+/* Oscuro por elección explícita — gana sobre el sistema en ambos sentidos */
+:root[data-tema="oscuro"] {
+  --fondo-app:         #11151C;
+  --fondo-panel:       #11151C;
+  --fondo-lateral:     #1A1F27;
+  --fondo-cabecera:    #161A22;
+  --fondo-elevado:     #1F252E;
+  --hairline:          #2E333C;
+  --hairline-fuerte:   #3F4551;
+  --hover:             #1D222B;
+  --seleccion:         #2A313D;
+  --tinta-1:           #EBEFF4;
+  --tinta-2:           #A7ADB7;
+  --tinta-3:           #90959F;
+  --acento:            #5AE7EC;
+  --acento-apagado:    #3A9DA0;
+  --acento-tenue:      #0C3D3F;
+  --acento-contra:     #0B0F18;
+  --estado-hecha:      #49CC95;
+  --estado-curso:      #618DF3;
+  --estado-pendiente:  #90959F;
+  --estado-cancelada:  #90959F;
+  --estado-sindesglosar: #7C8089;
+  --nuevo-banda:       #D7AA42;
+  --nuevo-fondo:       #382C11;
+  --nuevo-tinta:       #E6C686;
+  --bloqueo-banda:     #F0555B;
+  --bloqueo-fondo:     #431F1F;
+  --bloqueo-tinta:     #F9ADAA;
+  --completa-lavado:   #13231B;
+  --completa-guia:     #4B735F;
+  --completa-fondo:    #143526;
+  --completa-tinta:    #94DDB9;
+  --chip-fondo:        #262C35;
+  --chip-tinta:        #B2B8C1;
+  --medidor-pista:     #292E37;
+  --medidor-relleno:   #878C96;
+  --reparto-a:         #878C96;
+  --reparto-b:         #5E636D;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   2. BASE
+   ═══════════════════════════════════════════════════════════════════════ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--fuente);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--tinta-1);
+  background: var(--fondo-app);
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.crece { flex: 1; }
+
+/* La tipografía TÉCNICA es el carácter, y va donde no estorba la lectura:
+   claves, conteos, fechas, códigos y etiquetas de cabecera. El cuerpo de los
+   títulos sigue en la fuente del sistema — un mono a 13px en 45 filas cansa. */
+.tec, .clave, .codigo, .medidor__conteo, .conteo-solo, .contador,
+.cab__titulo, .lat-titulo, .tema__etiqueta {
+  font-family: var(--fuente-tec);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   3. ENVOLTORIO DEL DOCUMENTO — esto NO es parte de la app
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.doc-cab {
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  padding: 22px 28px 18px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--fondo-lateral);
+}
+.doc-cab h1 { font-size: 19px; line-height: 24px; font-weight: 650; letter-spacing: -.01em; }
+.doc-cab p { font-size: 12.5px; color: var(--tinta-2); max-width: 62ch; }
+
+.doc-seccion { padding: 26px 28px 8px; }
+.doc-seccion h2 {
+  font-size: 15px; line-height: 21px; font-weight: 650;
+  letter-spacing: -.005em; margin-bottom: 5px;
+}
+.doc-seccion p { font-size: 12.5px; color: var(--tinta-2); max-width: 78ch; }
+.doc-seccion p + p { margin-top: 6px; }
+.doc-nota {
+  margin-top: 8px; padding: 8px 11px;
+  border-left: 2px solid var(--acento);
+  background: var(--acento-tenue);
+  font-size: 12px; color: var(--tinta-1); max-width: 78ch;
+}
+.doc-nota strong { font-weight: 620; }
+
+/* marco que simula la ventana de la app */
+.marco {
+  margin: 14px 0 0;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--fondo-app);
+}
+.marco--alto .app { height: 720px; }
+.marco--medio .app { height: 436px; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   4. ARMAZÓN DE LA APP
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.app { display: grid; grid-template-rows: 44px 1fr; }
+.cuerpo { display: grid; grid-template-columns: var(--ancho-lateral) 1fr 1fr; min-height: 0; }
+.app.rail .cuerpo, .app.estrecho .cuerpo { grid-template-columns: var(--ancho-rail) 1fr 1fr; }
+
+.panel { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--fondo-panel); }
+.panel + .panel { border-left: 1px solid var(--hairline); }
+
+/* PROFUNDIDAD, no negro plano: el contenido es la capa más honda, el chasis
+   (toolbar + lateral) sube un escalón, y las cabeceras se quedan en medio.
+   Tres planos separados por luminancia, sin una sola sombra difusa. */
+
+.toolbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 12px;
+  background: var(--fondo-lateral);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.tb-boton {
+  display: flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 9px; border-radius: 5px; color: var(--tinta-2);
+}
+.tb-boton:hover { background: var(--hover); color: var(--tinta-1); }
+
+.proyecto-actual {
+  display: flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 8px; border-radius: 5px;
+  font-weight: 600; color: var(--tinta-1);
+}
+.proyecto-actual:hover { background: var(--hover); }
+
+/* ÚNICO bloque relleno de acento en toda la app. ~0.1 % de los píxeles. */
+.tb-primario {
+  height: 26px; padding: 0 12px; border-radius: 5px;
+  background: var(--acento); color: var(--acento-contra);
+  font-weight: 600; letter-spacing: .005em;
+}
+.tb-primario:hover { filter: brightness(1.08); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   5. BARRA LATERAL — aquí vive el acento como marca de «dónde estoy»
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.lateral {
+  background: var(--fondo-lateral);
+  border-right: 1px solid var(--hairline);
+  overflow-y: auto; padding: 8px 0 16px;
+}
+.lat-grupo { padding: 0 8px; }
+.lat-titulo {
+  padding: 14px 8px 5px;
+  font-size: 10px; font-weight: 600; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--tinta-3);
+}
+
+.lat-item {
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; height: 27px; padding: 0 8px;
+  border-radius: 5px; color: var(--tinta-1); text-align: left;
+}
+.lat-item:hover { background: var(--hover); }
+
+/* «Dónde estoy» = fondo tintado + filo de 2px + icono en acento.
+   Tres señales, ninguna es solo color. El filo vive en x 0–2 del ítem;
+   el canal de procedencia vive en x 0–3 de una FILA DEL ÁRBOL. Distinto
+   componente, distinto panel: no se cruzan nunca. */
+.lat-item[aria-current="true"] {
+  background: var(--acento-tenue);
+  color: var(--tinta-1); font-weight: 550;
+}
+.lat-item[aria-current="true"]::before {
+  content: ""; position: absolute; left: 0; top: 4px; bottom: 4px;
+  width: 2px; border-radius: 1px; background: var(--acento);
+}
+.lat-item[aria-current="true"] .lat-item__icono { color: var(--acento); }
+
+.lat-item__icono { flex: 0 0 16px; display: flex; color: var(--tinta-2); }
+.lat-item__texto { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.contador {
+  display: flex; align-items: center; gap: 3px;
+  font-size: 11px; color: var(--bloqueo-banda);
+}
+.contador svg { flex: 0 0 auto; }
+
+/* rail de 48px */
+.app.rail .lat-item__texto, .app.estrecho .lat-item__texto,
+.app.rail .lat-titulo, .app.estrecho .lat-titulo { display: none; }
+.app.rail .lat-item, .app.estrecho .lat-item { justify-content: center; padding: 0; }
+.app.rail .lat-grupo, .app.estrecho .lat-grupo { padding: 0 6px; }
+.app.rail .lat-item .contador, .app.estrecho .lat-item .contador {
+  position: absolute; transform: translate(11px, -9px); font-size: 9.5px;
+}
+.app.rail .lat-item .contador svg, .app.estrecho .lat-item .contador svg { display: none; }
+.lat-sep { display: none; }
+.app.rail .lat-sep, .app.estrecho .lat-sep { display: block; margin: 10px 6px; height: 1px; background: var(--hairline); }
+.lat-inicial { display: none; }
+.app.rail .lat-inicial, .app.estrecho .lat-inicial {
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 5px;
+  background: var(--chip-fondo); color: var(--chip-tinta);
+  font-family: var(--fuente-tec);
+  font-size: 9.5px; font-weight: 600; letter-spacing: .01em;
+}
+.app.rail .lat-item[aria-current="true"] .lat-inicial,
+.app.estrecho .lat-item[aria-current="true"] .lat-inicial {
+  background: var(--acento); color: var(--acento-contra);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   6. CABECERAS DE PANEL
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.cab {
+  display: flex; align-items: center; gap: 10px;
+  height: 38px; padding: 0 12px;
+  background: var(--fondo-cabecera);
+  border-bottom: 1px solid var(--hairline);
+  flex: 0 0 auto;
+}
+.cab__titulo {
+  font-size: 11px; font-weight: 600; letter-spacing: .11em;
+  text-transform: uppercase; color: var(--tinta-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cab__accion { font-size: 11.5px; color: var(--tinta-3); padding: 3px 7px; border-radius: 4px; }
+.cab__accion:hover { background: var(--hover); color: var(--tinta-1); }
+
+.alternador { display: flex; padding: 2px; background: var(--chip-fondo); border-radius: 5px; }
+.alternador button { padding: 2px 8px; border-radius: 3px; font-size: 11.5px; color: var(--tinta-2); }
+.alternador button[aria-pressed="true"] {
+  background: var(--fondo-panel); color: var(--tinta-1); font-weight: 550;
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   7. MEDIDOR — nunca un porcentaje solo; el relleno es NEUTRO…
+   …salvo al 100 %, donde ya no informa avance sino cierre.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.medidor { display: flex; align-items: center; justify-content: flex-end; gap: 6px; flex: 0 0 84px; }
+.medidor__pista { width: 44px; height: 4px; border-radius: 2px; background: var(--medidor-pista); overflow: hidden; }
+.medidor__relleno { display: block; height: 100%; border-radius: 2px; background: var(--medidor-relleno); }
+.medidor__conteo { font-size: 11px; color: var(--tinta-2); min-width: 34px; text-align: right; }
+
+.conteo-solo--completo { color: var(--completa-tinta); font-weight: 600; }
+
+.conteo-solo { flex: 0 0 84px; text-align: right; font-size: 11px; color: var(--tinta-2); }
+.sin-desglosar { flex: 0 0 84px; text-align: right; font-size: 11px; color: var(--tinta-3); white-space: nowrap; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   8. ÁRBOL
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.arbol { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 8px; }
+
+.fila {
+  position: relative;
+  display: flex; align-items: center; gap: 6px;
+  width: 100%; padding-right: 12px;
+  text-align: left; color: var(--tinta-1);
+}
+.fila:hover { background: var(--hover); }
+
+/* La selección se tiñe de acento pero NO compite con el estado: es un filo
+   vertical de 2px al borde DERECHO más un fondo. El estado es un glifo
+   redondo de 14px en la columna izquierda. Distinta forma, distinto lado. */
+.fila[aria-selected="true"] { background: var(--acento-tenue); }
+.fila[aria-selected="true"]::after {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 2px; background: var(--acento);
+}
+/* Si la fila ya lleva la banda de procedencia en x 0–3, el filo se omite:
+   el fondo teñido basta para decir «seleccionada», y así el acento NUNCA
+   comparte píxeles con el canal 2. Se vio al mirar la captura, no leyendo. */
+.fila--nuevo[aria-selected="true"]::after { display: none; }
+.fila[aria-selected="true"] .meta,
+.fila[aria-selected="true"] .clave,
+.fila[aria-selected="true"] .medidor__conteo { color: var(--tinta-2); }
+
+.fila--epica    { height: var(--alto-epica);    padding-left: var(--sangria-1); font-weight: 620; }
+.fila--historia { height: var(--alto-historia); padding-left: var(--sangria-2); font-weight: 520; color: var(--tinta-2); }
+.fila--tarea    { height: var(--alto-tarea);    padding-left: var(--sangria-3); font-weight: 400; }
+
+.fila__texto { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* CANAL 2 · PROCEDENCIA — banda de 3px en x 0–3. Intacta. */
+.fila--nuevo::before, .tarjeta--nuevo::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--nuevo-banda);
+}
+
+.fila--en-sprint .fila__texto { color: var(--tinta-2); }
+.fila--en-sprint .glifo { opacity: .65; }
+
+.chevron { flex: 0 0 14px; display: flex; align-items: center; justify-content: center; color: var(--tinta-3); transition: transform .12s ease; }
+.chevron--abierto { transform: rotate(90deg); }
+.chevron--vacio { visibility: hidden; }
+
+.glifo { flex: 0 0 14px; display: flex; align-items: center; justify-content: center; }
+.glifo--pendiente { color: var(--estado-pendiente); }
+.glifo--curso     { color: var(--estado-curso); }
+.glifo--hecha     { color: var(--estado-hecha); }
+.glifo--cancelada { color: var(--estado-cancelada); }
+.glifo--sindesglosar { color: var(--estado-sindesglosar); }
+
+.fila--cancelada .fila__texto { text-decoration: line-through; color: var(--tinta-3); }
+
+.codigo { flex: 0 0 auto; font-size: 10.5px; font-weight: 600; color: var(--tinta-3); letter-spacing: .02em; }
+.clave { flex: 0 0 76px; text-align: right; font-size: 10.5px; color: var(--tinta-3); letter-spacing: 0; }
+.meta  { font-size: 11px; color: var(--tinta-3); }
+.fila .contador { margin-right: 2px; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   9. CONTENEDOR COMPLETO — «reconocer y retirarse»
+   ───────────────────────────────────────────────────────────────────────
+   El encargo: marcar en verde TODA la épica terminada, sin que el panel se
+   vuelva un semáforo donde lo ya resuelto grite más que lo pendiente.
+
+   La fila SÍ se marca entera: lavado verde a 1.09:1 sobre el panel —se ve,
+   no grita— más glifo, medidor lleno y el chip con la palabra COMPLETA.
+   Y se RETIRA por tres vías a la vez:
+     · el título baja de --tinta-1 a --tinta-2 (menos contraste, no más)
+     · llega plegada: ocupa 1 fila en vez de 15
+     · su medidor deja de ser una barra que hay que leer y pasa a ser un
+       bloque sólido: se reconoce sin decodificarse
+   La RAMA, al expandirla, no se pinta de fondo: recibe una guía de 1px en
+   x 20 —dentro de la sangría, lejos de la banda de procedencia en x 0–3—.
+   Argumento: la fila es el objeto que se juzga («¿esta épica está lista?»);
+   la rama es la evidencia, y la evidencia ya la dan los glifos de cada
+   tarea. Pintarla de fondo repetiría el mismo dato quince veces.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.fila--completa { background: var(--completa-lavado); }
+.fila--completa:hover { background: var(--completa-fondo); }
+.fila--completa .fila__texto { color: var(--tinta-2); font-weight: 550; }
+.fila--completa.fila--historia .fila__texto { font-weight: 480; }
+
+.grupo--completa { position: relative; }
+.grupo--completa::before {
+  content: ""; position: absolute; top: 0; bottom: 0;
+  left: var(--guia-x); width: 1px; background: var(--completa-guia);
+}
+/* Anidada: si una historia completa vive dentro de una épica completa, su
+   guía se desplaza para no montarse sobre la del padre. */
+.grupo--completa .grupo--completa::before { left: calc(var(--guia-x) + 16px); }
+
+.chip--completa { background: var(--completa-fondo); color: var(--completa-tinta); }
+
+/* ── chips ── */
+.chip {
+  flex: 0 0 auto; display: inline-flex; align-items: center;
+  height: 15px; padding: 0 5px; border-radius: 3px;
+  font-size: 9.5px; font-weight: 650; letter-spacing: .05em;
+  text-transform: uppercase; white-space: nowrap;
+  font-family: var(--fuente-tec);
+}
+.chip--nuevo   { background: var(--nuevo-fondo); color: var(--nuevo-tinta); }
+.chip--bloqueo { background: var(--bloqueo-fondo); color: var(--bloqueo-tinta); gap: 4px; }
+.chip--neutro  { background: var(--chip-fondo); color: var(--chip-tinta); font-weight: 550; }
+.chip--arrastre{ background: var(--chip-fondo); color: var(--chip-tinta); }
+
+/* ── leyenda ── */
+.leyenda {
+  flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 3px 11px;
+  padding: 6px 12px; border-top: 1px solid var(--hairline);
+  background: var(--fondo-cabecera); font-size: 11px; color: var(--tinta-2);
+}
+.leyenda__item { display: flex; align-items: center; gap: 5px; }
+.leyenda__banda { width: 3px; height: 12px; border-radius: 1px; background: var(--nuevo-banda); }
+.leyenda__guia  { width: 1px; height: 12px; background: var(--completa-guia); margin: 0 1px; }
+.leyenda__nota  { flex-basis: 100%; color: var(--tinta-3); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   10. SPRINT — tarjetas planas, hairline, sin sombra
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.resumen {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-bottom: 1px solid var(--hairline);
+  font-size: 11.5px; color: var(--tinta-2); flex: 0 0 auto;
+}
+.lista-sprint { flex: 1; min-height: 0; overflow-y: auto; }
+
+.tarjeta { position: relative; padding: 9px 12px 10px; border-bottom: 1px solid var(--hairline); }
+.tarjeta:hover { background: var(--hover); }
+.tarjeta__cab { display: flex; align-items: flex-start; gap: 7px; }
+.tarjeta__titulo { flex: 1; min-width: 0; line-height: 18px; }
+.tarjeta__cab .glifo { height: 18px; }
+.tarjeta__cab .clave { line-height: 18px; }
+.tarjeta__ruta { margin: 2px 0 0 21px; font-size: 11px; color: var(--tinta-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tarjeta__pie { display: flex; align-items: center; gap: 6px; margin: 5px 0 0 21px; font-size: 11.5px; color: var(--tinta-2); min-width: 0; }
+.tarjeta__persona { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tarjeta__sep { color: var(--tinta-3); }
+.tarjeta__falta { color: var(--tinta-3); font-style: italic; }
+
+.tira-bloqueo {
+  display: flex; align-items: center; gap: 6px;
+  margin: 7px 0 0 21px; padding: 4px 7px; border-radius: 4px;
+  background: var(--bloqueo-fondo); color: var(--bloqueo-tinta); font-size: 11px;
+}
+.tira-bloqueo svg { flex: 0 0 auto; }
+.tira-bloqueo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   11. TIRA DE VISTAS GLOBALES
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.tira {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+  gap: 1px; background: var(--hairline);
+  border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline);
+  margin-top: 14px;
+}
+.mini { background: var(--fondo-panel); display: flex; flex-direction: column; min-width: 0; height: 372px; }
+.mini__cuerpo { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* — Panorama — */
+.pan-fila {
+  display: grid; grid-template-columns: 1fr 84px 78px;
+  align-items: center; gap: 8px;
+  height: 40px; padding: 0 12px; border-bottom: 1px solid var(--hairline);
+}
+.pan-fila:hover { background: var(--hover); }
+.pan-nombre { min-width: 0; display: flex; align-items: center; gap: 6px; }
+.pan-nombre b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pan-quieto { font-size: 10.5px; color: var(--tinta-3); text-align: right; font-family: var(--fuente-tec); }
+.pan-quieto--alerta { color: var(--bloqueo-tinta); }
+.pan-vacio { grid-column: 1 / -1; font-size: 11.5px; color: var(--tinta-3); font-style: italic; }
+
+/* — Bloqueos — */
+.blq-grupo { padding: 7px 12px 2px; font-size: 10px; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; color: var(--tinta-3); font-family: var(--fuente-tec); }
+.blq-fila { display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border-bottom: 1px solid var(--hairline); }
+.blq-fila:hover { background: var(--hover); }
+.blq-dias { flex: 0 0 auto; display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--bloqueo-banda); font-family: var(--fuente-tec); }
+.blq-titulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
+
+/* — Carga por persona —
+   Barra de reparto: segmentos NEUTROS con 2px de hueco de superficie entre
+   ellos; la identidad la lleva la etiqueta directa, nunca el tono. Sin pista
+   de fondo: una pista se leería como techo, y la app no estima esfuerzo. */
+.car-fila { display: grid; grid-template-columns: 132px 1fr 58px; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--hairline); }
+.car-nombre { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.car-barra { display: flex; gap: 2px; height: 8px; max-width: 220px; }
+.car-seg { height: 100%; border-radius: 2px; }
+.car-seg--a { background: var(--reparto-a); }
+.car-seg--b { background: var(--reparto-b); }
+.car-etq { font-size: 10px; color: var(--tinta-3); margin-top: 3px; font-family: var(--fuente-tec); }
+.car-total { text-align: right; font-size: 11px; color: var(--tinta-2); font-family: var(--fuente-tec); }
+
+/* — Terminadas — */
+.ter-sprint { display: flex; align-items: baseline; gap: 8px; padding: 9px 12px 4px; }
+.ter-sprint b { font-size: 12.5px; font-weight: 600; }
+.ter-sprint span { font-size: 10.5px; color: var(--tinta-3); font-family: var(--fuente-tec); }
+.ter-fila { display: flex; align-items: center; gap: 7px; height: 26px; padding: 0 12px 0 20px; }
+.ter-fila:hover { background: var(--hover); }
+.ter-titulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: var(--tinta-2); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   12. TABLA DE TOKENS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.tabla-envoltorio { margin-top: 14px; overflow-x: auto; border: 1px solid var(--hairline); border-radius: 6px; }
+table.tokens { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 12px; }
+table.tokens th, table.tokens td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--hairline); vertical-align: middle; }
+table.tokens thead th {
+  position: sticky; top: 0; background: var(--fondo-cabecera);
+  font-size: 10px; font-weight: 650; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--tinta-2); font-family: var(--fuente-tec);
+}
+table.tokens tbody tr:hover { background: var(--hover); }
+table.tokens td.tok, table.tokens td.hex { font-family: var(--fuente-tec); font-size: 11px; }
+table.tokens td.hex { color: var(--tinta-2); white-space: nowrap; }
+table.tokens td.nota { color: var(--tinta-2); font-size: 11.5px; }
+.muestra { display: inline-block; width: 13px; height: 13px; border-radius: 3px; border: 1px solid var(--hairline); vertical-align: -2px; margin-right: 6px; }
+.sin-equiv { color: var(--acento); font-weight: 600; }
+tr.grupo-tok td { background: var(--fondo-cabecera); font-weight: 650; font-size: 11px; letter-spacing: .04em; }
+
+/* interruptor de tema — SOLO DE LA MAQUETA */
+.tema { display: flex; align-items: center; gap: 8px; }
+.tema__etiqueta { font-size: 10px; letter-spacing: .11em; text-transform: uppercase; color: var(--tinta-3); }
+.tema__grupo { display: flex; padding: 2px; background: var(--chip-fondo); border-radius: 6px; }
+.tema__op { padding: 3px 10px; border-radius: 4px; font-size: 12px; color: var(--tinta-2); }
+.tema__op[aria-pressed="true"] { background: var(--fondo-elevado); color: var(--tinta-1); font-weight: 550; box-shadow: 0 0 0 1px var(--hairline); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   13. UMBRAL DURO — bajo ~1040px el tercer panel no cabe
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1040px) {
+  .cuerpo, .app.rail .cuerpo, .app.estrecho .cuerpo { grid-template-columns: var(--ancho-rail) 1fr; }
+  .panel--sprint { display: none; }
+  .doc-seccion { padding: 22px 18px 8px; }
+  .doc-cab { padding: 20px 18px 16px; }
+}
+</style>
+</head>
+<body>
+
+<header class="doc-cab">
+  <div style="flex:1;min-width:280px">
+    <h1>PM-care · identidad «Arco»</h1>
+    <p>Propuesta para comparar al lado de <code class="tec">index.html</code> y <code class="tec">vistas.html</code>, que no se tocaron.
+       Superficies con temperatura, un acento eléctrico que aparece poco, tipografía técnica en los metadatos,
+       y el tratamiento nuevo del contenedor terminado.</p>
+  </div>
+  <div class="tema">
+    <span class="tema__etiqueta">tema</span>
+    <div class="tema__grupo" role="group" aria-label="Tema">
+      <button class="tema__op" data-tema-op="claro"  aria-pressed="false">Claro</button>
+      <button class="tema__op" data-tema-op="oscuro" aria-pressed="true">Oscuro</button>
+      <button class="tema__op" data-tema-op="sistema" aria-pressed="false">Sistema</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ════════ 1 · VISTA DE PROYECTO ════════ -->
+<section class="doc-seccion">
+  <h2>1 · Vista de proyecto — el 90 % del tiempo se pasa aquí</h2>
+  <p>Mismo armazón, misma densidad, mismos tres canales. Lo que cambia es la temperatura de las superficies,
+     el acento en la barra lateral y en la selección, y la tipografía técnica de claves y conteos.
+     La épica <b>SICOE-13</b> llega plegada y marcada: es el tratamiento nuevo.</p>
+</section>
+<div class="marco marco--alto">
+  <div class="app" id="app">
+    <header class="toolbar">
+      <button class="tb-boton" id="btn-rail" title="Colapsar la barra lateral">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
+          <rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="M6 2.5v11"/>
+        </svg>
+      </button>
+      <button class="proyecto-actual">SICOE
+        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 4l3 3 3-3"/></svg>
+      </button>
+      <span class="crece"></span>
+      <button class="tb-primario">Capturar</button>
+    </header>
+
+    <div class="cuerpo">
+      <nav class="lateral">
+        <div class="lat-grupo" id="vistas"></div>
+        <div class="lat-sep"></div>
+        <div class="lat-titulo">Proyectos</div>
+        <div class="lat-grupo" id="proyectos"></div>
+      </nav>
+
+      <section class="panel panel--arbol">
+        <div class="cab">
+          <span class="cab__titulo">Backlog de SICOE</span>
+          <span class="crece"></span>
+          <div class="alternador">
+            <button aria-pressed="true">En backlog</button>
+            <button aria-pressed="false">Terminadas</button>
+          </div>
+          <span class="medidor" title="26 tareas hechas de 45 (1 cancelada, fuera del conteo)">
+            <span class="medidor__pista"><span class="medidor__relleno" style="width:57.8%"></span></span>
+            <span class="medidor__conteo">26/45</span>
+          </span>
+          <button class="cab__accion" id="btn-colapsar">Colapsar todo</button>
+        </div>
+        <div class="arbol" id="arbol" role="tree" aria-label="Backlog de SICOE"></div>
+        <div class="leyenda" id="leyenda"></div>
+      </section>
+
+      <section class="panel panel--sprint">
+        <div class="cab">
+          <span class="cab__titulo">Sprint 13 · 18–29 ago</span>
+          <span class="crece"></span>
+          <div class="alternador">
+            <button aria-pressed="true">Solo SICOE</button>
+            <button aria-pressed="false">Todo el sprint</button>
+          </div>
+        </div>
+        <div class="resumen">
+          <span class="medidor" title="1 tarea hecha de 9">
+            <span class="medidor__pista"><span class="medidor__relleno" style="width:11%"></span></span>
+            <span class="medidor__conteo">1/9</span>
+          </span>
+          <span class="tec">5 en curso · 2 bloqueadas · 2 no planeadas</span>
+        </div>
+        <div class="lista-sprint" id="sprint"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ 2 · ÉPICA COMPLETA ════════ -->
+<section class="doc-seccion">
+  <h2>2 · La épica terminada — se reconoce y se retira</h2>
+  <p>Aquí está la prueba que importa: <b>seis contenedores terminados a la vez</b> en doce filas. Si el tratamiento fuera un
+     bloque verde sólido, esta pantalla sería un semáforo y lo ya resuelto pesaría más que lo pendiente.
+     Con el lavado a 1.09:1, el título bajando a <code class="tec">--tinta-2</code> y el plegado automático,
+     lo terminado ocupa una fila cada uno y lo que exige decisión —E6, con su bloqueo— sigue siendo lo primero que se ve.</p>
+  <div class="doc-nota">
+    <strong>Sobre la rama:</strong> el tratamiento cubre la fila entera siempre; la rama, al expandirla, solo recibe
+    una guía de 1px. La fila es el objeto que se juzga; la rama es la evidencia, y los glifos de cada tarea ya la dan.
+    Expande <b>SICOE-13</b> abajo para verlo. <br>
+    <strong>Dato honesto:</strong> hoy SICOE-13 va 9 de 11. Su cierre está <b>proyectado</b> para poder enseñar el
+    tratamiento; las historias completas (E5·H1, E5·H2, E6·H2) sí lo están de verdad en Jira.<br>
+    <strong>Hallazgo al mirar:</strong> «Users Module» tiene sus 6 tareas hechas pero una historia sin desglosar.
+    No se marca completa: se dice <span class="tec">6/6 · 1 sin desglosar</span>. Pintar de verde una incógnita
+    sería la misma mentira que inventar un 0 % para lo vacío.
+  </div>
+</section>
+<div class="marco marco--medio">
+  <div class="app" style="grid-template-rows:1fr">
+    <section class="panel panel--arbol">
+      <div class="cab">
+        <span class="cab__titulo" id="cab-estres">Prueba de estrés</span>
+        <span class="crece"></span>
+        <button class="cab__accion" id="btn-expandir-todo">Expandir todo</button>
+      </div>
+      <div class="arbol" id="arbol-estres" role="tree" aria-label="Prueba de estrés"></div>
+    </section>
+  </div>
+</div>
+
+<!-- ════════ 3 · VISTAS GLOBALES ════════ -->
+<section class="doc-seccion">
+  <h2>3 · Las vistas globales con el mismo sistema</h2>
+  <p>Un sistema no se juzga en una pantalla. Estas cuatro comparten tokens, escala y canales con la vista de proyecto:
+     si algo se rompe al cambiar de contexto, se rompe aquí.</p>
+</section>
+<div class="tira">
+  <div class="mini">
+    <div class="cab"><span class="cab__titulo">Panorama</span><span class="crece"></span><span class="cab__accion tec">por atención</span></div>
+    <div class="mini__cuerpo" id="mini-panorama"></div>
+  </div>
+  <div class="mini">
+    <div class="cab"><span class="cab__titulo">9 bloqueos abiertos</span><span class="crece"></span><span class="cab__accion tec">por tipo</span></div>
+    <div class="mini__cuerpo" id="mini-bloqueos"></div>
+  </div>
+  <div class="mini">
+    <div class="cab"><span class="cab__titulo">Carga por persona</span><span class="crece"></span><span class="cab__accion tec">abiertas hoy</span></div>
+    <div class="mini__cuerpo" id="mini-carga"></div>
+  </div>
+  <div class="mini">
+    <div class="cab"><span class="cab__titulo">Terminadas</span><span class="crece"></span><span class="cab__accion tec">por sprint</span></div>
+    <div class="mini__cuerpo" id="mini-terminadas"></div>
+  </div>
+</div>
+
+<!-- ════════ 4 · TOKENS ════════ -->
+<section class="doc-seccion">
+  <h2>4 · Tokens nuevos frente a los viejos</h2>
+  <p>Migrar es sustituir valores, no reescribir componentes: los nombres se conservan uno a uno.
+     Las siete filas marcadas <span class="sin-equiv">sin equivalente</span> son las únicas altas nuevas,
+     y seis de ellas son el tratamiento del contenedor completo.</p>
+  <div class="tabla-envoltorio">
+    <table class="tokens">
+      <thead>
+        <tr><th>Token</th><th>Viejo · claro</th><th>Nuevo · claro</th><th>Viejo · oscuro</th><th>Nuevo · oscuro</th><th>Qué cambia</th></tr>
+      </thead>
+      <tbody id="tabla-tokens"></tbody>
+    </table>
+  </div>
+  <p style="margin-top:12px">Todos los pares de texto sobre fondo pasan AA 4.5:1 y todo elemento gráfico 3:1, en los dos temas.
+     El detalle medido va en la nota de entrega.</p>
+</section>
+
+<div style="height:40px"></div>
+</main>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   GLIFOS — el ESTADO vive en la FORMA. Cinco formas distinguibles
+   a 12px y en escala de grises. Sin cambios respecto al sistema vigente.
+   ═══════════════════════════════════════════════════════════════ */
+const GLIFOS = {
+  pendiente:    '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="4.4"/></svg>',
+  curso:        '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="4.4" stroke="currentColor" stroke-width="1.4"/><path d="M7 2.6a4.4 4.4 0 010 8.8z" fill="currentColor"/></svg>',
+  hecha:        '<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="currentColor"/><path d="M4.5 7.1 6.2 8.8 9.5 5.4" fill="none" stroke="var(--fondo-panel)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  cancelada:    '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="4.4"/><path d="M4.2 9.8 9.8 4.2" stroke-linecap="round"/></svg>',
+  sindesglosar: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="2.2 2.2"><circle cx="7" cy="7" r="4.4"/></svg>'
+};
+const NOMBRE_ESTADO   = { pendiente:'Pendiente', curso:'En curso', hecha:'Hecha', cancelada:'Cancelada', sindesglosar:'Sin desglosar' };
+const NOMBRE_DERIVADO = { pendiente:'Pendiente', curso:'En movimiento', hecha:'Hecha', sindesglosar:'Sin desglosar' };
+const CHEVRON = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 2 6.8 5 3.5 8"/></svg>';
+const CUADRO  = '<svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.2" fill="currentColor"/></svg>';
+
+const ICO = {
+  panorama: '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>',
+  sprint:   '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.8v2.4M10.5 1.8v2.4"/></svg>',
+  bloqueos: '<svg width="15" height="15" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="1.6" fill="currentColor"/></svg>',
+  hechas:   '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.4 6 11.9 13.5 4.4"/></svg>',
+  backlog:  '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M2.5 4h11M2.5 8h11M2.5 12h7"/></svg>',
+  carga:    '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 13V7M8 13V3M13 13v-4"/></svg>',
+  equipos:  '<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="6" cy="5.5" r="2.4"/><path d="M1.8 13.2c0-2.2 1.9-3.6 4.2-3.6s4.2 1.4 4.2 3.6"/><path d="M11 3.4a2.4 2.4 0 010 4.4M12.2 9.9c1.3.5 2.1 1.6 2.1 3.3"/></svg>'
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   BARRA LATERAL — proyectos y bloqueos REALES
+   ═══════════════════════════════════════════════════════════════ */
+const VISTAS = [
+  { icono:'panorama', texto:'Panorama' },
+  { icono:'sprint',   texto:'Sprint 13' },
+  { icono:'bloqueos', texto:'Bloqueos', bloqueos:9 },
+  { icono:'hechas',   texto:'Terminadas' },
+  { icono:'backlog',  texto:'Backlog del área' },
+  { icono:'carga',    texto:'Carga por persona' },
+  { icono:'equipos',  texto:'Equipos' }
+];
+const PROYECTOS = [
+  { nombre:'SICOE', inicial:'SIC', bloqueos:3, actual:true },
+  { nombre:'SIEST', inicial:'SIE', bloqueos:0 },
+  { nombre:'PED',   inicial:'PED', bloqueos:2, largo:'Plataforma Eventos Deportivos' },
+  { nombre:'DGETI web', inicial:'DW', bloqueos:0 },
+  { nombre:'Infraestructura', inicial:'IN', bloqueos:4 },
+  { nombre:'IDCE',   inicial:'IDC', bloqueos:0 },
+  { nombre:'INDICA', inicial:'IND', bloqueos:0 },
+  { nombre:'PULSO',  inicial:'PUL', bloqueos:0 },
+  { nombre:'REDOC',  inicial:'RED', bloqueos:0 },
+  { nombre:'RENAC',  inicial:'REN', bloqueos:0 },
+  { nombre:'SISEC',  inicial:'SIS', bloqueos:0 }
+];
+const contador = n => n > 0 ? `<span class="contador" title="${n} bloqueadas">${CUADRO}${n}</span>` : '';
+
+document.getElementById('vistas').innerHTML = VISTAS.map(v => `
+  <button class="lat-item" title="${v.texto}">
+    <span class="lat-item__icono">${ICO[v.icono]}</span>
+    <span class="lat-item__texto">${v.texto}</span>
+    ${contador(v.bloqueos || 0)}
+  </button>`).join('');
+
+document.getElementById('proyectos').innerHTML = PROYECTOS.map(p => `
+  <button class="lat-item" title="${p.largo || p.nombre}" ${p.actual ? 'aria-current="true"' : ''}>
+    <span class="lat-inicial">${p.inicial}</span>
+    <span class="lat-item__texto">${p.nombre}</span>
+    ${contador(p.bloqueos)}
+  </button>`).join('');
+
+/* ═══════════════════════════════════════════════════════════════
+   ÁRBOL — épicas, claves, títulos, responsables y estados REALES
+   de docs/datos-reales-sicoe.md. Las HISTORIAS son de maqueta.
+   `completa` no se guarda: se DERIVA de las hojas (regla 1).
+   ═══════════════════════════════════════════════════════════════ */
+const ARBOL = [
+  { cod:'E1', clave:'SICOE-45', titulo:'Users Module', plegada:true, historias:[
+    { cod:'H1', titulo:'Alta y consulta de usuarios', tareas:[
+      { clave:'SICOE-54', t:'Endpoints Creación de usuarios con contraseña y validación', e:'hecha' },
+      { clave:'SICOE-53', t:'Endpoint consulta y filtrado de usuarios', e:'hecha' },
+      { clave:'SICOE-55', t:'Vista Creación Usuarios', e:'hecha' },
+      { clave:'SICOE-44', t:'Vista Datos Usuario', e:'pendiente', sprint:true }
+    ]},
+    { cod:'H2', titulo:'Contraseñas y definición', tareas:[
+      { clave:'SICOE-56', t:'Endpoint Restablecimiento de contraseñas', e:'curso', sprint:true },
+      { clave:'SICOE-85', t:'Manejo de usuarios (definición)', e:'pendiente',
+        bloq:'Bloqueada 6 d · Falta la definición funcional' }
+    ]},
+    { cod:'H3', titulo:'Roles y permisos', tareas:[] }
+  ]},
+
+  { cod:'E2', clave:'SICOE-20', titulo:'Teacher module', historias:[] },
+
+  { cod:'E3', clave:'SICOE-98', titulo:'Regularization Module', plegada:true, historias:[
+    { cod:'H1', titulo:'Contrato y backend de grupos', tareas:[
+      { clave:'SICOE-104', t:'Contrato y mock de la API de grupos de regularización', e:'hecha' },
+      { clave:'SICOE-105', t:'Backend de grupos de recursamiento con flujo de aprobación', e:'curso', sprint:true },
+      { clave:'SICOE-107', t:'Backend de grupos extraordinarios e inscripción de alumnos', e:'pendiente' }
+    ]},
+    { cod:'H2', titulo:'Vistas y verificación', tareas:[
+      { clave:'SICOE-106', t:'Vistas de grupos de regularización y aprobación', e:'pendiente' },
+      { clave:'SICOE-108', t:'QA: pruebas extremo a extremo de grupos de regularización', e:'pendiente' }
+    ]}
+  ]},
+
+  { cod:'E4', clave:'SICOE-99', titulo:'Student Movements & Audit Module', historias:[
+    { cod:'H1', titulo:'Catálogo y registro auditable', tareas:[
+      { clave:'SICOE-100', t:'Sembrar catálogo de motivos y alinear enums de estatus del alumno', e:'hecha' },
+      { clave:'SICOE-101', t:'Servicio de registro auditable de movimientos de estatus', e:'curso', sprint:true, sel:true },
+      { clave:'SICOE-103', t:'Endpoint de cambio de carrera con revalidación y auditoría', e:'curso', sprint:true,
+        bloq:'Bloqueada 4 d · Falta el criterio de revalidación de Control Escolar' }
+    ]},
+    { cod:'H2', titulo:'Interfaz de movimientos', tareas:[
+      { clave:'SICOE-102', t:'Vista de movimientos de alumno e historial de estatus', e:'pendiente' }
+    ]}
+  ]},
+
+  /* Las nueve tareas de H1 y H2 están Finalizadas en Jira: esas dos historias
+     SÍ están completas de verdad. Las dos de H3 se muestran PROYECTADAS como
+     hechas para poder enseñar el tratamiento de épica completa. */
+  { cod:'E5', clave:'SICOE-13', titulo:'Re-enrollment module', proyectada:true, historias:[
+    { cod:'H1', titulo:'Reglas y configuración', tareas:[
+      { clave:'SICOE-88', t:'GET reglas generales (1)', e:'hecha' },
+      { clave:'SICOE-89', t:'PUT regla general (2)', e:'hecha' },
+      { clave:'SICOE-90', t:'GET reglas por plantel (3)', e:'hecha' },
+      { clave:'SICOE-91', t:'PUT regla específica por plantel (4)', e:'hecha', sprint:true },
+      { clave:'SICOE-34', t:'Endpoints para Config Reinscripcion', e:'hecha' },
+      { clave:'SICOE-48', t:'Endpoints para manejo de ciclos escolares', e:'hecha' }
+    ]},
+    { cod:'H2', titulo:'Reportes y diseño', tareas:[
+      { clave:'SICOE-57', t:'Arquitectura DB Reporte Reinscripción', e:'hecha' },
+      { clave:'SICOE-31', t:'Endpoint Generar reporte reinscripción', e:'hecha' },
+      { clave:'SICOE-25', t:'Wireframe Reinscripcion Design', e:'hecha' }
+    ]},
+    { cod:'H3', titulo:'Prórroga y cierre', tareas:[
+      { clave:'SICOE-95', t:'Vista de prórroga y configuración de reinscripción por plantel', e:'hecha', nuevo:true },
+      { clave:'SICOE-97', t:'QA: pruebas extremo a extremo del flujo de reinscripción', e:'hecha' }
+    ]}
+  ]},
+
+  { cod:'E6', clave:'SICOE-18', titulo:'Portability module', historias:[
+    { cod:'H1', titulo:'Solicitudes', tareas:[
+      { clave:'SICOE-69', t:'POST Crear solicitud con captura', e:'hecha' },
+      { clave:'SICOE-70', t:'POST Crear solicitud de alumno previamente registrado', e:'hecha' },
+      { clave:'SICOE-79', t:'GET solicitudes entrantes', e:'hecha' },
+      { clave:'SICOE-80', t:'GET detalle solicitud por id', e:'hecha' },
+      { clave:'SICOE-77', t:'POST rechazar y cancelar solicitud', e:'hecha' },
+      { clave:'SICOE-76', t:'POST aceptar solicitud (3 casos de uso)', e:'curso', sprint:true },
+      { clave:'SICOE-78', t:'JOB expiración de solicitud', e:'cancelada' }
+    ]},
+    /* Historia REALMENTE completa: las seis Finalizadas en Jira. */
+    { cod:'H2', titulo:'Catálogos y revalidación', tareas:[
+      { clave:'SICOE-72', t:'GET alumnos por curp', e:'hecha' },
+      { clave:'SICOE-73', t:'GET carreras', e:'hecha' },
+      { clave:'SICOE-74', t:'GET materias/carrera/{carrera_id}/semestre', e:'hecha' },
+      { clave:'SICOE-75', t:'GET calificaciones del alumno', e:'hecha' },
+      { clave:'SICOE-39', t:'Arquitectura DB revalidación materias', e:'hecha' },
+      { clave:'SICOE-50', t:'Arquitectura de DB para portabilidad interna', e:'hecha' }
+    ]},
+    { cod:'H3', titulo:'Tablero y casos especiales', tareas:[
+      { clave:'SICOE-92', t:'Contrato y mock de aceptar solicitud de portabilidad', e:'pendiente' },
+      { clave:'SICOE-93', t:'Vista de aceptación de solicitud con captura de equivalencias', e:'pendiente' },
+      { clave:'SICOE-94', t:'Acciones de rechazo y cancelación en el tablero de solicitudes', e:'pendiente' },
+      /* los TRES canales a la vez: pendiente + no planeada + bloqueada */
+      { clave:'SICOE-81', t:'Manejo de materias pendientes', e:'pendiente', nuevo:true, sprint:true,
+        bloq:'Bloqueada 2 d · Sin regla para materias que no existen en el destino' },
+      { clave:'SICOE-82', t:'Salida a plantel sin actividad en SICOE', e:'pendiente', nuevo:true, sprint:true },
+      { clave:'SICOE-96', t:'QA: pruebas extremo a extremo del flujo de portabilidad', e:'pendiente' },
+      { clave:'SICOE-26', t:'Wireframe para portabilidad externa', e:'hecha' }
+    ]}
+  ]}
+];
+
+/* ── conteos derivados: se cuentan las hojas, nunca se guardan ── */
+function conteo(tareas) {
+  const vivas = tareas.filter(t => t.e !== 'cancelada');   /* fuera de todo denominador */
+  return {
+    hechas: vivas.filter(t => t.e === 'hecha').length,
+    curso:  vivas.filter(t => t.e === 'curso').length,
+    bloqueadas: vivas.filter(t => t.bloq).length,
+    total:  vivas.length
+  };
+}
+const conteoEpica = ep => conteo(ep.historias.flatMap(h => h.tareas));
+
+/* «Completa» es DERIVADO, y solo si el estado es 'hecha' — jamás por
+   redondeo del porcentaje (regla 4). Un contenedor vacío no está completo.
+
+   Y una condición más, que apareció al mirar la captura de la rama expandida:
+   una épica con alguna historia SIN DESGLOSAR no puede marcarse completa,
+   aunque todas sus hojas estén hechas. «Sin desglosar» significa «no sabemos
+   si queda trabajo»; pintar de verde una incógnita es la misma mentira que
+   inventar un 0 % para lo vacío. Se dice lo que pasa: «6/6 · 1 sin desglosar». */
+const esCompleto = c => c.total > 0 && c.hechas === c.total;
+const historiasVacias = ep => ep.historias.filter(h => h.tareas.length === 0).length;
+const epicaCompleta = (ep, c) => esCompleto(c) && historiasVacias(ep) === 0;
+
+function medidorHTML(c, verde) {
+  if (c.total === 0) return '<span class="sin-desglosar">sin desglosar</span>';
+  if (c.total < 5)   return `<span class="conteo-solo">${c.hechas}/${c.total}</span>`;
+  /* Completo: se retira la barra. Misma columna de 84px, misma cifra, menos tinta. */
+  if (esCompleto(c) && verde !== false) return `<span class="conteo-solo conteo-solo--completo" title="Todas sus tareas están hechas">${c.hechas}/${c.total}</span>`;
+  const pct = (c.hechas / c.total) * 100;
+  return `<span class="medidor" title="${c.hechas} de ${c.total} tareas hechas">
+    <span class="medidor__pista"><span class="medidor__relleno" style="width:${pct}%"></span></span>
+    <span class="medidor__conteo">${c.hechas}/${c.total}</span></span>`;
+}
+function conteoHTML(c) {
+  if (c.total === 0) return '<span class="sin-desglosar">sin desglosar</span>';
+  return `<span class="conteo-solo ${esCompleto(c) ? 'conteo-solo--completo' : ''}">${c.hechas}/${c.total}</span>`;
+}
+function glifoContenedor(c) {
+  if (c.total === 0) return 'sindesglosar';
+  if (c.hechas === c.total) return 'hecha';
+  if (c.hechas + c.curso > 0) return 'curso';   /* en movimiento */
+  return 'pendiente';
+}
+
+function filaTarea(ta) {
+  const clases = ['fila','fila--tarea'];
+  if (ta.nuevo) clases.push('fila--nuevo');
+  if (ta.sprint) clases.push('fila--en-sprint');
+  if (ta.e === 'cancelada') clases.push('fila--cancelada');
+  return `<div class="${clases.join(' ')}" role="treeitem" ${ta.sel ? 'aria-selected="true"' : ''}>
+    <span class="chevron chevron--vacio"></span>
+    <span class="glifo glifo--${ta.e}" title="${NOMBRE_ESTADO[ta.e]}">${GLIFOS[ta.e]}</span>
+    <span class="fila__texto">${ta.t}</span>
+    ${ta.bloq   ? `<span class="chip chip--bloqueo" title="${ta.bloq}">${CUADRO}${ta.bloq.split(' · ')[0]}</span>` : ''}
+    ${ta.nuevo  ? '<span class="chip chip--nuevo" title="No planeado">Nuevo</span>' : ''}
+    ${ta.sprint ? '<span class="chip chip--neutro">en el sprint</span>' : ''}
+    <span class="clave">${ta.clave}</span>
+  </div>`;
+}
+
+/* `pref` permite dos árboles en la misma página sin que choquen los ids de plegado */
+function render(destino, datos, pref) {
+  const html = datos.map((ep, i) => {
+    const ce = conteoEpica(ep);
+    const vacias = historiasVacias(ep);
+    const completa = epicaCompleta(ep, ce);
+    /* Una épica completa LLEGA PLEGADA: retirarse en su forma más literal. */
+    const abierta = ep.historias.length > 0 && !ep.plegada && (!completa || ep.abrirDemo);
+    const g = glifoContenedor(ce);
+
+    const filaEp = `<div class="fila fila--epica ${completa ? 'fila--completa' : ''}" role="treeitem" data-plegar="${pref}e${i}">
+      <span class="chevron ${ep.historias.length ? (abierta ? 'chevron--abierto' : '') : 'chevron--vacio'}">${CHEVRON}</span>
+      <span class="glifo glifo--${g}" title="${NOMBRE_DERIVADO[g]}">${GLIFOS[g]}</span>
+      <span class="codigo">${ep.cod}</span>
+      <span class="fila__texto">${ep.titulo}</span>
+      ${completa ? '<span class="chip chip--completa" title="Todas sus tareas están hechas y no queda nada sin desglosar">Completa</span>' : ''}
+      ${!completa && esCompleto(ce) && vacias ? `<span class="chip chip--neutro" title="Sus tareas están hechas, pero ${vacias} ${vacias === 1 ? 'historia sigue' : 'historias siguen'} sin desglosar">${vacias} sin desglosar</span>` : ''}
+      ${contador(ce.bloqueadas)}
+      ${medidorHTML(ce, completa)}
+      <span class="clave">${ep.clave}</span>
+    </div>`;
+
+    const hijos = ep.historias.map((h, j) => {
+      const ch = conteo(h.tareas);
+      const hCompleta = esCompleto(ch);
+      const ab = h.tareas.length > 0 && !hCompleta;
+      const gh = glifoContenedor(ch);
+      const filaH = `<div class="fila fila--historia ${hCompleta ? 'fila--completa' : ''}" role="treeitem" data-plegar="${pref}e${i}h${j}">
+        <span class="chevron ${h.tareas.length ? (ab ? 'chevron--abierto' : '') : 'chevron--vacio'}">${CHEVRON}</span>
+        <span class="glifo glifo--${gh}" title="${NOMBRE_DERIVADO[gh]}">${GLIFOS[gh]}</span>
+        <span class="codigo">${h.cod}</span>
+        <span class="fila__texto">${h.titulo}</span>
+        ${hCompleta ? '<span class="chip chip--completa">Completa</span>' : ''}
+        ${conteoHTML(ch)}
+        <span class="clave"></span>
+      </div>`;
+      const tareas = `<div class="grupo ${hCompleta ? 'grupo--completa' : ''}" data-grupo="${pref}e${i}h${j}" ${ab ? '' : 'hidden'}>${h.tareas.map(filaTarea).join('')}</div>`;
+      return filaH + tareas;
+    }).join('');
+
+    return filaEp + `<div class="grupo ${completa ? 'grupo--completa' : ''}" data-grupo="${pref}e${i}" ${abierta ? '' : 'hidden'}>${hijos}</div>`;
+  }).join('');
+  document.getElementById(destino).innerHTML = html;
+}
+render('arbol', ARBOL, '');
+
+/* ── prueba de estrés: cuatro épicas completas a la vez ──
+   Mismos datos, con E1, E3 y E4 cerradas además de E5. Es una PROYECCIÓN:
+   sirve para responder «¿esto se vuelve un semáforo?», no para informar. */
+const cerrar = ep => ({ ...ep, historias: ep.historias.map(h => ({ ...h,
+  tareas: h.tareas.map(t => t.e === 'cancelada' ? t : ({ ...t, e:'hecha', bloq:undefined })) })) });
+const ESTRES = ARBOL.map((ep, i) => (i === 0 || i === 2 || i === 3 || i === 4) ? cerrar(ep) : ep)
+  /* E1 llega abierta —y sin el plegado de sesión— para enseñar la guía de rama */
+  .map((ep, i) => i === 0 ? { ...ep, abrirDemo:true, plegada:false } : ep);
+render('arbol-estres', ESTRES, 'x');
+/* El rótulo se cuenta, no se escribe a mano: al endurecer la regla de
+   «completa» el número cambió solo, y un rótulo fijo habría mentido. */
+{
+  const nC = ESTRES.filter(ep => epicaCompleta(ep, conteoEpica(ep))).length;
+  const nH = ESTRES.reduce((a, ep) => a + ep.historias.filter(h => esCompleto(conteo(h.tareas))).length, 0);
+  document.getElementById('cab-estres').textContent =
+    `Prueba de estrés · ${nC} de ${ESTRES.length} épicas y ${nH} historias completas`;
+}
+
+/* plegado real, en los dos árboles */
+document.addEventListener('click', ev => {
+  const fila = ev.target.closest('[data-plegar]');
+  if (!fila) return;
+  const grupo = document.querySelector(`[data-grupo="${fila.dataset.plegar}"]`);
+  if (!grupo || !grupo.children.length) return;
+  grupo.hidden = !grupo.hidden;
+  fila.querySelector('.chevron').classList.toggle('chevron--abierto', !grupo.hidden);
+});
+document.getElementById('btn-colapsar').addEventListener('click', () => {
+  document.querySelectorAll('#arbol .grupo').forEach(g => { if (g.children.length) g.hidden = true; });
+  document.querySelectorAll('#arbol .chevron').forEach(c => c.classList.remove('chevron--abierto'));
+});
+document.getElementById('btn-expandir-todo').addEventListener('click', () => {
+  document.querySelectorAll('#arbol-estres .grupo').forEach(g => { if (g.children.length) g.hidden = false; });
+  document.querySelectorAll('#arbol-estres .chevron:not(.chevron--vacio)').forEach(c => c.classList.add('chevron--abierto'));
+});
+
+/* ── leyenda: el color nunca viaja solo — forma + nombre ── */
+document.getElementById('leyenda').innerHTML =
+  ['pendiente','curso','hecha','cancelada','sindesglosar'].map(e =>
+    `<span class="leyenda__item"><span class="glifo glifo--${e}">${GLIFOS[e]}</span>${NOMBRE_ESTADO[e]}</span>`).join('') +
+  `<span class="leyenda__item"><span class="leyenda__banda"></span>No planeado</span>` +
+  `<span class="leyenda__item"><span class="chip chip--bloqueo">${CUADRO}Bloqueada</span></span>` +
+  `<span class="leyenda__item"><span class="leyenda__guia"></span><span class="chip chip--completa">Completa</span></span>`;
+
+/* ═══════════════════════════════════════════════════════════════
+   SPRINT 13 — datos reales
+   ═══════════════════════════════════════════════════════════════ */
+const SPRINT = [
+  { clave:'SICOE-105', t:'Backend de grupos de recursamiento con flujo de aprobación',
+    ruta:'E3 › H1 · Contrato y backend de grupos', e:'curso', quien:'Josue Vergara', cuando:'vence 27 ago' },
+  { clave:'SICOE-103', t:'Endpoint de cambio de carrera con revalidación y auditoría',
+    ruta:'E4 › H1 · Catálogo y registro auditable', e:'curso', quien:'Josue Vergara', cuando:'vence 25 ago',
+    bloqueo:'Bloqueada 4 días · Falta el criterio de revalidación de Control Escolar' },
+  { clave:'SICOE-101', t:'Servicio de registro auditable de movimientos de estatus',
+    ruta:'E4 › H1 · Catálogo y registro auditable', e:'curso', quien:'Josue Vergara', cuando:'vence 26 ago', arrastre:'2º' },
+  { clave:'SICOE-81', t:'Manejo de materias pendientes',
+    ruta:'E6 › H3 · Tablero y casos especiales', e:'pendiente', nuevo:true,
+    quien:'Jesús Alberto Castillo Hernández', cuando:'vence 28 ago',
+    bloqueo:'Bloqueada 2 días · Sin regla para materias que no existen en el destino' },
+  { clave:'SICOE-76', t:'POST aceptar solicitud (3 casos de uso)',
+    ruta:'E6 › H1 · Solicitudes', e:'curso', quien:'Jesús Alberto Castillo Hernández', cuando:'vence 27 ago', arrastre:'3º' },
+  { clave:'SICOE-82', t:'Salida a plantel sin actividad en SICOE',
+    ruta:'E6 › H3 · Tablero y casos especiales', e:'pendiente', nuevo:true, incompleta:'Falta quién y para cuándo' },
+  { clave:'SICOE-56', t:'Endpoint Restablecimiento de contraseñas',
+    ruta:'E1 › H2 · Contraseñas y definición', e:'curso', quien:'Jesús Alberto Castillo Hernández', cuando:'vence 28 ago' },
+  { clave:'SICOE-44', t:'Vista Datos Usuario',
+    ruta:'E1 › H1 · Alta y consulta de usuarios', e:'pendiente', quien:'jose praxedes dominguez acosta', cuando:'vence 29 ago' },
+  { clave:'SICOE-91', t:'PUT regla específica por plantel (4)',
+    ruta:'E5 › H1 · Reglas y configuración', e:'hecha', quien:'Jesús Alberto Castillo Hernández', cuando:'cerrada 21 ago' }
+];
+
+document.getElementById('sprint').innerHTML = SPRINT.map(c => `
+  <article class="tarjeta ${c.nuevo ? 'tarjeta--nuevo' : ''}">
+    <div class="tarjeta__cab">
+      <span class="glifo glifo--${c.e}" title="${NOMBRE_ESTADO[c.e]}">${GLIFOS[c.e]}</span>
+      <span class="tarjeta__titulo">${c.t}</span>
+      <span class="clave">${c.clave}</span>
+    </div>
+    <div class="tarjeta__ruta">${c.ruta}</div>
+    <div class="tarjeta__pie">
+      ${c.incompleta
+        ? `<span class="tarjeta__falta">${c.incompleta}</span>`
+        : `<span class="tarjeta__persona">${c.quien}</span><span class="tarjeta__sep">·</span><span class="tec">${c.cuando}</span>`}
+      <span class="crece"></span>
+      ${c.arrastre ? `<span class="chip chip--arrastre" title="Arrastrada al ${c.arrastre} sprint">${c.arrastre}</span>` : ''}
+      ${c.nuevo ? '<span class="chip chip--nuevo" title="No planeado">Nuevo</span>' : ''}
+    </div>
+    ${c.bloqueo ? `<div class="tira-bloqueo">${CUADRO}<span>${c.bloqueo}</span></div>` : ''}
+  </article>`).join('');
+
+/* ═══════════════════════════════════════════════════════════════
+   TIRA DE VISTAS GLOBALES — datos reales de vistas.html
+   ═══════════════════════════════════════════════════════════════ */
+const PANORAMA = [
+  { nombre:'SICOE', hechas:26, abiertas:40, quieto:6,  bloqueos:3 },
+  { nombre:'Infraestructura', hechas:1, abiertas:11, quieto:2,  bloqueos:4 },
+  { nombre:'PED', hechas:0, abiertas:3,  quieto:43, bloqueos:2 },
+  { nombre:'SIEST', hechas:0, abiertas:8,  quieto:12, bloqueos:0 },
+  { nombre:'DGETI web', vacio:true },
+  { nombre:'IDCE', vacio:true }
+];
+document.getElementById('mini-panorama').innerHTML = PANORAMA.map(p => {
+  if (p.vacio) return `<div class="pan-fila"><div class="pan-nombre"><b>${p.nombre}</b></div>
+    <div class="pan-vacio" style="grid-column:2/-1;text-align:right">sin nada capturado</div></div>`;
+  const total = p.hechas + p.abiertas;
+  return `<div class="pan-fila">
+    <div class="pan-nombre"><b>${p.nombre}</b>${contador(p.bloqueos)}</div>
+    ${medidorHTML({ hechas:p.hechas, total, curso:0, bloqueadas:0 })}
+    <div class="pan-quieto ${p.quieto >= 14 ? 'pan-quieto--alerta' : ''}">${p.quieto} d quieto</div>
+  </div>`;
+}).join('');
+
+const BLOQUEOS = [
+  { g:'Decisión pendiente', filas:[
+    { dias:9, t:'Alta masiva de docentes por plantel', clave:'PED-T2' },
+    { dias:8, t:'Endpoint Restablecimiento de contraseñas', clave:'SICOE-56' },
+    { dias:6, t:'Manejo de usuarios (definición)', clave:'SICOE-85' }]},
+  { g:'Acceso o permisos', filas:[
+    { dias:11, t:'Alertas de espacio en disco en servidores', clave:'INFRA-T2' },
+    { dias:5,  t:'Rotación de llaves SSH de despliegue', clave:'INFRA-T4' }]},
+  { g:'Falta información', filas:[
+    { dias:21, t:'Sincronizar padrón de alumnos con la plataforma', clave:'PED-T1' },
+    { dias:4,  t:'Endpoint de cambio de carrera con revalidación', clave:'SICOE-103' }]},
+  { g:'Tercero externo', filas:[
+    { dias:14, t:'Renovación de certificados TLS del portal', clave:'INFRA-T3' }]}
+];
+document.getElementById('mini-bloqueos').innerHTML = BLOQUEOS.map(b =>
+  `<div class="blq-grupo">${b.g}</div>` + b.filas.map(f => `
+    <div class="blq-fila">
+      <span class="blq-dias">${CUADRO}${f.dias} d</span>
+      <span class="blq-titulo">${f.t}</span>
+      <span class="clave">${f.clave}</span>
+    </div>`).join('')).join('');
+
+/* Carga: segmentos neutros con hueco de 2px; la identidad va en la etiqueta
+   directa, nunca en el tono. Sin pista de fondo: la app no estima esfuerzo. */
+const CARGA = [
+  { n:'Josué Vergara', r:[['SICOE',29]] },
+  { n:'Jesús A. Castillo', r:[['SICOE',6],['Infra',6]] },
+  { n:'Mario', r:[['SIEST',8]] },
+  { n:'Miguel Medina', r:[['Infra',5],['PED',3]] },
+  { n:'José P. Domínguez', r:[['SICOE',5]] },
+  { n:'Roberto Cortés · tú', r:[['SICOE',1],['Infra',1]] }
+];
+const MAXCARGA = 29;
+document.getElementById('mini-carga').innerHTML = CARGA.map(p => {
+  const tot = p.r.reduce((a, x) => a + x[1], 0);
+  return `<div class="car-fila">
+    <div class="car-nombre" title="${p.n}">${p.n}</div>
+    <div>
+      <div class="car-barra" style="width:${(tot / MAXCARGA) * 100}%">
+        ${p.r.map((x, i) => `<div class="car-seg car-seg--${i % 2 ? 'b' : 'a'}" style="flex:${x[1]}" title="${x[0]}: ${x[1]}"></div>`).join('')}
+      </div>
+      <div class="car-etq">${p.r.map(x => `${x[0]} ${x[1]}`).join(' · ')}</div>
+    </div>
+    <div class="car-total">${tot} abiertas</div>
+  </div>`;
+}).join('');
+
+const TERMINADAS = [
+  { s:'Sprint 33', r:'10 – 21 ago', t:[
+    ['SICOE-69','POST Crear solicitud con captura','13 ago'],
+    ['SICOE-70','POST Crear solicitud de alumno registrado','14 ago'],
+    ['SICOE-75','GET calificaciones del alumno','19 ago'],
+    ['SICOE-77','POST rechazar y cancelar solicitud','20 ago'],
+    ['INFRA-T5','Inventario de servicios por servidor','18 ago']]},
+  { s:'Sprint 32', r:'27 jul – 7 ago', t:[
+    ['SICOE-72','GET alumnos por curp','29 jul'],
+    ['SICOE-73','GET carreras','29 jul'],
+    ['SICOE-74','GET materias/carrera/{id}/semestre','4 ago'],
+    ['SICOE-53','Endpoint consulta y filtrado de usuarios','5 ago']]}
+];
+document.getElementById('mini-terminadas').innerHTML = TERMINADAS.map(g =>
+  `<div class="ter-sprint"><b>${g.s}</b><span>${g.r}</span><span class="crece"></span><span>${g.t.length} cerradas</span></div>` +
+  g.t.map(x => `<div class="ter-fila">
+      <span class="glifo glifo--hecha">${GLIFOS.hecha}</span>
+      <span class="ter-titulo">${x[1]}</span>
+      <span class="clave">${x[0]}</span>
+    </div>`).join('')).join('');
+
+/* ═══════════════════════════════════════════════════════════════
+   TABLA DE TOKENS — viejo vs nuevo, para que migrar sea sustituir
+   ═══════════════════════════════════════════════════════════════ */
+const TOKENS = [
+ ['g','Superficies — de gris neutro a azul-tinta (hue OKLCH 262)'],
+ ['fondo-app',      '#FFFFFF','#FCFDFF','#1C1C1E','#11151C','Oscuro más hondo (L .227 → .195) y con temperatura. No es negro: el negro puro sobre LCD deja imagen fantasma.'],
+ ['fondo-panel',    '#FFFFFF','#FCFDFF','#1C1C1E','#11151C','Igual que la app: el contenido es la capa honda.'],
+ ['fondo-lateral',  '#F5F5F7','#EDF1F8','#232326','#1A1F27','El chasis sube un escalón sobre el contenido. Ahí es donde se nota la temperatura.'],
+ ['fondo-cabecera', '#FAFAFB','#F6F8FD','#202023','#161A22','Plano intermedio.'],
+ ['fondo-elevado',  null,'#FFFFFF',null,'#1F252E','<span class="sin-equiv">Sin equivalente.</span> Cuarto plano para menús y emergentes.'],
+ ['hairline',       '#DCDCE0','#C9D0DC','#3A3A3F','#2E333C','Más marcado en claro (1.5:1 vs 1.2:1): con el fondo casi blanco, el anterior desaparecía.'],
+ ['hairline-fuerte',null,'#B7BECB',null,'#3F4551','<span class="sin-equiv">Sin equivalente.</span> Separación de bloque, no de fila.'],
+ ['hover',          '#F0F0F3','#EBF0FA','#2A2A2E','#1D222B','Mismo salto de luminancia, con matiz.'],
+ ['seleccion',      '#E4E4E8','#D8E0EF','#3A3A40','#2A313D','Ya no es la selección del árbol (pasó a --acento-tenue). Queda para listas sin canal de estado.'],
+
+ ['g','Tinta — el metadato sube a AA'],
+ ['tinta-1','#1D1D1F','#181E29','#F2F2F5','#EBEFF4','16.4:1 en claro, 15.8:1 en oscuro.'],
+ ['tinta-2','#55555C','#535B6A','#A9A9B2','#A7ADB7','6.7:1 y 8.1:1.'],
+ ['tinta-3','#86868B','#666E7A','#7C7C85','#90959F','<b>Corrección real:</b> el viejo daba 3.6:1 en claro y no pasaba AA a 11px. Ahora 5.1:1 y 4.6:1.'],
+
+ ['g','Acento — canal nuevo, solo interacción'],
+ ['acento',        null,'#00464D',null,'#5AE7EC','<span class="sin-equiv">Sin equivalente.</span> Cian «arco». Se separa de los estados por LUMINANCIA, no por matiz: en oscuro es más claro que todos, en claro más oscuro.'],
+ ['acento-apagado',null,'#1E767F',null,'#3A9DA0','<span class="sin-equiv">Sin equivalente.</span> Acento inactivo o secundario.'],
+ ['acento-tenue',  null,'#D1F2F5',null,'#0C3D3F','<span class="sin-equiv">Sin equivalente.</span> Fondo de fila seleccionada y de ítem activo del lateral.'],
+ ['acento-contra', null,'#FCFDFF',null,'#0B0F18','<span class="sin-equiv">Sin equivalente.</span> Texto sobre el acento sólido (solo el botón «Capturar»).'],
+
+ ['g','Estado — mismos roles, mismas formas de glifo'],
+ ['estado-hecha','#047857','#006443','#0FA97A','#49CC95','Más claro en oscuro (L .652 → .760). No es capricho: separa el verde del neutro «pendiente» en deuteranopia, que se había quedado en ΔE 5.4.'],
+ ['estado-curso','#1D4ED8','#345BC0','#4C8DF6','#618DF3','Prácticamente el mismo azul (hue 260 → 265).'],
+ ['estado-pendiente','#86868B','#666E7A','#7C7C85','#90959F','Sigue el valor de --tinta-3.'],
+ ['estado-cancelada','#86868B','#666E7A','#7C7C85','#90959F','Igual. La cancelada se distingue por el tachado, no por el tono.'],
+ ['estado-sindesglosar','#A1A1A6','#7F8590','#6A6A73','#7C8089','Sube a 3:1 como elemento gráfico.'],
+
+ ['g','Procedencia y bloqueo — canales intactos'],
+ ['nuevo-banda','#CA8A04','#B68B16','#D9A441','#D7AA42','Banda de 3px en x 0–3. Sin cambio de rol.'],
+ ['nuevo-fondo','#FDF0CC','#FFF0D2','#3A2D0F','#382C11','Fondo del chip «Nuevo».'],
+ ['nuevo-tinta','#713F12','#634800','#F0CE7E','#E6C686','7.6:1 y 8.3:1 sobre su fondo.'],
+ ['bloqueo-banda','#B91C1C','#BA2936','#EF4444','#F0555B','Cuadro del contador y de la tira.'],
+ ['bloqueo-fondo','#FDF0F0','#FFECEB','#3A1A1A','#431F1F','Fondo de la bandera y de la tira de motivo.'],
+ ['bloqueo-tinta','#991B1B','#932A30','#FCA5A5','#F9ADAA','7.1:1 y 8.0:1 sobre su fondo.'],
+
+ ['g','Contenedor completo — todo esto es alta nueva'],
+ ['completa-lavado',null,'#E5F8EE',null,'#13231B','<span class="sin-equiv">Sin equivalente.</span> Fondo de la fila terminada. A propósito a 1.09:1 sobre el panel: se ve, no grita.'],
+ ['completa-guia',  null,'#6F9D85',null,'#4B735F','<span class="sin-equiv">Sin equivalente.</span> Guía de 1px en x 20, dentro de la sangría. Nunca pisa la banda de procedencia (x 0–3).'],
+ ['completa-fondo', null,'#D2F5E2',null,'#143526','<span class="sin-equiv">Sin equivalente.</span> Fondo del chip «Completa» y del hover de la fila.'],
+ ['completa-tinta', null,'#005C3D',null,'#94DDB9','<span class="sin-equiv">Sin equivalente.</span> Texto del chip y del conteo al cerrarse.'],
+
+ ['g','Chips y medidor'],
+ ['chip-fondo','#ECECF0','#E3E8F2','#2E2E33','#262C35','Con temperatura.'],
+ ['chip-tinta','#4B5563','#535B6A','#B0B0BA','#B2B8C1','5.6:1 y 7.0:1.'],
+ ['medidor-pista','#E4E4E8','#D8DEE9','#3A3A40','#292E37','Sin cambio de rol.'],
+ ['medidor-relleno','#6E6E76','#70757D','#8E8E98','#878C96','Sigue NEUTRO. El verde está reservado para «hecha» — salvo al 100 %, donde el medidor ya no informa avance sino cierre.'],
+ ['reparto-a',null,'#70757D',null,'#878C96','<span class="sin-equiv">Sin equivalente formal</span> (existía suelto en vistas.html). Segmento de la barra de carga.'],
+ ['reparto-b',null,'#9BA1AC',null,'#5E636D','<span class="sin-equiv">Sin equivalente formal.</span> Segundo segmento. No codifica identidad: solo separa un tramo del siguiente.']
+];
+
+document.getElementById('tabla-tokens').innerHTML = TOKENS.map(t => {
+  if (t[0] === 'g') return `<tr class="grupo-tok"><td colspan="6">${t[1]}</td></tr>`;
+  const [tok, vc, nc, vo, no, nota] = t;
+  const celda = hex => hex
+    ? `<span class="muestra" style="background:${hex}"></span>${hex}`
+    : '<span style="opacity:.5">—</span>';
+  return `<tr>
+    <td class="tok">--${tok}</td>
+    <td class="hex">${celda(vc)}</td>
+    <td class="hex">${celda(nc)}</td>
+    <td class="hex">${celda(vo)}</td>
+    <td class="hex">${celda(no)}</td>
+    <td class="nota">${nota}</td>
+  </tr>`;
+}).join('');
+
+/* ═══════════════════════════════════════════════════════════════
+   INTERRUPTOR DE TEMA Y RAIL — solo de la maqueta
+   ═══════════════════════════════════════════════════════════════ */
+document.querySelectorAll('[data-tema-op]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.documentElement.dataset.tema = b.dataset.temaOp;
+    document.querySelectorAll('[data-tema-op]').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+  });
+});
+document.getElementById('btn-rail').addEventListener('click', () => {
+  document.getElementById('app').classList.toggle('rail');
+});
+const estrecha = window.matchMedia('(max-width: 1040px)');
+const aplicarEstrecho = () => document.getElementById('app').classList.toggle('estrecho', estrecha.matches);
+estrecha.addEventListener('change', aplicarEstrecho);
+aplicarEstrecho();
+</script>
+</body>
+</html>

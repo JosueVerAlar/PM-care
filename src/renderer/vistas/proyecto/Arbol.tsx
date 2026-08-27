@@ -30,13 +30,31 @@
  *     B         bandera de bloqueo (o quitarla)
  *     C         cancelar la tarea, o revivirla
  *     ⌫         eliminar
+ *     ⌥↑ ⌥↓     subir o bajar entre hermanas · ⌥Inicio / ⌥Fin a los extremos
  *
  * **`S` no es la alternativa accesible del arrastre: es la vía principal.** Por debajo de
  * 1040 px el panel del sprint no se pinta y arrastrar es imposible con cualquier
  * librería; ahí `S` es lo único que hay. Ver `util/arrastre.ts`.
  *
- * Solo se arrastran TAREAS (regla 10): las épicas y las historias no llevan `draggable`,
- * así que intentar arrastrarlas no es que falle, es que no empieza.
+ * ## Los dos arrastres, y cómo se distinguen sin adivinar (regla 10)
+ *
+ * Sobre las mismas filas conviven dos gestos que quieren decir cosas distintas: mandar
+ * una tarea AL SPRINT y REORDENAR dentro del árbol. Que se distingan no se resuelve con
+ * un aviso ni con una tecla modificadora, sino haciendo que empiecen en sitios distintos:
+ *
+ * - **Se agarra el CUERPO de la fila → al sprint.** Solo las tareas, como en E7.
+ * - **Se agarra el ASA (los seis puntos, al principio del renglón) → reordenar.** En los
+ *   tres niveles, y siempre entre hermanas.
+ *
+ * Cada gesto viaja con su propio tipo MIME, así que ninguna zona puede confundirlos: el
+ * panel del sprint no se ilumina durante un reordenamiento, y el árbol no dibuja ninguna
+ * línea de inserción mientras se arrastra algo hacia el sprint. **En cualquier instante
+ * hay un solo juego de destinos encendido**, y es el del gesto que se empezó.
+ *
+ * Y lo que no se puede hacer, no se ofrece: como **mover entre padres no existe** en el
+ * reductor, solo aceptan el soltar las filas hermanas de lo que se arrastra. Sobre
+ * cualquier otra el cursor dice que no y no aparece ninguna línea, en vez de dejar soltar
+ * para contestar con un error.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -65,14 +83,23 @@ import type {
   Tarea,
 } from '../../../compartido/modelo/tipos';
 import { ChipBloqueo, ChipNeutro, ChipNuevo, ContadorBloqueos } from '../../componentes/Chips';
-import { Chevron, Glifo } from '../../componentes/iconos';
+import { Asa, Chevron, Glifo } from '../../componentes/iconos';
 import { Medidor } from '../../componentes/Medidor';
+import { useAccionesOrden } from '../../estado/acciones-orden';
 import { useAccionesSprint } from '../../estado/acciones-sprint';
 import { useAccionesInterfaz, useInterfaz } from '../../estado/interfaz';
 import { useMutar } from '../../estado/mutaciones';
 import { enCampoDeTexto, letraSuelta } from '../../util/atajos';
-import { chipDeArrastre, TIPO_TAREA } from '../../util/arrastre';
+import { chipDeArrastre, esArrastreDeOrden, TIPO_ORDEN, TIPO_TAREA } from '../../util/arrastre';
 import {
+  destinoDesdeHueco,
+  quieto,
+  reordenable,
+  sonHermanas,
+  type Ubicacion,
+} from '../../util/orden';
+import {
+  cuenta,
   etiquetaDerivada,
   etiquetaDeTarea,
   formaDerivada,
@@ -91,7 +118,15 @@ const CICLO: Record<EstadoTarea, EstadoTarea> = {
   cancelada: 'pendiente',
 };
 
-/** Una fila ya resuelta: todo lo que hace falta para pintarla, sin volver a calcular. */
+/**
+ * Una fila ya resuelta: todo lo que hace falta para pintarla, sin volver a calcular.
+ *
+ * `posicion` / `hermanos` son lo que se ANUNCIA (`aria-posinset`), y salen de la lista
+ * filtrada: quien oye «3 de 4» tiene que poder contar cuatro filas. `orden`, en cambio,
+ * sale de la lista REAL del documento, porque es lo que se va a mandar en un comando. En
+ * la pestaña «Terminadas» las dos cuentas difieren —y ahí reordenar está apagado, que es
+ * justamente por lo que no se pueden mezclar.
+ */
 type Fila =
   | {
       tipo: 'epica';
@@ -100,6 +135,7 @@ type Fila =
       padre: null;
       posicion: number;
       hermanos: number;
+      orden: Ubicacion;
       epica: Epica;
       avance: Avance;
       bloqueadas: number;
@@ -112,6 +148,7 @@ type Fila =
       padre: string;
       posicion: number;
       hermanos: number;
+      orden: Ubicacion;
       epica: Epica;
       historia: Historia;
       avance: Avance;
@@ -125,10 +162,74 @@ type Fila =
       padre: string;
       posicion: number;
       hermanos: number;
+      orden: Ubicacion;
       historia: Historia;
       tarea: Tarea;
       enSprint: boolean;
     };
+
+/** Un arrastre no señala una posición, señala un HUECO: el de arriba o el de abajo. */
+type Borde = 'antes' | 'despues';
+
+/** Todo lo que una fila necesita saber del gesto de reordenar. Un solo prop, no seis. */
+interface GestoOrden {
+  /** `false` en «Terminadas» y en solo lectura: ni asa, ni destinos, ni nada. */
+  activo: boolean;
+  /** Qué se está moviendo ahora mismo, o `null`. */
+  moviendo: Fila | null;
+  iniciar(fila: Fila): void;
+  terminar(): void;
+  sobre(destino: Ubicacion, borde: Borde): void;
+  soltar(destino: Ubicacion, borde: Borde): void;
+}
+
+/** En qué mitad de la fila está el cursor. Arriba es «antes»; abajo, «después». */
+function bordeDe(evento: React.DragEvent): Borde {
+  const caja = evento.currentTarget.getBoundingClientRect();
+  return evento.clientY < caja.top + caja.height / 2 ? 'antes' : 'despues';
+}
+
+function tituloDeFila(fila: Fila): string {
+  switch (fila.tipo) {
+    case 'epica':
+      return fila.epica.titulo;
+    case 'historia':
+      return fila.historia.titulo;
+    case 'tarea':
+      return fila.tarea.titulo;
+  }
+}
+
+/**
+ * Qué se lleva consigo este nodo. `null` si no se lleva nada (una tarea, o un contenedor
+ * vacío). No es adorno: la rama entera viajando con la épica es LO QUE SE PIDIÓ, y en el
+ * chip del arrastre y en el anuncio es donde se puede comprobar sin abrir nada.
+ */
+function resumenDeRama(fila: Fila): string | null {
+  if (fila.tipo === 'epica') {
+    const historias = fila.epica.historias.length;
+    if (historias === 0) return null;
+    const tareas = tareasDeEpica(fila.epica).length;
+    return `${cuenta(historias, 'historia', 'historias')} y ${cuenta(tareas, 'tarea', 'tareas')}`;
+  }
+  if (fila.tipo === 'historia') {
+    const tareas = fila.historia.tareas.length;
+    return tareas === 0 ? null : cuenta(tareas, 'tarea', 'tareas');
+  }
+  return null;
+}
+
+/** El chip que va en el cursor: qué se mueve y cuánto se mueve con ello. */
+function etiquetaDeArrastre(fila: Fila): string {
+  const rama = resumenDeRama(fila);
+  return rama === null ? tituloDeFila(fila) : `${tituloDeFila(fila)} · ${rama}`;
+}
+
+function anuncioDeOrden(fila: Fila, aIndice: number): string {
+  const rama = resumenDeRama(fila);
+  const base = `${tituloDeFila(fila)}: posición ${aIndice + 1} de ${fila.orden.hermanos}`;
+  return rama === null ? base : `${base}, con ${rama}`;
+}
 
 export interface PropsArbol {
   proyecto: Proyecto;
@@ -158,10 +259,84 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
   } = useAccionesInterfaz();
   const mutar = useMutar();
   const acciones = useAccionesSprint(sprint);
+  const accionesOrden = useAccionesOrden();
 
   const filas = useMemo(
     () => construirFilas(proyecto, sprint, expandidos, predicado),
     [proyecto, sprint, expandidos, predicado],
+  );
+
+  // --- reordenar: el arrastre que NO sale del árbol --------------------------
+  /**
+   * Vive en un `useState` local y no en el estado de interfaz a propósito. Nadie fuera
+   * del árbol necesita saber que se está reordenando —y que el panel del sprint no lo
+   * sepa es exactamente lo que garantiza que no se ilumine mientras se prioriza—. El
+   * arrastre al sprint sí está allá arriba porque lo comparten dos paneles hermanos.
+   */
+  const [moviendo, setMoviendo] = useState<Fila | null>(null);
+  /** Dónde caería al soltar. `null` mientras el hueco señalado no cambie nada. */
+  const [indicador, setIndicador] = useState<{ id: string; borde: Borde } | null>(null);
+  /**
+   * Lo último que se movió, dicho en palabras. Un reordenamiento que solo se ve no existe
+   * para quien navega con lector de pantalla, y entre cinco épicas parecidas tampoco es
+   * evidente para quien mira. Dice además cuánto viajó con ella: es la promesa del gesto.
+   */
+  const [anuncio, setAnuncio] = useState('');
+
+  const limpiarOrden = useCallback(() => {
+    setMoviendo(null);
+    setIndicador(null);
+  }, []);
+
+  const reordenar = useCallback(
+    async (fila: Fila, aIndice: number) => {
+      const final = await accionesOrden.mover(fila.orden, aIndice);
+      // `null` = no había nada que mover. Ni se anuncia ni se avisa: no pasó nada.
+      if (final !== null) setAnuncio(anuncioDeOrden(fila, final));
+    },
+    [accionesOrden],
+  );
+
+  const sobrevolarOrden = useCallback(
+    (destino: Ubicacion, borde: Borde) => {
+      if (moviendo === null) return;
+      const hueco = borde === 'antes' ? destino.indice : destino.indice + 1;
+      // Los dos huecos que rodean al elemento lo dejan donde estaba. No se dibuja línea:
+      // así se ve ANTES de soltar que ahí no va a pasar nada, en vez de descubrirlo con
+      // un error después.
+      const nada = quieto(moviendo.orden, destinoDesdeHueco(moviendo.orden.indice, hueco));
+      setIndicador((previo) => {
+        if (nada) return null;
+        if (previo !== null && previo.id === destino.id && previo.borde === borde) return previo;
+        return { id: destino.id, borde };
+      });
+    },
+    [moviendo],
+  );
+
+  const soltarOrden = useCallback(
+    async (destino: Ubicacion, borde: Borde) => {
+      const fila = moviendo;
+      limpiarOrden();
+      if (fila === null) return;
+      const hueco = borde === 'antes' ? destino.indice : destino.indice + 1;
+      await reordenar(fila, destinoDesdeHueco(fila.orden.indice, hueco));
+    },
+    [limpiarOrden, moviendo, reordenar],
+  );
+
+  const gesto = useMemo<GestoOrden>(
+    () => ({
+      // En «Terminadas» el árbol está filtrado: las posiciones que se ven no son las del
+      // documento, así que ahí no se reordena. Es la misma bandera que apaga el resto.
+      activo: editable,
+      moviendo,
+      iniciar: setMoviendo,
+      terminar: limpiarOrden,
+      sobre: sobrevolarOrden,
+      soltar: soltarOrden,
+    }),
+    [editable, limpiarOrden, moviendo, sobrevolarOrden, soltarOrden],
   );
 
   // --- foco recorrible (roving tabindex) -----------------------------------
@@ -314,12 +489,26 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
         if (destino !== undefined) irANodo(destino.id);
       };
 
+      /**
+       * `⌥` convierte las cuatro teclas de moverse en las cuatro de MOVER: es el
+       * equivalente por teclado del arrastre por el asa, y la única forma de reordenar
+       * por debajo de 1040 px, donde arrastrar deja de ser cómodo y el panel hermano ni
+       * se pinta. En el tope no hace nada —no se envuelve al otro extremo— porque
+       * `mover` rechaza el destino que deja el nodo donde estaba.
+       */
+      const reordenarA = (aIndice: number) => {
+        evento.preventDefault();
+        if (editable) void reordenar(fila, aIndice);
+      };
+
       switch (evento.key) {
         case 'ArrowDown':
+          if (evento.altKey) return reordenarA(fila.orden.indice + 1);
           evento.preventDefault();
           irA(Math.min(indice + 1, filas.length - 1));
           return;
         case 'ArrowUp':
+          if (evento.altKey) return reordenarA(fila.orden.indice - 1);
           evento.preventDefault();
           irA(Math.max(indice - 1, 0));
           return;
@@ -334,10 +523,14 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
           else if (fila.padre !== null) irANodo(fila.padre);
           return;
         case 'Home':
+          // «Esta épica va primero» es literalmente lo que el usuario pidió poder hacer
+          // de un solo gesto. Con el teclado son dos teclas.
+          if (evento.altKey) return reordenarA(0);
           evento.preventDefault();
           irA(0);
           return;
         case 'End':
+          if (evento.altKey) return reordenarA(fila.orden.hermanos - 1);
           evento.preventDefault();
           irA(filas.length - 1);
           return;
@@ -417,6 +610,7 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
       haySeleccion,
       irANodo,
       redactar,
+      reordenar,
     ],
   );
 
@@ -434,30 +628,51 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
   }
 
   return (
-    // El manejador de teclado vive en el contenedor: el evento sube desde la fila
-    // enfocada, así que no hay que registrar 300 escuchas.
-    <div className="arbol" role="tree" aria-label={etiqueta} onKeyDown={alTeclado}>
-      {filas.map((fila) => (
-        <FilaArbol
-          key={fila.id}
-          fila={fila}
-          hoy={hoy}
-          expandido={fila.tipo !== 'tarea' && expandidos.has(fila.id)}
-          activo={fila.id === activoVigente}
-          seleccionado={haySeleccion && fila.id === activoVigente}
-          editable={editable}
-          editandoTitulo={editandoTitulo === fila.id}
-          acciones={acciones}
-          alternar={alternar}
-          enfocar={enfocarNodo}
-          cambiarEstado={cambiarEstado}
-          registrar={(nodo) => {
-            if (nodo === null) nodos.current.delete(fila.id);
-            else nodos.current.set(fila.id, nodo);
-          }}
-        />
-      ))}
-    </div>
+    <>
+      {/* El manejador de teclado vive en el contenedor: el evento sube desde la fila
+          enfocada, así que no hay que registrar 300 escuchas. */}
+      <div
+        className="arbol"
+        role="tree"
+        aria-label={etiqueta}
+        onKeyDown={alTeclado}
+        // Sacar el cursor del árbol apaga la línea de inserción. Se mira `relatedTarget`
+        // en vez de llevar un contador de profundidad: aquí basta con saber si el destino
+        // sigue dentro, y `dragover` la vuelve a encender en cuanto se entra a una fila.
+        onDragLeave={(evento) => {
+          const destino = evento.relatedTarget;
+          if (destino instanceof Node && evento.currentTarget.contains(destino)) return;
+          setIndicador(null);
+        }}
+      >
+        {filas.map((fila) => (
+          <FilaArbol
+            key={fila.id}
+            fila={fila}
+            hoy={hoy}
+            expandido={fila.tipo !== 'tarea' && expandidos.has(fila.id)}
+            activo={fila.id === activoVigente}
+            seleccionado={haySeleccion && fila.id === activoVigente}
+            editable={editable}
+            editandoTitulo={editandoTitulo === fila.id}
+            acciones={acciones}
+            orden={gesto}
+            indicador={indicador !== null && indicador.id === fila.id ? indicador.borde : null}
+            alternar={alternar}
+            enfocar={enfocarNodo}
+            cambiarEstado={cambiarEstado}
+            registrar={(nodo) => {
+              if (nodo === null) nodos.current.delete(fila.id);
+              else nodos.current.set(fila.id, nodo);
+            }}
+          />
+        ))}
+      </div>
+      {/* Fuera del `role="tree"`: un párrafo suelto no es un `treeitem` válido. */}
+      <p className="solo-lectores" role="status" aria-live="polite">
+        {anuncio}
+      </p>
+    </>
   );
 }
 
@@ -491,6 +706,15 @@ function construirFilas(
       padre: null,
       posicion: i + 1,
       hermanos: epicas.length,
+      // El padre afirmado de una épica es la CLAVE del proyecto, no un id: un proyecto
+      // tiene clave, y así lo llaman ya `crearEpica` y `editarEquipo`.
+      orden: {
+        clase: 'epica',
+        id: epica.id,
+        padre: proyecto.clave,
+        indice: proyecto.epicas.indexOf(epica),
+        hermanos: proyecto.epicas.length,
+      },
       epica,
       // Siempre sobre TODAS las hojas de la épica, nunca sobre las filtradas.
       avance: avanceDeEpica(epica),
@@ -510,6 +734,13 @@ function construirFilas(
         padre: epica.id,
         posicion: j + 1,
         hermanos: historias.length,
+        orden: {
+          clase: 'historia',
+          id: historia.id,
+          padre: epica.id,
+          indice: epica.historias.indexOf(historia),
+          hermanos: epica.historias.length,
+        },
         epica,
         historia,
         avance: avanceDeHistoria(historia),
@@ -527,6 +758,13 @@ function construirFilas(
           padre: historia.id,
           posicion: k + 1,
           hermanos: tareas.length,
+          orden: {
+            clase: 'tarea',
+            id: tarea.id,
+            padre: historia.id,
+            indice: historia.tareas.indexOf(tarea),
+            hermanos: historia.tareas.length,
+          },
           historia,
           tarea,
           enSprint: estaEnSprint(tarea.id, sprint),
@@ -551,6 +789,9 @@ interface PropsFila {
   editable: boolean;
   editandoTitulo: boolean;
   acciones: ReturnType<typeof useAccionesSprint>;
+  orden: GestoOrden;
+  /** Dónde pintar la línea de inserción en ESTA fila, si toca. */
+  indicador: Borde | null;
   alternar: (id: string) => void;
   enfocar: (id: string) => void;
   cambiarEstado: (tarea: Tarea, estado: EstadoTarea) => void;
@@ -566,6 +807,8 @@ function FilaArbol({
   editable,
   editandoTitulo,
   acciones,
+  orden,
+  indicador,
   alternar,
   enfocar,
   cambiarEstado,
@@ -573,6 +816,26 @@ function FilaArbol({
 }: PropsFila) {
   const { arrastre } = useInterfaz();
   const { arrastrar } = useAccionesInterfaz();
+
+  /** Solo aceptan soltar las HERMANAS: mover entre padres no existe, así que no se ofrece. */
+  const esDestino = orden.moviendo !== null && sonHermanas(orden.moviendo.orden, fila.orden);
+  const moviendoEsta = orden.moviendo?.id === fila.id;
+
+  const zonaOrden = esDestino
+    ? {
+        onDragOver: (evento: React.DragEvent) => {
+          if (!esArrastreDeOrden(evento.dataTransfer)) return;
+          // Sin este `preventDefault` el navegador nunca dispara `drop`.
+          evento.preventDefault();
+          evento.dataTransfer.dropEffect = 'move';
+          orden.sobre(fila.orden, bordeDe(evento));
+        },
+        onDrop: (evento: React.DragEvent) => {
+          evento.preventDefault();
+          void orden.soltar(fila.orden, bordeDe(evento));
+        },
+      }
+    : {};
 
   const comunes = {
     ref: registrar,
@@ -582,8 +845,37 @@ function FilaArbol({
     'aria-posinset': fila.posicion,
     'aria-setsize': fila.hermanos,
     'aria-selected': seleccionado,
+    'data-inserta': indicador ?? undefined,
     onFocus: () => enfocar(fila.id),
+    ...zonaOrden,
   };
+
+  /**
+   * El asa. Ocupa su hueco SIEMPRE —aunque esté vacía— para que la columna del chevron
+   * no baile entre pestañas ni entre filas que se pueden reordenar y filas que no.
+   */
+  const asa = (
+    <span
+      className="asa"
+      aria-hidden="true"
+      draggable={orden.activo && reordenable(fila.orden)}
+      title={`Arrastra para reordenar entre sus ${fila.orden.hermanos} hermanas · ⌥↑ ⌥↓`}
+      // Sin esto, agarrar el asa de una épica la plegaría de paso.
+      onClick={(evento) => evento.stopPropagation()}
+      onDragStart={(evento) => {
+        // Este arrastre NO es el del sprint: se corta aquí para que el `onDragStart` de
+        // la fila —que es el que compromete una tarea— no llegue a enterarse.
+        evento.stopPropagation();
+        evento.dataTransfer.setData(TIPO_ORDEN, fila.id);
+        evento.dataTransfer.effectAllowed = 'move';
+        chipDeArrastre(evento, etiquetaDeArrastre(fila));
+        orden.iniciar(fila);
+      }}
+      onDragEnd={() => orden.terminar()}
+    >
+      {orden.activo && reordenable(fila.orden) && <Asa />}
+    </span>
+  );
 
   if (fila.tipo === 'tarea') {
     const { tarea } = fila;
@@ -594,12 +886,14 @@ function FilaArbol({
     if (mostrarProcedencia(tarea)) clases.push('fila--nuevo');
     if (fila.enSprint) clases.push('fila--en-sprint');
     if (tarea.estado === 'cancelada') clases.push('fila--cancelada');
-    if (arrastre?.tareaId === tarea.id) clases.push('fila--arrastrando');
+    if (arrastre?.tareaId === tarea.id || moviendoEsta) clases.push('fila--arrastrando');
 
     return (
       <div
         {...comunes}
         className={clases.join(' ')}
+        // El estado, disponible para el tema sin tener que leer la clase del glifo.
+        data-estado={tarea.estado}
         draggable={arrastrable}
         onDragStart={(evento) => {
           evento.dataTransfer.setData(TIPO_TAREA, tarea.id);
@@ -610,6 +904,7 @@ function FilaArbol({
         onDragEnd={() => arrastrar(null)}
         onClick={() => enfocar(tarea.id)}
       >
+        {asa}
         <Chevron abierto={false} vacio />
         {/* Canal 1: el estado, en la forma del glifo. El bloqueo NO lo sustituye. */}
         {editable ? (
@@ -673,16 +968,35 @@ function FilaArbol({
   const historiaDelLote = fila.tipo === 'historia' && editable ? fila.historia : null;
   const lote = historiaDelLote === null ? [] : acciones.loteDe(historiaDelLote);
 
+  const clases = ['fila', `fila--${fila.tipo}`];
+  if (moviendoEsta) clases.push('fila--arrastrando');
+
   return (
     <div
       {...comunes}
-      className={`fila fila--${fila.tipo}`}
+      className={clases.join(' ')}
+      /**
+       * ENGANCHE DEL ESTADO DERIVADO (E13).
+       *
+       * `hecha` en una épica significa que todas sus tareas cerraron, y el usuario pidió
+       * que eso se vea en la fila entera y no solo en el glifo de 14 px. El cálculo ya lo
+       * daba; lo que faltaba era que la fila lo dijera. El tratamiento visual lo entrega
+       * `diseno` con el rediseño de tema: aquí queda el gancho —un atributo, no una
+       * clase de color— para que se aplique sin tocar este archivo.
+       *
+       * La advertencia que va con él: con varias épicas terminadas, un bloque verde
+       * sólido por cada una convierte el panel en un semáforo y hace que lo TERMINADO,
+       * que ya no pide ninguna decisión, grite más que lo pendiente. Lo que se pinte aquí
+       * tiene que recular, no destacar.
+       */
+      data-derivado={derivado}
       aria-expanded={fila.expandible ? expandido : undefined}
       onClick={() => {
         enfocar(fila.id);
         if (fila.expandible && !editandoTitulo) alternar(fila.id);
       }}
     >
+      {asa}
       <Chevron abierto={expandido} vacio={!fila.expandible} />
       {/* Estado DERIVADO: mismas formas, otros nombres. Nunca se persiste. */}
       <Glifo forma={formaDerivada(derivado)} etiqueta={etiquetaDerivada(derivado)} />

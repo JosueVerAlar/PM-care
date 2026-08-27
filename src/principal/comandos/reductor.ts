@@ -230,6 +230,76 @@ function aplicar(
       };
     }
 
+    // --- planeación inicial ---------------------------------------------
+    case 'cerrarPlaneacion': {
+      const proyecto = doc.proyectos.find((p) => p.clave === comando.proyecto);
+      if (proyecto === undefined) return falta(`el proyecto "${comando.proyecto}"`);
+      if (proyecto.planeacion_cerrada_en !== null) {
+        return invalido(
+          `la planeación de ${proyecto.clave} ya está cerrada desde ${proyecto.planeacion_cerrada_en}`,
+        );
+      }
+
+      // No toca ni una tarea existente: todas quedan como están, que es lo que significa
+      // "esto es lo planeado". Lo único que cambia es cómo nace lo que venga después.
+      proyecto.planeacion_cerrada_en = fechaDe(ahora);
+      const planeadas = contarTareas(proyecto, (t) => t.planeada);
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          proyecto_id: proyecto.clave,
+          origen: rutaLegible([proyecto.clave]),
+          resumen: `Planeación cerrada: ${proyecto.clave} (planeado hasta aquí: ${cuenta(planeadas, 'tarea')})`,
+          detalle: {
+            planeacion_cerrada_en: proyecto.planeacion_cerrada_en,
+            tareas_planeadas: planeadas,
+          },
+        }),
+      };
+    }
+
+    case 'reabrirPlaneacion': {
+      const proyecto = doc.proyectos.find((p) => p.clave === comando.proyecto);
+      if (proyecto === undefined) return falta(`el proyecto "${comando.proyecto}"`);
+      if (proyecto.planeacion_cerrada_en === null) {
+        return invalido(`la planeación de ${proyecto.clave} no está cerrada`);
+      }
+
+      const desde = proyecto.planeacion_cerrada_en;
+      proyecto.planeacion_cerrada_en = null;
+
+      // **No se reclasifica nada, y es la decisión de diseño de este comando.**
+      //
+      // `planeada` es un hecho del momento de la captura (regla 17: procedencia, no
+      // estado). Reescribirlo hacia atrás borraría el único dato que distingue lo que se
+      // previó de lo que se coló, y lo borraría en bloque: reabrir no sabe CUÁLES de esas
+      // tareas se marcaron mal, así que "corregirlas" arrasaría también con las que
+      // fueron emergentes de verdad. Un dato que se puede recalcular no se pierde al
+      // recalcularlo; este no se puede, porque nadie guarda en qué momento se capturó
+      // cada cosa con precisión de reloj.
+      //
+      // Es la misma línea que ya siguen sus vecinos: `reabrirProyecto` no revive ninguna
+      // tarea, `cerrarProyecto` no cancela las pendientes y `reactivarPersona` no la
+      // devuelve a sus equipos de hace seis meses. Un interruptor de ciclo de vida no
+      // reescribe historia; a lo sumo cambia lo que pasará de aquí en adelante.
+      const noPlaneadas = contarTareas(proyecto, (t) => !t.planeada);
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          proyecto_id: proyecto.clave,
+          origen: rutaLegible([proyecto.clave]),
+          resumen:
+            `Planeación reabierta: ${proyecto.clave}` +
+            (noPlaneadas > 0 ? ` (sin reclasificar: ${cuenta(noPlaneadas, 'tarea')})` : ''),
+          detalle: { estaba_cerrada_desde: desde, tareas_no_planeadas: noPlaneadas },
+        }),
+      };
+    }
+
     case 'eliminarProyecto': {
       if (comando.confirmacion !== comando.clave) {
         return invalido(
@@ -339,13 +409,22 @@ function aplicar(
       const salioDe = equiposDe(doc, persona.id);
       const vaciado = fijarEquiposDe(doc, persona.id, []);
       if (!vaciado.ok) return { ok: false, error: vaciado.error };
+      // Si era quien usa la app, el campo se limpia por lo mismo que se vacían sus
+      // equipos: los dos son estado del PRESENTE, y "quién soy" deja de ser cierto en el
+      // mismo momento que "a qué proyectos estoy dedicado". Dejarlo apuntando a alguien
+      // inactivo pondría al conmutador «Solo lo mío» a filtrar por un fantasma, y la
+      // invariante «`usuario` nunca nombra a alguien inactivo» viviría a medias.
+      const eraUsuario = soltarUsuario(doc, persona.id);
 
       return {
         ok: true,
         documento: doc,
         evento: anotar({
           resumen: `Persona desactivada: ${persona.nombre} (${persona.id})`,
-          detalle: { equipos: salioDe },
+          // `era_usuario` solo cuando de verdad pasó: escribirlo en `false` en cada baja
+          // sería ruido en un log que se lee a mano. De aquí se recupera el dato para
+          // volver a fijarlo si la baja fue un error.
+          detalle: { equipos: salioDe, ...(eraUsuario ? { era_usuario: true } : {}) },
         }),
       };
     }
@@ -388,6 +467,11 @@ function aplicar(
       const salioDe = equiposDe(doc, persona.id);
       const vaciado = fijarEquiposDe(doc, persona.id, []);
       if (!vaciado.ok) return { ok: false, error: vaciado.error };
+      // Mismo criterio que con los equipos, y por una razón más: si el campo se quedara
+      // apuntando a alguien que ya no está en `personas`, la validación cruzada tumbaría
+      // el documento y el comando fallaría con un `documento-invalido` que no le explica
+      // nada a nadie. `usuario` es estado del presente, no registro histórico: se suelta.
+      const eraUsuario = soltarUsuario(doc, persona.id);
       doc.personas.splice(doc.personas.indexOf(persona), 1);
 
       return {
@@ -395,7 +479,42 @@ function aplicar(
         documento: doc,
         evento: anotar({
           resumen: `Persona eliminada: ${persona.nombre} (${persona.id})`,
-          detalle: { equipos: salioDe },
+          detalle: { equipos: salioDe, ...(eraUsuario ? { era_usuario: true } : {}) },
+        }),
+      };
+    }
+
+    // --- usuario de la app ----------------------------------------------
+    case 'fijarUsuario': {
+      // La persona tiene que existir y estar activa. La comprobación vive aquí, del lado
+      // que escribe, y no en la vista que ofrece el desplegable: si viviera allá, la
+      // próxima pantalla que fije el usuario se olvidaría del filtro. Es la misma razón
+      // por la que existe `noAsignable`, aunque no se reutilice: ser el usuario no es
+      // recibir trabajo, y su mensaje de error mentiría.
+      if (comando.id !== null) {
+        const persona = doc.personas.find((p) => p.id === comando.id);
+        if (persona === undefined) return falta(`la persona "${comando.id}"`);
+        if (!persona.activa) {
+          return invalido(
+            `${persona.id} (${persona.nombre}) está desactivada; reactívala con "reactivarPersona" antes de fijarla como usuario`,
+          );
+        }
+      }
+      if (doc.usuario === comando.id) return sinCambios();
+
+      const antes = doc.usuario;
+      doc.usuario = comando.id;
+      const nombre =
+        comando.id === null
+          ? 'sin fijar'
+          : `${doc.personas.find((p) => p.id === comando.id)?.nombre ?? comando.id} (${comando.id})`;
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          resumen: `Usuario de la app: ${nombre}`,
+          detalle: { antes, despues: doc.usuario },
         }),
       };
     }
@@ -472,6 +591,65 @@ function aplicar(
           item_id: sitio.epica.id,
           resumen: `Épica eliminada: ${sitio.epica.titulo} (${tareas.size} tareas)`,
           detalle: { tareas: [...tareas] },
+        }),
+      };
+    }
+
+    /**
+     * Priorizar. La rama entera viaja con la épica porque la épica ES el nodo del que
+     * cuelga —ver el comentario largo de `ReordenarEpica` en `tipos.ts`—, así que aquí no
+     * hay nada que arrastrar aparte: un `splice` sobre `proyecto.epicas` y ya.
+     *
+     * Lo que este caso NO hace, y es a propósito:
+     * - **No toca ningún id.** Se mueve el objeto, no se reescribe: la posición no es
+     *   identidad (regla 15). `SICOE-E4` sigue siendo `SICOE-E4` en la primera fila.
+     * - **No toca ningún sprint**, abierto ni cerrado. El orden del árbol y el de
+     *   `sprint.items` son cosas distintas.
+     * - **No escribe ninguna marca de tiempo en el documento.** Eso es lo que garantiza
+     *   —estructuralmente, no por costumbre— que reordenar no cuente como movimiento:
+     *   `diasSinMovimiento` mira `creada_en`, `hecha_en` y los bloqueos de las tareas, y
+     *   ninguno cambia aquí. Un proyecto reordenado diez veces sigue igual de quieto.
+     * - **No se rechaza en un proyecto cerrado o archivado.** Reordenar no afirma ningún
+     *   hecho histórico, solo cómo se lee la lista; y prohibirlo aquí sería más estricto
+     *   que `crearEpica`, que sí deja capturar en un proyecto cerrado.
+     */
+    case 'reordenarEpica': {
+      const proyecto = doc.proyectos.find((p) => p.clave === comando.proyecto);
+      if (proyecto === undefined) return falta(`el proyecto "${comando.proyecto}"`);
+
+      const epica = proyecto.epicas.find((e) => e.id === comando.epicaId);
+      if (epica === undefined) {
+        const otro = buscarEpica(doc, comando.epicaId);
+        return otro === null
+          ? falta(`la épica "${comando.epicaId}"`)
+          : otroPadre(`la épica "${comando.epicaId}"`, proyecto.clave, otro.proyecto.clave);
+      }
+
+      const desde = proyecto.epicas.indexOf(epica);
+      const hasta = indiceDeDestino(comando.aIndice, proyecto.epicas.length);
+      if (hasta === desde) return yaEnPosicion(epica.id, desde);
+      reubicar(proyecto.epicas, desde, hasta);
+
+      const tareas = idsDeTareasDeEpica(epica).size;
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          proyecto_id: proyecto.clave,
+          origen: rutaLegible([proyecto.clave]),
+          epica_id: epica.id,
+          item_id: epica.id,
+          resumen: `Épica reordenada: ${epica.titulo} (posición ${desde + 1} → ${hasta + 1} de ${proyecto.epicas.length})`,
+          // Los conteos de la rama van en el detalle para que la línea de bitácora deje
+          // constancia de CUÁNTO se movió con la épica, que es justo lo que el comando
+          // promete.
+          detalle: {
+            desde,
+            hasta,
+            historias: epica.historias.length,
+            tareas,
+            orden: proyecto.epicas.map((e) => e.id),
+          },
         }),
       };
     }
@@ -555,6 +733,44 @@ function aplicar(
       };
     }
 
+    /** Mismas garantías que `reordenarEpica`, un nivel más abajo: las tareas van con ella. */
+    case 'reordenarHistoria': {
+      const sitioEpica = buscarEpica(doc, comando.epicaId);
+      if (sitioEpica === null) return falta(`la épica "${comando.epicaId}"`);
+
+      const historia = sitioEpica.epica.historias.find((h) => h.id === comando.historiaId);
+      if (historia === undefined) {
+        const otra = buscarHistoria(doc, comando.historiaId);
+        return otra === null
+          ? falta(`la historia "${comando.historiaId}"`)
+          : otroPadre(`la historia "${comando.historiaId}"`, sitioEpica.epica.id, otra.epica.id);
+      }
+
+      const desde = sitioEpica.epica.historias.indexOf(historia);
+      const hasta = indiceDeDestino(comando.aIndice, sitioEpica.epica.historias.length);
+      if (hasta === desde) return yaEnPosicion(historia.id, desde);
+      reubicar(sitioEpica.epica.historias, desde, hasta);
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          proyecto_id: sitioEpica.proyecto.clave,
+          origen: rutaLegible([sitioEpica.proyecto.clave, sitioEpica.epica.titulo]),
+          epica_id: sitioEpica.epica.id,
+          historia_id: historia.id,
+          item_id: historia.id,
+          resumen: `Historia reordenada: ${historia.titulo} (posición ${desde + 1} → ${hasta + 1} de ${sitioEpica.epica.historias.length})`,
+          detalle: {
+            desde,
+            hasta,
+            tareas: historia.tareas.length,
+            orden: sitioEpica.epica.historias.map((h) => h.id),
+          },
+        }),
+      };
+    }
+
     // --- tareas ---------------------------------------------------------
     case 'crearTarea': {
       const sitio = buscarHistoria(doc, comando.historiaId);
@@ -574,7 +790,13 @@ function aplicar(
         estado: 'pendiente',
         // Procedencia, no estado (regla 17): lo capturado después de cerrar la
         // planeación nace «no planeado» sin que el usuario marque nada (D4).
-        planeada: naceComoPlaneada(sitio.proyecto, ahora),
+        //
+        // El campo explícito gana cuando viene, y viene en el caso que la fecha no puede
+        // ver: una captura hecha DIRECTAMENTE en el sprint, en un proyecto que nunca
+        // cerró su planeación. Lo que entra al sprint sin haber pasado por el backlog no
+        // estaba contemplado, y esa es la mejor señal de trabajo emergente que tiene el
+        // producto. Sin esto se perdía entera en Infraestructura y en PED.
+        planeada: comando.planeada ?? naceComoPlaneada(sitio.proyecto, ahora),
         responsable,
         fecha_limite: comando.fechaLimite ?? null,
         prioridad: comando.prioridad ?? null,
@@ -595,7 +817,12 @@ function aplicar(
           historia_id: sitio.historia.id,
           item_id: tarea.id,
           resumen: `Tarea capturada: ${tarea.titulo}`,
-          detalle: { planeada: tarea.planeada },
+          // `explicita` distingue «lo marcó la regla del proyecto» de «lo dijo quien
+          // capturó». Es barato y es lo único que permitirá, dentro de un año, defender
+          // un conteo de trabajo emergente: sin esto, las dos procedencias son la misma
+          // línea de log y no hay forma de saber cuánto de la métrica lo decidió el
+          // calendario y cuánto una persona.
+          detalle: { planeada: tarea.planeada, explicita: comando.planeada !== undefined },
         }),
       };
     }
@@ -651,6 +878,40 @@ function aplicar(
           ...ubicacionDeTarea(sitio),
           resumen: `Tarea eliminada: ${sitio.tarea.titulo}`,
           detalle: { estado: sitio.tarea.estado },
+        }),
+      };
+    }
+
+    /**
+     * La hoja del árbol. Es la única de las tres que puede afectar a una tarea que está
+     * comprometida en un sprint, y **no la afecta**: `sprint.items` no se consulta ni se
+     * toca, ni siquiera el de un sprint abierto. Por eso tampoco hay guarda de sprint
+     * cerrado aquí —no habría nada que proteger de qué—, al revés que en `eliminarTarea`.
+     */
+    case 'reordenarTarea': {
+      const sitioHistoria = buscarHistoria(doc, comando.historiaId);
+      if (sitioHistoria === null) return falta(`la historia "${comando.historiaId}"`);
+
+      const tarea = sitioHistoria.historia.tareas.find((t) => t.id === comando.tareaId);
+      if (tarea === undefined) {
+        const otra = buscarTarea(doc, comando.tareaId);
+        return otra === null
+          ? falta(`la tarea "${comando.tareaId}"`)
+          : otroPadre(`la tarea "${comando.tareaId}"`, sitioHistoria.historia.id, otra.historia.id);
+      }
+
+      const desde = sitioHistoria.historia.tareas.indexOf(tarea);
+      const hasta = indiceDeDestino(comando.aIndice, sitioHistoria.historia.tareas.length);
+      if (hasta === desde) return yaEnPosicion(tarea.id, desde);
+      reubicar(sitioHistoria.historia.tareas, desde, hasta);
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          ...ubicacionDeTarea({ ...sitioHistoria, tarea }),
+          resumen: `Tarea reordenada: ${tarea.titulo} (posición ${desde + 1} → ${hasta + 1} de ${sitioHistoria.historia.tareas.length})`,
+          detalle: { desde, hasta, orden: sitioHistoria.historia.tareas.map((t) => t.id) },
         }),
       };
     }
@@ -1069,6 +1330,67 @@ function idsDeTareasDeProyecto(proyecto: Proyecto): Set<string> {
   return ids;
 }
 
+// --- árbol: orden -----------------------------------------------------------
+
+/**
+ * Índice de destino saneado (decisión 1: **se topa, no se rechaza**).
+ *
+ * El que llama es una interfaz de arrastre, y al soltar en el último hueco de la lista
+ * calcula el índice a partir de geometría: un píxel de más y pide `5` en una lista de
+ * cinco. Rechazarlo haría que «llevar esto hasta abajo» fallara de forma intermitente y
+ * sin nada que explicárselo al usuario. Y un índice absurdo (`999`) no se distingue de un
+ * off-by-one desde aquí: topar los dos al último hueco es la única respuesta que en ambos
+ * casos hace lo que el gesto quería decir.
+ *
+ * Lo que sí se rechaza —negativo, fraccionario, `NaN`— se rechaza arriba, en el esquema
+ * del payload: ningún arrastre bien formado los produce, así que ahí un rechazo ruidoso
+ * señala un bug de verdad en vez de estorbar.
+ *
+ * `cuantos` es el largo de la lista CON el elemento dentro; el tope es `cuantos - 1`
+ * porque el elemento se cuenta a sí mismo (sale y vuelve a entrar, el largo no cambia).
+ * Misma cuenta que `posicionValida` para un item que ya está en el sprint.
+ */
+function indiceDeDestino(aIndice: number, cuantos: number): number {
+  return Math.min(Math.max(Math.trunc(aIndice), 0), Math.max(cuantos - 1, 0));
+}
+
+/**
+ * Saca el elemento de `desde` y lo inserta en `hasta`.
+ *
+ * **Mueve el objeto, no lo reescribe**: es lo que hace que ningún id cambie al reordenar,
+ * y de paso que los campos desconocidos que el usuario escribió a mano viajen con él
+ * (regla 14). Y como el nodo se mueve entero, todo lo que cuelga de él se mueve también:
+ * ahí está la garantía de que la rama acompaña a la épica.
+ */
+function reubicar<T>(lista: T[], desde: number, hasta: number): void {
+  const movidos = lista.splice(desde, 1);
+  lista.splice(hasta, 0, ...movidos);
+}
+
+/**
+ * El hijo existe, pero cuelga de otro padre.
+ *
+ * Reordenar cambia el orden DENTRO de un padre y nada más. Mover una historia de épica o
+ * una tarea de historia sería otra operación —«mover entre padres»—, que hoy no existe;
+ * mientras no exista, este rechazo es lo que impide que un arrastre mal calculado la
+ * simule a medias reordenando en el sitio equivocado.
+ */
+function otroPadre(que: string, esperado: string, real: string): { ok: false; error: ErrorComando } {
+  return invalido(
+    `${que} no cuelga de "${esperado}" sino de "${real}"; reordenar solo cambia el orden dentro de un mismo padre y no mueve nada entre padres`,
+  );
+}
+
+/**
+ * El destino coincide con el origen. Se rechaza en vez de devolver el documento igual, por
+ * lo mismo que `moverAlSprint` rechaza reordenar a la posición en la que ya está: un
+ * comando que no cambia nada no debe apilarse en «deshacer» ni escribir una línea de
+ * bitácora. Soltar una épica donde estaba es el desenlace más común de un arrastre.
+ */
+function yaEnPosicion(id: string, indice: number): { ok: false; error: ErrorComando } {
+  return invalido(`${id} ya está en la posición ${indice + 1}`);
+}
+
 function contarTareas(proyecto: Proyecto, cumple: (tarea: Tarea) => boolean): number {
   let total = 0;
   for (const epica of proyecto.epicas) {
@@ -1102,6 +1424,19 @@ function noAsignable(doc: Documento, personaId: string): ErrorComando | null {
     };
   }
   return null;
+}
+
+/**
+ * Suelta el campo `usuario` si apuntaba a esta persona. Devuelve si lo hizo.
+ *
+ * Una sola función para las dos salidas de una persona (baja y borrado) por lo mismo que
+ * `fijarEquiposDe` es una sola: la próxima ruta que saque a alguien del documento tiene
+ * que llamar a esto, y encontrarlo escrito una vez lo hace evidente.
+ */
+function soltarUsuario(doc: Documento, personaId: string): boolean {
+  if (doc.usuario !== personaId) return false;
+  doc.usuario = null;
+  return true;
 }
 
 /** Claves de los proyectos en cuyo equipo aparece la persona. */
@@ -1486,7 +1821,16 @@ function clonar<T>(valor: T): T {
   return structuredClone(valor);
 }
 
-/** Lo capturado después de cerrar la planeación nace «no planeado» (D4, regla 17). */
+/**
+ * Lo capturado después de cerrar la planeación nace «no planeado» (D4, regla 17).
+ *
+ * Es la regla por omisión, no la última palabra: `crearTarea` acepta `planeada` explícito
+ * y ese gana. Y es la MISMA regla que `capturaNaceNoPlaneada` en `dominio/sprint.ts`, que
+ * la interfaz usa para avisar antes de capturar; las dos tienen que decir siempre lo
+ * mismo o el formulario prometerá una procedencia y el reductor escribirá otra. Si algún
+ * día se mueve el límite del día (hoy es `<=`: cerrar la planeación hoy deja como
+ * planeado lo capturado hoy), se mueve en los dos archivos a la vez.
+ */
 function naceComoPlaneada(proyecto: Proyecto, ahora: Instante): boolean {
   const cierre = proyecto.planeacion_cerrada_en;
   return cierre === null || fechaDe(ahora) <= cierre;
