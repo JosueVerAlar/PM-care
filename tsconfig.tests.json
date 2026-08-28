@@ -2,12 +2,15 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "types": [
-      "node"
-    ]
+      "node",
+      "vite/client"
+    ],
+    "jsx": "react-jsx"
   },
   "include": [
     "tests",
     "src/compartido",
-    "src/principal"
+    "src/principal",
+    "src/renderer"
   ]
 }

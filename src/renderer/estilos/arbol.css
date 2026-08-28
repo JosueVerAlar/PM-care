@@ -78,25 +78,39 @@
 .glifo--cancelada    { color: var(--estado-cancelada); }
 .glifo--sindesglosar { color: var(--estado-sindesglosar); }
 
-/* ── ÉPICA (E HISTORIA) TERMINADA — el enganche, sin la estética ─────
-   La fila lleva `data-derivado="hecha"` cuando TODAS sus tareas contables cerraron; las
-   tareas llevan `data-estado`. El cálculo ya lo daba (`estadoDerivado`), pero hasta ahora
-   solo llegaba al glifo de 14 px.
+/* ── CONTENEDOR TERMINADO — el verde que RECULA ──────────────────
+   `data-derivado="hecha"` significa que todas las tareas contables de esa épica o esa
+   historia cerraron Y que no queda nada sin desglosar (regla 2). Nunca sale de que el
+   porcentaje redondee a 100 (regla 4).
 
-   Aquí NO se pinta nada todavía a propósito: el tratamiento llega con el rediseño de tema
-   de `diseno`, y adelantarlo con los tokens de hoy —que no tienen ningún verde de fondo,
-   solo `--estado-hecha` como tinta— obligaría a inventar un token que después habría que
-   deshacer. El selector es este y no hace falta tocar ningún .tsx para rellenarlo:
+   El tratamiento es deliberadamente débil: un lavado de 1.09:1 contra el panel, ni borde
+   ni bloque sólido. En un proyecto con cinco épicas cerradas, cinco bloques verdes
+   convierten el panel en un semáforo y hacen que lo TERMINADO —que ya no pide ninguna
+   decisión— grite más que lo pendiente, que es lo único que se mira para decidir. Se lee
+   como «esto ya no me toca», no como una alarma.
 
-     .fila--epica[data-derivado="hecha"] { … }
-     .fila--historia[data-derivado="hecha"] { … }
+   El glifo sigue siendo quien AFIRMA el estado: el fondo solo acompaña, y por eso el par
+   texto/fondo no cambia de contraste — el título conserva su tinta. */
 
-   La restricción que va con el encargo, para quien lo rellene: en un proyecto con cinco
-   épicas cerradas, cinco bloques verdes sólidos convierten el panel en un semáforo y
-   hacen que lo TERMINADO —que ya no pide ninguna decisión— grite más que lo pendiente,
-   que es lo único que se mira para decidir. El verde tiene que RECULAR: leerse de un
-   vistazo como «esto ya no me toca» y no como una alarma. Y la regla 4 sigue mandando:
-   verde solo con `data-derivado="hecha"`, jamás porque el porcentaje redondee a 100. */
+.fila--epica[data-derivado="hecha"],
+.fila--historia[data-derivado="hecha"] { background: var(--completa-lavado); }
+
+.fila--epica[data-derivado="hecha"]:hover,
+.fila--historia[data-derivado="hecha"]:hover { background: var(--completa-fondo); }
+
+/* La selección manda sobre el lavado: saber qué fila está elegida importa más que saber
+   que está cerrada, y si no, una épica terminada parecería no poder seleccionarse. */
+.fila[aria-selected="true"][data-derivado="hecha"] { background: var(--seleccion); }
+
+/* El título de un contenedor cerrado pierde el peso extra: deja de reclamar la mirada
+   sin llegar a atenuarse, que sería tratarlo como deshabilitado. */
+.fila--epica[data-derivado="hecha"] .fila__texto { font-weight: 550; color: var(--tinta-2); }
+.fila--historia[data-derivado="hecha"] .fila__texto { font-weight: 480; }
+
+/* La guía de rama de la maqueta (`.grupo--completa::before`) NO se porta: pide un
+   elemento que envuelva la rama, y el árbol se renderiza como lista PLANA a propósito
+   —es lo que hace que las flechas del teclado sean un `indice ± 1`—. Volver a anidar el
+   marcado por una guía de 1px sería pagar el rendimiento y el teclado por una línea. */
 
 /* Columna fija: todas las claves alineadas a la derecha en los tres niveles. */
 .clave {
@@ -122,3 +136,14 @@
 /* `.leyenda__nota` se fue con sus dos frases: explicaban el modelo y el asa escondida, y
    el asa ya no se esconde (E13). */
 
+
+/* ── ESFUERZO ─────────────────────────────────────────────────────
+   Un número, no un chip: los chips de esta app codifican estado o procedencia y este no es
+   ninguno de los dos. Tinta secundaria y ancho fijo para que la columna cuadre entre filas
+   sin empujar el título. Solo aparece si hay estimación: «sin estimar» es lo normal y no
+   se señala. */
+.esfuerzo {
+  flex: 0 0 auto; min-width: 14px; text-align: center;
+  font-size: 11px; font-weight: 600; color: var(--tinta-3);
+  padding: 0 3px; border-radius: 3px; background: var(--chip-fondo);
+}

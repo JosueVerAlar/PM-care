@@ -74,45 +74,23 @@ iCloud no la toca. El primer arranque crea los tres solo, sin preguntar nada.
 Para llegar a ella desde Finder: menú **Ir › Ir a la carpeta…** y pega la ruta. Desde la
 app, cuando algo falla, el botón **Mostrar en Finder** te lleva directo.
 
-### La otra opción: guardarlo en tu carpeta personal
+### PM-care no toca ninguna otra carpeta tuya
 
-Si prefieres tener el archivo a la vista —para versionarlo con git, por ejemplo— puedes
-mover el almacén a donde quieras con la variable `PMCARE_DIRECTORIO_DATOS`:
+**Decidido el 2026-08-27: la app es independiente de tus carpetas.** No escribe en
+Documentos, ni en Escritorio, ni en Descargas; no sincroniza con nada; no abre diálogos de
+guardar ni de importar. Todo lo que crea vive dentro de la carpeta de arriba, y por eso el
+primer arranque no te pide un solo permiso de macOS.
 
-```
-# una sola vez; afecta a las apps que abras después
-launchctl setenv PMCARE_DIRECTORIO_DATOS ~/Documentos/PM-care
-```
+Existe una variable `PMCARE_DIRECTORIO_DATOS` que apunta el almacén a otro directorio,
+pero **no es una opción de uso diario**: está ahí para que las pruebas corran sobre una
+carpeta temporal y para mover el almacén a mano si algún día hiciera falta. La interfaz no
+la ofrece y no hay razón para tocarla. Si la usas, ten en cuenta dos cosas: `launchctl
+setenv` se borra al reiniciar el Mac (la app volvería a mirar la carpeta por omisión y
+verías un tablero vacío, aunque tus datos sigan donde los dejaste), y PM-care **no se
+lleva nada consigo** — tendrías que copiar `datos.json`, `historial.jsonl` y `respaldos/`
+tú mismo antes de abrirla.
 
-y para volver a la carpeta por omisión:
-
-```
-launchctl unsetenv PMCARE_DIRECTORIO_DATOS
-```
-
-**Ojo: eso se borra al reiniciar el Mac.** Si reinicias y vuelves a abrir la app sin
-haberlo puesto otra vez, PM-care mirará la carpeta por omisión y te encontrarás un
-tablero vacío — tus datos siguen donde los dejaste, pero la app no está mirando ahí.
-Mientras no decidamos si el archivo se muda de verdad, lo más seguro es dejarlo en la
-carpeta por omisión.
-
-Al cambiar la ruta, **PM-care no se lleva nada consigo**: en la carpeta nueva empieza con
-un tablero vacío. Si quieres conservar lo que tenías, copia primero `datos.json`,
-`historial.jsonl` y `respaldos/` a la carpeta nueva y luego abre la app.
-
-**Antes de decidir, dos avisos honestos:**
-
-- **iCloud.** Si tienes iCloud Drive sincronizando *Escritorio y Documentos*, poner ahí el
-  archivo es pedir problemas: iCloud puede descargar una versión mientras PM-care escribe
-  otra. La app lo detecta (deja de escribir y te avisa de que el archivo cambió por
-  fuera), pero cada vez que pase tendrás que decidir con qué versión te quedas. Si vas a
-  versionarlo con git, una carpeta **fuera** de Documentos —por ejemplo
-  `~/Proyectos/PM-care-datos`— te da lo mismo sin el conflicto.
-- **Permisos de macOS.** Documentos, Escritorio y Descargas están protegidos: la primera
-  vez que PM-care escriba ahí, macOS preguntará. Si dices que no, la app **no abre a
-  medias**: muestra un aviso que dice qué carpeta es, cómo darle permiso (Ajustes del
-  Sistema › Privacidad y seguridad › Archivos y carpetas) y cómo volver a la carpeta por
-  omisión. Se sale por donde entraste, no por una pantalla en blanco.
+Para respaldar, copia la carpeta entera; no hace falta mover nada de sitio.
 
 ## Respaldar
 

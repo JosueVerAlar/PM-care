@@ -192,9 +192,6 @@ export function SeccionProyectos({ documento }: { documento: Documento }) {
             <p className="bloque__titulo">
               Cerrados <span className="bloque__n tabular">{cerrados.length}</span>
             </p>
-            <p className="bloque__nota">
-              <b>Eliminar solo se ofrece aquí:</b> para borrar un proyecto hay que cerrarlo antes.
-            </p>
 
             {cerrados.length === 0 ? (
               <p className="bloque__nota">Ningún proyecto cerrado todavía.</p>

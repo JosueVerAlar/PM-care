@@ -20,6 +20,10 @@
 }
 .vacio__titulo { font-size: 14px; font-weight: 600; }
 .vacio__nota { max-width: 48ch; color: var(--tinta-2); line-height: 19px; }
+
+/* Un estado vacío con salida: los botones van juntos y con aire por encima, para que se
+   lean como la consecuencia del texto y no como parte de él. */
+.vacio__acciones { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
 .vacio__dato { color: var(--tinta-2); }
 .vacio__etapa { font-size: 11.5px; color: var(--tinta-3); }
 

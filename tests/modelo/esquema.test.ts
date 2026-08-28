@@ -590,3 +590,88 @@ describe('lo que el esquema NO puede ver porque pasa en JSON.parse (tarea de E3)
     expect(() => JSON.parse(CRUDO_EJEMPLO.slice(0, 500))).toThrow(SyntaxError);
   });
 });
+
+/**
+ * N9 · la jerarquía es opcional por diseño.
+ *
+ * «Infraestructura» y «DGETI web» son trabajo continuo sin épicas. Obligarlas a una épica
+ * «General» inventada sería mentirle a la estructura para que quepa en el modelo, así que
+ * una tarea puede colgar de una historia, de una épica o del propio proyecto.
+ */
+describe('N9 · tareas sin jerarquía completa', () => {
+  /** Un proyecto de trabajo continuo: sin una sola épica, con tareas sueltas. */
+  const continuo = () =>
+    unDocumento({
+      proyectos: [
+        unProyecto({
+          clave: 'INFRA',
+          epicas: [],
+          tareas: [unaTarea({ clave: 'INFRA' }), unaTarea({ clave: 'INFRA' })],
+        }),
+      ],
+    });
+
+  it('un proyecto sin épicas y con tareas colgadas valida', () => {
+    const resultado = validarDocumento(continuo());
+    expect(resultado.ok ? [] : resultado.problemas).toEqual([]);
+  });
+
+  it('una épica puede llevar tareas sin historia de por medio', () => {
+    const doc = unDocumento({
+      proyectos: [
+        unProyecto({
+          clave: 'INFRA',
+          epicas: [unaEpica({ clave: 'INFRA', tareas: [unaTarea({ clave: 'INFRA' })] })],
+        }),
+      ],
+    });
+    const resultado = validarDocumento(doc);
+    expect(resultado.ok ? [] : resultado.problemas).toEqual([]);
+  });
+
+  /**
+   * El riesgo silencioso del cambio: si la verificación de contadores no mirara las tres
+   * listas, un id escrito a mano en la lista nueva no levantaría la alarma y la app
+   * volvería a emitir ese número — dos tareas vivas con el mismo id (regla 15).
+   */
+  it('un id alto en una tarea suelta SÍ obliga a subir el contador', () => {
+    const doc = unDocumento({
+      proyectos: [
+        unProyecto({
+          clave: 'INFRA',
+          epicas: [],
+          tareas: [unaTarea({ clave: 'INFRA', id: 'INFRA-T500' })],
+          contadores: { epicas: 0, historias: 0, tareas: 3 },
+        }),
+      ],
+    });
+    const resultado = validarDocumento(doc);
+    expect(resultado.ok).toBe(false);
+    if (!resultado.ok) {
+      expect(resultado.problemas.map((p) => p.mensaje).join(' ')).toContain('500');
+    }
+  });
+
+  it('un id duplicado entre dos listas distintas se detecta igual', () => {
+    const doc = unDocumento({
+      proyectos: [
+        unProyecto({
+          clave: 'INFRA',
+          epicas: [
+            unaEpica({
+              clave: 'INFRA',
+              tareas: [unaTarea({ clave: 'INFRA', id: 'INFRA-T1' })],
+            }),
+          ],
+          tareas: [unaTarea({ clave: 'INFRA', id: 'INFRA-T1' })],
+          contadores: { epicas: 1, historias: 0, tareas: 1 },
+        }),
+      ],
+    });
+    const resultado = validarDocumento(doc);
+    expect(resultado.ok).toBe(false);
+    if (!resultado.ok) {
+      expect(resultado.problemas.map((p) => p.mensaje).join(' ')).toContain('duplicado');
+    }
+  });
+});

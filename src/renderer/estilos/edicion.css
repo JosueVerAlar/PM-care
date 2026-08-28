@@ -307,3 +307,21 @@
   background: var(--fondo-panel); color: var(--tinta-2);
   font-family: inherit; font-size: 10px; font-weight: 600;
 }
+
+/* ── ESCALA DE ESFUERZO ───────────────────────────────────────────
+   «Sin estimar» es el primer botón y no un hueco: es una respuesta válida, y la más
+   frecuente. Objetivos de 24px, que es el mínimo que el resto de la app ya respeta. */
+.campo--esfuerzo { border: 0; padding: 0; margin: 0; }
+.escala { display: flex; gap: 4px; flex-wrap: wrap; }
+.escala button {
+  height: 24px; padding: 0 9px; border-radius: 5px;
+  border: 1px solid var(--hairline); background: var(--fondo-panel);
+  color: var(--tinta-2); font-size: 12px; cursor: pointer;
+}
+.escala button:hover { background: var(--hover); }
+.escala__punto { min-width: 28px; padding: 0; font-weight: 600; }
+.escala button[aria-pressed="true"] {
+  background: var(--solido-fondo); color: var(--solido-tinta);
+  border-color: var(--solido-fondo);
+}
+.escala button:focus-visible { outline: 2px solid var(--foco); outline-offset: 1px; }

@@ -249,12 +249,15 @@ contenedor que tiene hijos, con el conteo en el texto ("Borrar E3 y sus 12 tarea
 después obliga a reescribir el reductor entero para que sea puro y serializable. Hacerlo en
 E7 cuesta poco; hacerlo en la v2 cuesta el reductor completo.
 
-**D2 · Ubicación del archivo de datos — decidir antes de E3.**
-Opciones: `userData` (sin permisos de macOS, invisible para el usuario) · `~/Documentos/PM-care`
-(versionable con git, pero pide autorización TCC y puede estar en iCloud).
-*Recomendación:* **`userData` por defecto, con ruta configurable**. El usuario es técnico y va
-a querer versionar; que lo pueda apuntar a donde quiera, pero que el primer arranque no le pida
-permisos del sistema. **Pregunta abierta: ¿tienes iCloud sincronizando Documentos?**
+**D2 · Ubicación del archivo de datos — CERRADA (2026-08-27, decisión del usuario).**
+«No quiero sincronizar mis carpetas con esta app, todo debe ser independiente.»
+**PM-care guarda todo dentro de su propia carpeta en la Biblioteca**
+(`~/Library/Application Support/PM-care`): documento, `historial.jsonl` y respaldos. No
+escribe en Documentos, Escritorio ni Descargas; no pide permisos de macOS; iCloud no la
+toca. `PMCARE_DIRECTORIO_DATOS` sigue existiendo solo para las pruebas y para un respaldo
+manual; **no se ofrece como configuración en la interfaz**.
+*Lo que se pierde:* versionar el archivo con git desde su sitio. Se sustituye por copiar la
+carpeta a mano (`README.md`, sección de respaldos).
 
 **D3 · Librería de arrastre — decidir en E7.**
 Única excepción admitida a la regla de cero dependencias. HTML5 nativo es gratis pero
@@ -281,15 +284,72 @@ existe «atrasado», solo «quieto».
 Sin archivar, la rejilla de Panorama crece para siempre.
 *Recomendación:* un campo `archivado` desde E2 (cuesta una línea) y el filtro en E10.
 
-**D8 · Importar desde Jira una sola vez — decidir antes de E13.**
+**D8 · Importar desde Jira una sola vez — CERRADA (2026-08-27). Ver N8.**
 Hay MCP de Atlassian conectado. Capturar 11 proyectos a mano es la barrera real de adopción.
 *Recomendación:* **una importación única y manual, fuera de la app** — un JSON generado por un
 agente, no código de red dentro de PM-care. La regla `connect-src 'none'` no se toca.
 
-**D9 · Proyectos sin épicas («Infraestructura», «DGETI web») — decidir antes de E2.**
+**D9 · Proyectos sin épicas («Infraestructura», «DGETI web») — CERRADA (2026-08-27). Ver N9.**
 Si son trabajo continuo, el modelo de 3 niveles no les queda.
 *Recomendación:* permitir tareas colgando directo del proyecto, sin épica. Es un caso del
 esquema, no un modelo aparte. **Pregunta abierta: ¿cuántos de los 11 son así?**
+
+---
+
+## Decisiones del 2026-08-27 — cerradas por el usuario
+
+No se reabren. Si una se contradice al construir, se para y se pregunta; no se decide por
+cuenta propia.
+
+**N1 · Orden de trabajo.** Primero la pila de deshacer (hecho). Después **D8**, importar
+los 11 proyectos desde Jira. Después los tres cambios visibles del nivel 1.
+*Por qué D8 antes que el rediseño:* las preguntas que quedan —¿estorba la clave?, ¿cansa
+el recorrido?, ¿sirve el `＋`?— solo se contestan honestamente usando la app con los 11
+proyectos de verdad. Sin datos reales, capturar a mano es la barrera de adopción.
+
+**N2 · Nivel 1 del rediseño: solo los tres visibles.** `＋` en la fila (1.4), borrar el
+texto explicativo (1.2) y la paleta (1.1). ~1.5 jornadas.
+*Lo que se pierde:* 1.3, 1.5 y 1.6 no desaparecen — se re-priorizan con lo aprendido de
+estos tres. El nivel 1 completo era una apuesta de 3.75 jornadas sin retroalimentación.
+
+**N3 · Pruebas de renderer: autorizadas.** `jsdom` y `@testing-library/react` entran como
+dependencias **de desarrollo**. No tocan el paquete ni el runtime, y la alternativa era
+hacer 2.1 y 2.2 —los dos cambios de mayor riesgo— sobre 0 % de cobertura de interfaz.
+**Condición única, no negociable:** las primeras pruebas se escriben sobre el
+comportamiento ACTUAL del renderer, antes de tocarlo. Red, no decoración.
+
+**N4 · El menú `⋯` por fila: lista nativa, no 200 líneas a mano.** El criterio es el
+contenido del menú, no la estética: con ≤5 acciones, sin submenús, sin íconos por acción y
+sin separadores, un botón que despliega una lista nativa es honesto y trae teclado, foco y
+`Escape` gratis. Se migra a un menú propio **el día que el menú necesite su primera cosa
+que un `<select>` no hace** — y ese día se escribe aquí.
+
+**N5 · «No es fácil agregar items internos»: se observa, no se opina.** Entregar el `＋`
+visible, usarlo una semana, y **solo si la fricción persiste** invertir en la captura en
+la fila (2.1, 2 jornadas, riesgo alto). Si el problema era descubrir la tecla `N`, el `＋`
+lo cura entero y 2.1 sobra.
+
+**N6 · La clave (`SICOE-104`) sale del renglón.** Se copia, no se lee: nadie se orienta
+escaneando claves, se orienta por el título. Vuelve visible al pasar el ratón o al
+seleccionar la fila, con copiado en un clic. Los 88 px recuperados son para el `＋` y el `⋯`.
+
+**N7 · Equipos sale de la barra lateral.** Uso mensual. *Regla general que aplica a toda
+la lateral:* **la frecuencia de uso decide la jerarquía de navegación, no la importancia
+organizacional.** Equipos vive bajo Administración o un menú secundario.
+
+**N8 · D8 · Importación desde Jira: script externo, una sola vez.** Un JSON generado
+fuera de la app con el MCP de Atlassian. No se construye integración permanente para un
+problema de arranque. `connect-src 'none'` no se toca.
+
+**N9 · D9 · La jerarquía es opcional por diseño.** Las tareas pueden colgar directo del
+proyecto: `tarea.padre` es una épica **o** el proyecto. Obligar a Infraestructura y DGETI
+web a una épica «General» artificial es mentirle a la estructura. La vista agrupa por
+épica cuando existe y lista plano cuando no.
+
+**N10 · Ícono propio sí, firma del `.app` todavía no.** El ícono es una hora y quita la
+señal de «experimento» cada vez que se ve en el Dock. La firma ad hoc solo importa cuando
+el `.app` viaje a otra máquina; el día que se comparta con alguien del equipo, ese día se
+firma.
 
 ---
 
@@ -314,6 +374,150 @@ puntos u horas · adjuntos y comentarios en las tareas.
 ---
 
 ## Bitácora
+
+**2026-08-27 · Esfuerzo por tarea y tiempo de resolución.**
+
+Dos decisiones del usuario, implementadas tal cual: **esfuerzo en Fibonacci `1·2·3·5·8`** y
+**el reloj corre desde que arranca el sprint hasta que él marca la tarea completada.**
+
+- Campos nuevos, los dos aditivos: `tarea.esfuerzo` y `item.comprometida_en`. El segundo no
+  cambia la regla del reloj, la protege: una tarea metida DÍAS después del arranque no puede
+  cargar con los días en que ni existía el compromiso. El tope es **por día de calendario**,
+  no por instante — comprometer algo a las nueve de la mañana del primer día no puede
+  regalarle nueve horas al que capturó temprano.
+- `compartido/dominio/duracion.ts`, puro: resolución por tarea, promedios por persona,
+  equipo y proyecto, suma de esfuerzo y días por punto. 33 pruebas, 5 de ellas invariantes
+  sobre los 300 árboles generados.
+- **Vista global «Tiempos»**, la octava. Sin semáforos, sin pista de fondo en la barra y sin
+  una sola proyección: no existe un «bien» ni un «mal» de días por tarea, y un promedio
+  describe lo que pasó — convertirlo en pronóstico sería el índice de salud 0-100 que está
+  fuera de alcance desde el primer día.
+
+**Un fallo real, encontrado por una prueba que yo había escrito mal:** `sprint.inicio` es una
+fecha suelta sin huso, y resolverla como `T00:00:00` la interpretaba en la zona de la
+MÁQUINA. La misma tarea duraba seis horas distintas según dónde se abriera la app, sin
+fallar y sin avisar. Ahora el huso sale del instante contra el que se resta.
+
+**Los tres límites que la pantalla dice en voz alta, no en una nota al pie:**
+cerrar algo fuera de un sprint no da duración (`null`, jamás `0`, y va a pasar seguido);
+un promedio de menos de cinco tareas no se muestra; y lo cerrado antes de hoy no tiene
+duración y no la va a tener nunca — esto no se reconstruye hacia atrás.
+
+972 pruebas, `npm run tipos` y `npm run build` limpios.
+
+**2026-08-27 · N2 · los tres visibles, cerrados.**
+
+- **1.1 paleta.** `base.css` toma la de `maqueta/tema.html` entera, en claro y oscuro. Los
+  seis tokens que la maqueta no trae —`--foco`, `--solido-*`, `--peligro-*`, `--medida`—
+  no se inventaron: se derivan del canal de interacción que la maqueta ya fijó
+  (`--foco: var(--acento)`). Contrastes MEDIDOS, no supuestos: foco 10.4:1 en claro y
+  12.3:1 en oscuro; peligro 6.1:1 y 5.4:1. `tests/estilos/tokens.test.ts` sigue en verde,
+  que era justo el que avisaba de que sustituir la paleta dejaba la app sin anillo de foco.
+- **`data-derivado="hecha"` relleno.** Lavado de 1.09:1, sin borde ni bloque sólido: el
+  verde RECULA. Cinco épicas cerradas no pueden gritar más que lo pendiente, que es lo
+  único que se mira para decidir. La selección gana sobre el lavado. La guía de rama de la
+  maqueta NO se portó y está dicho por qué: pide envolver la rama en un elemento, y el
+  árbol es lista plana a propósito.
+- **1.2 texto.** Los diez `NotaPie` ya no existían; se podó lo que quedaba con un criterio:
+  se queda lo que dice un HECHO que hace falta ahora, se va lo que explica el modelo. Seis
+  bloques recortados.
+- **1.4 y 1.5 ya estaban hechos** en una sesión anterior: el `＋` de cada épica e historia
+  y el `＋ Nueva épica` de la cabecera. Lo que faltaba de verdad era el estado vacío, que no
+  ofrecía ninguna salida y decía «no tiene épicas capturadas» —falso desde N9—. Ahora
+  ofrece las dos formas de empezar, épica o tarea suelta, y solo cuando se puede escribir.
+
+**Dos defectos reales que salieron de aplicar esto, ninguno estético:**
+
+- **Capturar en el sprint no tenía ningún destino en cinco de los once proyectos.**
+  `destinosDeCaptura` solo listaba historias, así que con los datos reales el diálogo decía
+  «no hay dónde capturar» sobre un Jira lleno de trabajo. Ahora ofrece los tres niveles, el
+  más preciso primero.
+- **El texto de esa pantalla afirmaba «una tarea siempre vive en una historia del árbol»**,
+  que N9 dejó falso. La copia mentía sobre el modelo.
+
+934 pruebas, `npm run tipos` limpio, `npm run build` pasa.
+
+**2026-08-27 · El árbol pinta las tres formas. N9 cerrado de punta a punta.**
+
+Las cinco tareas de la semilla se ven en pantalla, verificado montando el árbol en un DOM
+con el documento real. Antes de esto Infraestructura enseñaba una épica vacía y PULSO
+nada.
+
+- **`construirFilas` salió de `Arbol.tsx` a `filas.ts`.** Es la lógica con más casos límite
+  de la interfaz y ahora es pura: se prueba con datos, sin DOM ni proveedores. Doce pruebas
+  la cubren, incluidas las que antes no existían para nada (qué se anuncia con
+  `aria-posinset`, y que el índice de reordenar sale de la lista real y no de la filtrada).
+- Una tarea va al **nivel 3** bajo una historia, al **2** bajo una épica y al **1** colgada
+  del proyecto. Dentro de un contenedor va antes lo que agrupa y después lo suelto —la
+  convención del Finder—, para que una tarea suelta no separe dos historias hermanas.
+- **`crearTarea` y `reordenarTarea` reciben `contenedorId`**, no `historiaId`: una historia,
+  una épica o la CLAVE del proyecto. Sin esto se podían LEER las tareas de un proyecto
+  continuo pero no capturar ni reordenar ninguna, que es media función.
+- Se cerró la deuda que `acceso-tareas.test.ts` declaraba: de las ocho excepciones a la
+  regla 18 quedan cuatro, y las cuatro son correctas por definición.
+- **Primeras pruebas de interfaz del proyecto** (`jsdom` + `@testing-library/react`,
+  autorizadas). Ocho, y una de ellas vigila en PANTALLA la regla 2: una épica vacía dice
+  «sin desglosar» y no aparece ni un `0%` ni un `NaN` en el DOM. Eso no lo miraba nadie.
+- 908 → 928 pruebas. `npm run tipos` limpio en los tres tsconfig.
+
+**Lo que queda antes de que sea agradable de usar:** los tres cambios visibles de N2 —el
+`＋` en la fila, la poda del texto explicativo y la paleta—, y decidir si la épica sin
+historias merece alguna señal de que ahí no falta un nivel, sino que no lo hay.
+
+**2026-08-27 · Semilla con los 11 proyectos reales, y la confirmación de que N9 era obligatorio.**
+
+Se leyó el Jira una vez (solo lectura, fuera de la app) y salió el hallazgo que cierra la
+discusión de la jerarquía: **cinco de los once proyectos no tienen nivel de historia**
+—IDCE, INDICA, PULSO, REDOC y SISEC usan «Flujo de trabajo» → «Tarea»— y las 12 tareas
+abiertas de Infraestructura cuelgan directamente de la épica `IN-2`, sin una sola historia.
+Inventar una historia «General» habría metido un nivel falso en más de un tercio del
+tablero. Detalle en `docs/jira.md`.
+
+Tres claves no eran las que se suponían: Infraestructura es `IN` (no `INFRA`), DGETI web es
+`DW`, SIEST es `SIES`. Como la clave es inmutable y prefija todos los ids, equivocarlas hoy
+costaba renombrar a mano cada id el día que se notara.
+
+`datos/semilla.json`: los 11 proyectos, tres tarjetas importadas de verdad (`IN-3`, `IN-4`,
+`IN-9`, colgadas de su épica sin historia) y dos simuladas en PULSO colgadas del proyecto,
+distinguibles porque no traen `clave_externa`. Siete pruebas la vigilan. **No sustituye a
+`datos/ejemplo.json`**, que sigue siendo el fixture congelado en el archivo de oro.
+
+**Sigue pendiente lo mismo que ayer, y ahora se nota más:** el árbol del renderer no pinta
+tareas colgadas de una épica ni de un proyecto, así que de las cinco tareas de la semilla
+**el árbol no muestra ninguna**. Las siete vistas transversales sí las cuentan.
+
+**2026-08-27 · N9 · la jerarquía deja de ser obligatoria (modelo, dominio y comandos).**
+
+Se hizo ANTES de importar de Jira a propósito: el costo de un cambio de esquema se mide
+contra los datos que ya existen, y hoy ese conjunto es cero. Importar primero habría
+significado importar dos veces, la segunda con migración de datos vivos encima.
+
+- **Camino elegido: tres listas con una puerta única, no una tarea con puntero al padre.**
+  Aplanar las tareas a un arreglo con `padre_id` destruiría el anidamiento, que es la
+  forma en que el archivo se lee y se edita a mano (regla 14) — el anidamiento *es* la
+  relación de pertenencia, expresada de la única manera que resulta legible. Además no
+  eran horas: 55 accesos en `src/`, 95 en pruebas, y todos los comandos del reductor. Lo
+  que se compra con la decisión es el riesgo de que una función recuerde dos de las tres
+  listas; lo que lo paga es `tareasDe(nodo)` y la prueba estructural que lo vigila.
+- El campo se declara **una vez** (`CONTIENE_TAREAS` en `esquema.ts`) y se compone en
+  proyecto, épica e historia: un solo comentario, una sola definición.
+- **La regla de ids no cambió y ahora está escrita donde se emite:** el número sale
+  siempre del proyecto raíz, nunca del padre inmediato. Mover una tarea de una historia al
+  proyecto **no la renumera**, así que ninguna referencia del historial ni de un sprint
+  cerrado se rompe. `maximosUsados` ya recorre las tres listas: sin eso, un `INFRA-T500`
+  escrito a mano en la lista nueva no habría levantado la alarma y la app habría vuelto a
+  emitir ese número.
+- **Que no rompe nada está medido, no afirmado.** `tests/modelo/oro-documento-real.test.ts`
+  congeló ANTES del cambio la salida completa del dominio sobre `datos/ejemplo.json` —1037
+  líneas: avance y estado de cada nodo, la ruta de cada tarea, las cuatro vistas
+  transversales y la carga por persona— y sigue pasando idéntica.
+- El generador de árboles aleatorios ahora produce las tres formas, así que las 300
+  semillas de las invariantes ejercitan N9 de verdad. 895 → 901 pruebas.
+- **Lo que queda fuera y hay que decir en voz alta:** el árbol del renderer todavía no
+  pinta las tareas colgadas de una épica ni del proyecto, y `crearTarea` sigue exigiendo
+  una historia. El modelo las sostiene y todas las vistas transversales las cuentan, pero
+  **si se importara Infraestructura hoy, la vista de proyecto se vería vacía.** Va con el
+  `＋` de la fila (N2 · punto 1.4), después de las pruebas de renderer (N3).
 
 <!-- Una línea por cambio de estado. Entradas nuevas arriba. Formato: FECHA · etapa · qué pasó -->
 
@@ -349,8 +553,8 @@ puntos u horas · adjuntos y comentarios en las tareas.
 - **El primer arranque no pide ningún permiso de macOS** con la ruta por omisión: la
   carpeta vive en la Biblioteca, que no está bajo TCC. El permiso solo aparece si
   `PMCARE_DIRECTORIO_DATOS` apunta a Documentos, Escritorio o Descargas.
-- **D2 sigue abierta**: la pregunta de iCloud no tiene respuesta del usuario. El README
-  documenta las dos opciones y cómo pasar de una a otra sin decidir por él.
+- **D2 quedó cerrada el 2026-08-27**: el usuario pidió que la app fuera independiente de
+  sus carpetas. El comportamiento por omisión ya era ese, así que no hubo cambio de código.
 - Pendiente deliberado: **ícono propio** (va el de Electron por omisión) y decidir si el
   paquete se firma **ad hoc** — sin cuenta de Apple ni certificado — para que, copiada a
   otro Mac, macOS diga «no se pudo verificar el desarrollador» en vez de tratarla como

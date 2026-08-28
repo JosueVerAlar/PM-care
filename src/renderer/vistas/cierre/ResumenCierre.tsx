@@ -109,9 +109,11 @@ export function ResumenCierre({ documento, sprintId }: { documento: Documento; s
           <Cuenta etiqueta="Sin decidir (cierre viejo)" n={sinDecidir} />
         </dl>
 
+        {/* Solo lo que NO se ve en la pantalla: una discrepancia en las arrastradas, que
+            no hubiera sprint destino, o que algo se canceló. Que el sprint sea inmutable
+            se explicaba aquí y era información del modelo, no del cierre que acaba de
+            pasar. */}
         <p className="cierre-hecho__nota">
-          {sprint.nombre} es inmutable a partir de ahora: sus desenlaces, responsables y
-          fechas quedaron congelados y ningún comando los toca.{' '}
           {arrastradas > 0 && pasaron !== arrastradas
             ? `Ojo: el sprint registra ${arrastradas} arrastradas pero solo ${pasaron} aparecen en el destino.`
             : arrastradas === 0

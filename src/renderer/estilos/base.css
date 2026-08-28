@@ -10,62 +10,61 @@
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* superficies */
-  --fondo-app:      #FFFFFF;
-  --fondo-lateral:  #F5F5F7;
-  --fondo-panel:    #FFFFFF;
-  --fondo-cabecera: #FAFAFB;
-  --hairline:       #DCDCE0;
+  /* ── superficies · hue 262, croma bajo: temperatura sin colorear ── */
+  --fondo-app:         #FCFDFF;
+  --fondo-panel:       #FCFDFF;
+  --fondo-lateral:     #EDF1F8;
+  --fondo-cabecera:    #F6F8FD;
+  --fondo-elevado:     #FFFFFF;
+  --hairline:          #C9D0DC;
+  --hairline-fuerte:   #B7BECB;
+  --hover:             #EBF0FA;
+  --seleccion:         #D8E0EF;
 
-  /* tinta */
-  --tinta-1: #1D1D1F;   /* 16.8:1 sobre panel */
-  --tinta-2: #55555C;   /*  7.4:1 */
-  --tinta-3: #86868B;   /*  3.6:1 — solo metadatos */
+  /* ── tinta ── (contrastes sobre --fondo-panel) */
+  --tinta-1:           #181E29;   /* 16.4:1 */
+  --tinta-2:           #535B6A;   /*  6.7:1 */
+  --tinta-3:           #666E7A;   /*  5.1:1 — metadatos a 11px, ahora sí AA */
 
-  /* interacción — NEUTRA a propósito: el azul compite con «en curso» */
-  --hover:     #F0F0F3;
-  --seleccion: #E4E4E8;
-  --foco:      #1D4ED8;
+  /* ── ACENTO · canal de INTERACCIÓN, jamás de estado ──
+     En claro es un petróleo profundo: más oscuro que cualquier estado. */
+  --acento:            #00464D;   /* 12.3:1 */
+  --acento-apagado:    #1E767F;
+  --acento-tenue:      #D1F2F5;
+  --acento-contra:     #FCFDFF;
 
-  /* CANAL 1 · estado — solo dos tonos vivos; pendiente y cancelada son neutros */
-  --estado-hecha:        #047857;  /* 5.5:1 */
-  --estado-curso:        #1D4ED8;  /* 6.7:1 */
-  --estado-pendiente:    #86868B;
-  --estado-cancelada:    #86868B;
-  --estado-sindesglosar: #A1A1A6;
+  /* ── CANAL 1 · estado — la forma manda; el color solo confirma ── */
+  --estado-hecha:      #006443;   /* 7.1:1 */
+  --estado-curso:      #345BC0;   /* 6.1:1 */
+  --estado-pendiente:  #666E7A;
+  --estado-cancelada:  #666E7A;
+  --estado-sindesglosar: #7F8590;
 
-  /* CANAL 2 · procedencia */
-  --nuevo-banda:  #CA8A04;  /* 2.9:1 — elemento GRÁFICO, nunca texto */
-  --nuevo-fondo:  #FDF0CC;
-  --nuevo-tinta:  #713F12;  /* 7.6:1 sobre --nuevo-fondo */
+  /* ── CANAL 2 · procedencia — banda de 3px en x 0–3 ── */
+  --nuevo-banda:       #B68B16;   /* 3.1:1 — elemento gráfico, nunca texto */
+  --nuevo-fondo:       #FFF0D2;
+  --nuevo-tinta:       #634800;   /* 7.6:1 sobre --nuevo-fondo */
 
-  /* CANAL 3 · bloqueo — bandera sobre la tarea, no reemplaza su estado */
-  --bloqueo-banda: #B91C1C;  /* 6.5:1 */
-  --bloqueo-fondo: #FDF0F0;
-  --bloqueo-tinta: #991B1B;  /* 7.5:1 */
+  /* ── CANAL 3 · bloqueo — bandera con palabra + tira con motivo ── */
+  --bloqueo-banda:     #BA2936;   /* 6.0:1 */
+  --bloqueo-fondo:     #FFECEB;
+  --bloqueo-tinta:     #932A30;   /* 7.1:1 sobre --bloqueo-fondo */
 
-  /* chips neutros */
-  --chip-fondo: #ECECF0;
-  --chip-tinta: #4B5563;     /* 6.4:1 */
+  /* ── NUEVO · contenedor COMPLETO — reconocer y retirarse ── */
+  --completa-lavado:   #E5F8EE;   /* fondo de la fila: 1.09:1 vs panel */
+  --completa-guia:     #6F9D85;   /* guía de rama, 1px: 3.0:1 */
+  --completa-fondo:    #D2F5E2;
+  --completa-tinta:    #005C3D;   /* 6.9:1 sobre --completa-fondo */
 
-  /* superficies sólidas de acción (E7). Tomadas tal cual de la maqueta de
-     administración de `diseno`, donde ya venían medidas en los dos temas. */
-  --solido-fondo:  #1D1D1F;
-  --solido-tinta:  #FFFFFF;   /* 16.8:1 */
-  --peligro-fondo: #B91C1C;
-  --peligro-tinta: #FFFFFF;   /*  6.5:1 */
+  /* ── chips y medidor ── */
+  --chip-fondo:        #E3E8F2;
+  --chip-tinta:        #535B6A;
+  --medidor-pista:     #D8DEE9;
+  --medidor-relleno:   #70757D;   /* NEUTRO: el verde está reservado */
+  --reparto-a:         #70757D;   /* 5.0:1 — segmentos de la barra de carga */
+  --reparto-b:         #9BA1AC;   /* 3.0:1 — no codifican identidad */
 
-  /* medidor — relleno NEUTRO: el verde está reservado para «hecha» */
-  --medidor-pista:   #E4E4E8;
-  --medidor-relleno: #6E6E76;
-
-  /* E11 · reparto de carga. Dos neutros que solo SEPARAN tramos contiguos: no codifican
-     identidad — el proyecto lo dice la etiqueta de debajo, no el tono. Medidos por `diseno`
-     en `maqueta/vistas.html`: 5.05:1 y 3.43:1 sobre la superficie del panel. */
-  --reparto-a: #6E6E76;
-  --reparto-b: #8A8A92;
-
-  /* métrica */
+  /* ── métrica · idéntica al sistema vigente ── */
   --alto-epica: 32px;
   --alto-historia: 28px;
   --alto-tarea: 26px;
@@ -74,60 +73,79 @@
   --sangria-3: 44px;
   --ancho-lateral: 216px;
   --ancho-rail: 48px;
-  /* Medida de lectura de las vistas globales, que ocupan las dos columnas: dejar que un
-     título y su clave se separen 1200 px vuelve la fila ilegible. Se limita el CONTENIDO;
-     el hover y el hairline siguen llegando al borde. Viene de la maqueta de E0. */
-  --medida: 1040px;
+  --guia-x: 20px;          /* NUEVO: x de la guía de rama completa */
 
-  color-scheme: light dark;
+  /* ── tipografía ── */
+  --fuente: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+  --fuente-tec: ui-monospace, "SF Mono", SFMono-Regular, Menlo, "Cascadia Mono", monospace;
+
+  /* ── los seis que la maqueta no trae y `base.css` sí necesita ──
+     No se inventan colores: se derivan del canal de INTERACCIÓN que la maqueta ya fijó.
+     Sin esto, sustituir la paleta dejaba la app sin anillo de foco visible, sin excepción
+     y sin error de compilación. `tests/estilos/tokens.test.ts` lo vigila. */
+  --foco:            var(--acento);          /* 10.4:1 sobre el panel */
+  --solido-fondo:    var(--acento);
+  --solido-tinta:    var(--acento-contra);   /* 10.4:1 sobre --solido-fondo */
+  --peligro-fondo:   var(--bloqueo-banda);
+  --peligro-tinta:   #FFFFFF;      /* 6.1:1 sobre --peligro-fondo */
+
+  /* medida de lectura: métrica, no color. Se queda como estaba. */
+  --medida: 1040px;
 }
 
 /* La app no tiene interruptor de tema propio: sigue el del sistema, como cualquier
    otra ventana de macOS. El `backgroundColor` de la BrowserWindow ya se elige con
    `nativeTheme` para que no haya destello blanco al abrir en oscuro. */
+/* La app no tiene interruptor de tema propio: sigue el del sistema, como cualquier
+   otra ventana de macOS. El `backgroundColor` de la BrowserWindow ya se elige con
+   `nativeTheme` para que no haya destello blanco al abrir en oscuro. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --fondo-app:      #1C1C1E;
-    --fondo-lateral:  #232326;
-    --fondo-panel:    #1C1C1E;
-    --fondo-cabecera: #202023;
-    --hairline:       #3A3A3F;
+    --fondo-app:         #11151C;
+    --fondo-panel:       #11151C;
+    --fondo-lateral:     #1A1F27;
+    --fondo-cabecera:    #161A22;
+    --fondo-elevado:     #1F252E;
+    --hairline:          #2E333C;
+    --hairline-fuerte:   #3F4551;
+    --hover:             #1D222B;
+    --seleccion:         #2A313D;
+    --tinta-1:           #EBEFF4;
+    --tinta-2:           #A7ADB7;
+    --tinta-3:           #90959F;
+    --acento:            #5AE7EC;
+    --acento-apagado:    #3A9DA0;
+    --acento-tenue:      #0C3D3F;
+    --acento-contra:     #0B0F18;
+    --estado-hecha:      #49CC95;
+    --estado-curso:      #618DF3;
+    --estado-pendiente:  #90959F;
+    --estado-cancelada:  #90959F;
+    --estado-sindesglosar: #7C8089;
+    --nuevo-banda:       #D7AA42;
+    --nuevo-fondo:       #382C11;
+    --nuevo-tinta:       #E6C686;
+    --bloqueo-banda:     #F0555B;
+    --bloqueo-fondo:     #431F1F;
+    --bloqueo-tinta:     #F9ADAA;
+    --completa-lavado:   #13231B;
+    --completa-guia:     #4B735F;
+    --completa-fondo:    #143526;
+    --completa-tinta:    #94DDB9;
+    --chip-fondo:        #262C35;
+    --chip-tinta:        #B2B8C1;
+    --medidor-pista:     #292E37;
+    --medidor-relleno:   #878C96;
+    --reparto-a:         #878C96;
+    --reparto-b:         #5E636D;
 
-    --tinta-1: #F2F2F5;
-    --tinta-2: #A9A9B2;
-    --tinta-3: #7C7C85;
-
-    --hover:     #2A2A2E;
-    --seleccion: #3A3A40;
-    --foco:      #4C8DF6;
-
-    --estado-hecha:        #0FA97A;
-    --estado-curso:        #4C8DF6;
-    --estado-pendiente:    #7C7C85;
-    --estado-cancelada:    #7C7C85;
-    --estado-sindesglosar: #6A6A73;
-
-    --nuevo-banda:  #D9A441;
-    --nuevo-fondo:  #3A2D0F;
-    --nuevo-tinta:  #F0CE7E;
-
-    --bloqueo-banda: #EF4444;
-    --bloqueo-fondo: #3A1A1A;
-    --bloqueo-tinta: #FCA5A5;
-
-    --chip-fondo: #2E2E33;
-    --chip-tinta: #B0B0BA;
-
-    --solido-fondo:  #F2F2F5;
-    --solido-tinta:  #1C1C1E;   /* 15.2:1 */
-    --peligro-fondo: #EF4444;
-    --peligro-tinta: #1C1C1E;   /*  4.5:1 */
-
-    --medidor-pista:   #3A3A40;
-    --medidor-relleno: #8E8E98;
-
-    --reparto-a: #8E8E98;   /* 5.24:1 */
-    --reparto-b: #6A6A73;   /* 3.18:1 */
+    /* Los mismos seis, en oscuro. `--peligro-tinta` se invierte: sobre el rojo claro del
+       tema oscuro, el texto blanco no llega a AA y el fondo de la app sí. */
+    --foco:          var(--acento);          /* 12.3:1 sobre el panel */
+    --solido-fondo:  var(--acento);
+    --solido-tinta:  var(--acento-contra);   /* 12.9:1 sobre --solido-fondo */
+    --peligro-fondo: var(--bloqueo-banda);
+    --peligro-tinta: #11151C;      /* 5.4:1 sobre --peligro-fondo */
   }
 }
 

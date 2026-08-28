@@ -58,6 +58,12 @@ export const GLOBALES: readonly EntradaGlobal[] = [
     pregunta: 'Cuánto trae cada quien y entre cuántos proyectos está repartido.',
   },
   {
+    id: 'tiempos',
+    icono: 'tiempos',
+    texto: 'Tiempos',
+    pregunta: '¿Cuánto se tarda en cerrar una tarea, y quién arrastra las más lentas?',
+  },
+  {
     id: 'equipos',
     icono: 'equipos',
     texto: 'Equipos',

@@ -16,10 +16,10 @@ eso: **Zod**.
 ## Vistas
 
 - **Globales:** Panorama · Sprint (transversal a todos los proyectos) · Bloqueos ·
-  Terminadas · Backlog del área · Carga por persona · Equipos.
-- **De proyecto:** dos paneles. Izquierda, árbol épica → historia → tarea. Derecha, el
-  sprint filtrado a ese proyecto. *Terminadas* es una pestaña dentro de la vista, **no** un
-  tercer panel.
+  Terminadas · Backlog del área · Carga por persona · Tiempos · Equipos.
+- **De proyecto:** dos paneles. Izquierda, árbol épica → historia → tarea, con los niveles
+  que el proyecto tenga (ver regla 18). Derecha, el sprint filtrado a ese proyecto.
+  *Terminadas* es una pestaña dentro de la vista, **no** un tercer panel.
 
 ## Estructura de carpetas
 
@@ -109,6 +109,47 @@ en un solo lugar.
     archivo (el rename atómico rompe el watch atado al inodo). Sin merge automático.
 17. **Emergente es procedencia, no estado.** Vive en un canal visual distinto (banda
     izquierda + chip), no en el enum de estado.
+18. **La jerarquía es opcional (N9).** Una tarea cuelga de una historia, de una épica **o
+    del proyecto**. Épica e historia organizan; no son requisitos. Prohibido inventar una
+    épica «General» para que un proyecto de trabajo continuo quepa en tres niveles.
+    - **Toda LECTURA de las tareas de un nodo pasa por `tareasDe(nodo)`**
+      (`compartido/dominio/derivar.ts`). Son tres listas, y una función que recuerde dos de
+      las tres deja de contar en silencio, sin fallar y sin avisar: un proyecto de trabajo
+      continuo se vería vacío. El único que **muta** los arreglos es el reductor, que para
+      eso localiza el `contenedor` de la tarea. *Verificable:*
+      `tests/modelo/acceso-tareas.test.ts` lee el código fuente y falla si aparece un
+      acceso directo fuera de su lista de excepciones, cada una con su motivo escrito.
+    - El árbol pinta las tres formas: la tarea va al nivel 3 bajo una historia, al 2 bajo
+      una épica y al 1 colgada del proyecto. **Dentro de un contenedor va antes lo que
+      agrupa y después lo suelto**, como carpetas antes que archivos.
+    - `crearTarea` y `reordenarTarea` reciben `contenedorId`, que puede ser el id de una
+      historia, el de una épica o la CLAVE del proyecto. No existe un `historiaId`.
+    - `UbicacionTarea.epica` y `.historia` son `Epica | null`. La migaja omite los niveles
+      que no existen; nunca los rellena con «—».
+    - **El id sale siempre del proyecto raíz, nunca del padre inmediato.** Por eso mover
+      una tarea de una historia al proyecto no la renumera y ninguna referencia del
+      historial se rompe. *Verificable:* `siguienteId` recibe la clave del proyecto y sus
+      contadores; no existe una variante por padre.
+
+19. **El reloj de resolución corre desde que arranca el sprint** hasta `hecha_en`.
+    Decisión del usuario, no negociable. Con un solo tope, y por día de calendario: una
+    tarea metida DÍAS después empieza a contar el día que entró (`comprometida_en`); una
+    comprometida a las nueve del primer día cuenta desde el arranque, no desde las nueve.
+    - Una tarea cerrada **fuera de todo sprint** no tiene duración: `null`, jamás `0`. Va
+      a pasar seguido, y por eso **todo promedio dice sobre cuántas se calculó y cuántas
+      quedaron sin medir**.
+    - Una arrastrada se mide contra el sprint **en que cerró**, no contra el primero.
+      El arrastre se cuenta aparte, en sprints.
+    - **Ningún promedio de menos de 5 tareas se muestra** (`MINIMO_TAREAS_PARA_PROMEDIO`).
+      Ahí va el conteo crudo y nada más.
+    - El huso sale de los DATOS, nunca de la máquina: `sprint.inicio` es una fecha suelta y
+      resolverla con la zona local hacía durar distinto la misma tarea según dónde se
+      abriera la app. *Verificable:* `tests/dominio/duracion.test.ts`, «el huso sale de los
+      datos».
+20. **`esfuerzo` es Fibonacci `1·2·3·5·8` o `null`, y `null` es lo NORMAL.** Ninguna suma
+    de esfuerzo se muestra sin cuántas tareas la componen y cuántas no están estimadas:
+    «34 pts · 12 de 18 tareas», nunca «34 pts». Es la misma mentira que el `0%`.
+    Prohibido convertir esto en pronóstico: describe lo que pasó, no promete fechas.
 
 ## Convenciones
 
@@ -159,8 +200,15 @@ en un solo lugar.
 ```
 npm run dev        # Vite + Electron en desarrollo
 npm test           # vitest
+npm run tipos      # los tres tsconfig
 npm run empaquetar # genera el .app (E12)
 ```
+
+Las pruebas de interfaz viven en `tests/interfaz/` y piden su DOM archivo por archivo con
+`// @vitest-environment jsdom` en la primera línea. **No se configura globalmente:** las
+~900 de dominio corren en Node en dos segundos y levantarles un DOM las haría lentas sin
+ganar nada. Dependencias de desarrollo autorizadas para esto: `jsdom` y
+`@testing-library/react`; no tocan el paquete ni el runtime.
 
 Verifica siempre contra el `package.json` real: estos nombres son la convención acordada,
 no una promesa de que ya existan. **Pide autorización explícita antes de instalar paquetes.**

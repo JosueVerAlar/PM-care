@@ -195,10 +195,9 @@ function Decisiones({
         </button>
       </header>
 
-      <p className="regla-orden">
-        Revisa los tres bloques y decide qué pasa con cada tarea. Corregir un estado se
-        guarda al momento; los destinos no se guardan hasta que pulses el botón de abajo.
-      </p>
+      {/* Se queda porque dice cuándo se guarda, que es lo único que el usuario no puede
+          deducir mirando la pantalla y lo que decide si se va tranquilo a medias. */}
+      <p className="regla-orden">Los destinos no se guardan hasta que pulses el botón de abajo.</p>
 
       <div className="cierre">
         <BloqueCierre

@@ -1,0 +1,347 @@
+{
+  "esquema_version": 1,
+  "usuario": "josue-vergara",
+  "personas": [
+    {
+      "id": "josue-vergara",
+      "nombre": "Josue Vergara",
+      "activa": true,
+      "clave_externa": null
+    },
+    {
+      "id": "miguel-medina",
+      "nombre": "Miguel Medina",
+      "activa": true,
+      "clave_externa": null
+    },
+    {
+      "id": "jesus-alberto-castillo",
+      "nombre": "Jesús Alberto Castillo",
+      "activa": true,
+      "clave_externa": null
+    }
+  ],
+  "proyectos": [
+    {
+      "clave": "SICOE",
+      "nombre": "SICOE",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 0,
+        "historias": 0,
+        "tareas": 0
+      },
+      "equipo": [],
+      "epicas": [],
+      "tareas": [],
+      "clave_externa": "SICOE"
+    },
+    {
+      "clave": "SIES",
+      "nombre": "SIEST",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 0,
+        "historias": 0,
+        "tareas": 0
+      },
+      "equipo": [],
+      "epicas": [],
+      "tareas": [],
+      "clave_externa": "SIES"
+    },
+    {
+      "clave": "PED",
+      "nombre": "Plataforma Eventos Deportivos",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 0,
+        "historias": 0,
+        "tareas": 0
+      },
+      "equipo": [],
+      "epicas": [],
+      "tareas": [],
+      "clave_externa": "PED"
+    },
+    {
+      "clave": "DW",
+      "nombre": "DGETI web",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 0,
+        "historias": 0,
+        "tareas": 0
+      },
+      "equipo": [],
+      "epicas": [],
+      "tareas": [],
+      "clave_externa": "DW"
+    },
+    {
+      "clave": "IN",
+      "nombre": "Infraestructura",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 1,
+        "historias": 0,
+        "tareas": 3
+      },
+      "equipo": [
+        {
+          "persona_id": "miguel-medina",
+          "rol": "Infraestructura"
+        },
+        {
+          "persona_id": "jesus-alberto-castillo",
+          "rol": "Redes"
+        }
+      ],
+      "epicas": [
+        {
+          "id": "IN-E1",
+          "titulo": "Habilitación de red, puertos y sistema operativo",
+          "descripcion": null,
+          "planeada": true,
+          "clave_externa": "IN-2",
+          "historias": [],
+          "tareas": [
+            {
+              "id": "IN-T1",
+              "titulo": "Inventario de servidores",
+              "descripcion": "En revisión en Jira.",
+              "estado": "hecha",
+              "planeada": true,
+              "responsable": "miguel-medina",
+              "fecha_limite": "2026-08-12",
+              "prioridad": null,
+              "creada_en": "2026-08-04T14:30:01.590-06:00",
+              "hecha_en": "2026-08-28T17:30:00-06:00",
+              "bloqueos": [],
+              "clave_externa": "IN-3",
+              "esfuerzo": 3
+            },
+            {
+              "id": "IN-T2",
+              "titulo": "Matriz de comunicación entre servidores y puertos requeridos",
+              "descripcion": null,
+              "estado": "en_curso",
+              "planeada": true,
+              "responsable": "miguel-medina",
+              "fecha_limite": "2026-08-13",
+              "prioridad": null,
+              "creada_en": "2026-08-04T14:30:17.661-06:00",
+              "hecha_en": null,
+              "bloqueos": [],
+              "clave_externa": "IN-4",
+              "esfuerzo": 5
+            },
+            {
+              "id": "IN-T3",
+              "titulo": "Decidir y estandarizar el sistema operativo de los servidores",
+              "descripcion": null,
+              "estado": "pendiente",
+              "planeada": true,
+              "responsable": "miguel-medina",
+              "fecha_limite": "2026-08-13",
+              "prioridad": null,
+              "creada_en": "2026-08-04T14:31:48.459-06:00",
+              "hecha_en": null,
+              "bloqueos": [],
+              "clave_externa": "IN-9",
+              "esfuerzo": 2
+            }
+          ]
+        }
+      ],
+      "tareas": [],
+      "clave_externa": "IN"
+    },
+    {
+      "clave": "IDCE",
+      "nombre": "IDCE",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 0,
+        "historias": 0,
+        "tareas": 0
+      },
+      "equipo": [],
+      "epicas": [],
+      "tareas": [],
+      "clave_externa": "IDCE"
+    },
+    {
+      "clave": "INDICA",
+      "nombre": "INDICA",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 0,
+        "historias": 0,
+        "tareas": 0
+      },
+      "equipo": [],
+      "epicas": [],
+      "tareas": [],
+      "clave_externa": "INDICA"
+    },
+    {
+      "clave": "PULSO",
+      "nombre": "PULSO",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 0,
+        "historias": 0,
+        "tareas": 2
+      },
+      "equipo": [],
+      "epicas": [],
+      "tareas": [
+        {
+          "id": "PULSO-T1",
+          "titulo": "Definir los indicadores que PULSO va a publicar",
+          "descripcion": "EJEMPLO SIMULADO, no viene de Jira. Siguiente paso natural del proyecto.",
+          "estado": "pendiente",
+          "planeada": true,
+          "responsable": "josue-vergara",
+          "fecha_limite": null,
+          "prioridad": "alta",
+          "creada_en": null,
+          "hecha_en": null,
+          "bloqueos": [],
+          "clave_externa": null,
+          "esfuerzo": 3
+        },
+        {
+          "id": "PULSO-T2",
+          "titulo": "Levantar el tablero de captura mensual por plantel",
+          "descripcion": "EJEMPLO SIMULADO, no viene de Jira.",
+          "estado": "pendiente",
+          "planeada": true,
+          "responsable": null,
+          "fecha_limite": null,
+          "prioridad": null,
+          "creada_en": null,
+          "hecha_en": null,
+          "bloqueos": [],
+          "clave_externa": null,
+          "esfuerzo": null
+        }
+      ],
+      "clave_externa": "PULSO"
+    },
+    {
+      "clave": "REDOC",
+      "nombre": "REDOC",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 0,
+        "historias": 0,
+        "tareas": 0
+      },
+      "equipo": [],
+      "epicas": [],
+      "tareas": [],
+      "clave_externa": "REDOC"
+    },
+    {
+      "clave": "RENAC",
+      "nombre": "RENAC",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 0,
+        "historias": 0,
+        "tareas": 0
+      },
+      "equipo": [],
+      "epicas": [],
+      "tareas": [],
+      "clave_externa": "RENAC"
+    },
+    {
+      "clave": "SISEC",
+      "nombre": "SISEC",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 0,
+        "historias": 0,
+        "tareas": 0
+      },
+      "equipo": [],
+      "epicas": [],
+      "tareas": [],
+      "clave_externa": "SISEC"
+    }
+  ],
+  "sprints": [
+    {
+      "id": "S1",
+      "nombre": "Sprint 1",
+      "inicio": "2026-08-24",
+      "fin": "2026-09-06",
+      "estado": "activo",
+      "items": [
+        {
+          "tarea_id": "IN-T1",
+          "responsable": "miguel-medina",
+          "fecha_limite": "2026-08-12",
+          "prioridad": "alta",
+          "desenlace": null,
+          "comprometida_en": "2026-08-24T09:00:00-06:00"
+        },
+        {
+          "tarea_id": "IN-T2",
+          "responsable": "miguel-medina",
+          "fecha_limite": "2026-08-13",
+          "prioridad": null,
+          "desenlace": null,
+          "comprometida_en": "2026-08-24T09:00:00-06:00"
+        }
+      ]
+    }
+  ]
+}

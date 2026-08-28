@@ -28,8 +28,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+/** La escala de Fibonacci. Ver `EsquemaEsfuerzo` para por qué esta y no una lineal. */
+const ESCALA = [1, 2, 3, 5, 8] as const;
+
 import { compromisoEfectivo } from '../../../compartido/dominio/derivar';
-import type { Fecha, ItemSprint, Persona, Tarea } from '../../../compartido/modelo/tipos';
+import type { Esfuerzo, Fecha, ItemSprint, Persona, Tarea } from '../../../compartido/modelo/tipos';
 import { useAccionesInterfaz, useInterfaz } from '../../estado/interfaz';
 import { useMutar } from '../../estado/mutaciones';
 import { fechaCorta } from '../../util/presentacion';
@@ -65,7 +68,14 @@ export function FormularioCompromiso({
   const { recordarPersona } = useAccionesInterfaz();
 
   const vigente = compromisoEfectivo(
-    item ?? { tarea_id: tarea.id, responsable: null, fecha_limite: null, prioridad: null, desenlace: null },
+    item ?? {
+      tarea_id: tarea.id,
+      responsable: null,
+      fecha_limite: null,
+      prioridad: null,
+      comprometida_en: null,
+      desenlace: null,
+    },
     tarea,
   );
 
@@ -111,6 +121,9 @@ export function FormularioCompromiso({
   const [cuando, setCuando] = useState<Cuando>(inicial.cuando);
   const [fecha, setFecha] = useState(inicial.fecha);
   const [descripcion, setDescripcion] = useState(inicial.descripcion);
+  // Vive en la tarea, no en el item: cuánto cuesta algo no cambia porque se comprometa a
+  // otro sprint. Se edita aquí porque este es el momento en que se piensa en el trabajo.
+  const [esfuerzo, setEsfuerzo] = useState<Esfuerzo | null>(tarea.esfuerzo);
 
   const refPersona = useRef<HTMLSelectElement>(null);
   const refCuando = useRef<HTMLSelectElement>(null);
@@ -159,11 +172,14 @@ export function FormularioCompromiso({
     cuando?: Cuando;
     fecha?: string;
     descripcion?: string;
+    /** `null` es un VALOR aquí —«sin estimar»—, no «no lo cambies»: por eso `undefined`. */
+    e?: Esfuerzo | null;
   }): Promise<boolean> => {
     const p = parcial.persona ?? persona;
     const c = parcial.cuando ?? cuando;
     const f = parcial.fecha ?? fecha;
     const d = parcial.descripcion ?? descripcion;
+    const e = parcial.e !== undefined ? parcial.e : esfuerzo;
 
     const nuevoResponsable = p === '' ? null : p;
     const nuevaFecha = fechaElegida(c, f);
@@ -175,13 +191,20 @@ export function FormularioCompromiso({
       responsable?: string | null;
       fechaLimite?: Fecha | null;
       descripcion?: string | null;
+      esfuerzo?: Esfuerzo | null;
     } = { comando: 'editarTarea', id: tarea.id };
 
     if (nuevoResponsable !== tarea.responsable) comando.responsable = nuevoResponsable;
     if (nuevaFecha !== tarea.fecha_limite) comando.fechaLimite = nuevaFecha;
     if (nuevaDescripcion !== tarea.descripcion) comando.descripcion = nuevaDescripcion;
+    if (e !== tarea.esfuerzo) comando.esfuerzo = e;
 
-    if (comando.responsable === undefined && comando.fechaLimite === undefined && comando.descripcion === undefined) {
+    if (
+      comando.responsable === undefined &&
+      comando.fechaLimite === undefined &&
+      comando.descripcion === undefined &&
+      comando.esfuerzo === undefined
+    ) {
       return true;
     }
 
@@ -298,6 +321,41 @@ export function FormularioCompromiso({
           </label>
         )}
       </div>
+
+      {/* El esfuerzo es OPCIONAL y se ve que lo es: «Sin estimar» viene marcado y es una
+          opción legítima, no un hueco. La mayoría de las tareas no se van a estimar nunca,
+          y una escala que empiece vacía obligando a elegir cobra un clic en cada captura
+          para dar un dato que nadie iba a mirar. */}
+      <fieldset className="campo campo--esfuerzo">
+        <legend className="campo__etq">Cuánto cuesta</legend>
+        <div className="escala">
+          <button
+            type="button"
+            aria-pressed={esfuerzo === null}
+            onClick={() => {
+              setEsfuerzo(null);
+              void guardar({ e: null });
+            }}
+          >
+            Sin estimar
+          </button>
+          {ESCALA.map((punto) => (
+            <button
+              key={punto}
+              type="button"
+              className="escala__punto tabular"
+              aria-pressed={esfuerzo === punto}
+              title={`Esfuerzo ${punto}`}
+              onClick={() => {
+                setEsfuerzo(punto);
+                void guardar({ e: punto });
+              }}
+            >
+              {punto}
+            </button>
+          ))}
+        </div>
+      </fieldset>
 
       <label className="campo">
         <span className="campo__etq">Qué hay que hacer</span>

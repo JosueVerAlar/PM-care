@@ -229,9 +229,6 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
             <p className="bloque__titulo">
               Dadas de baja <span className="bloque__n tabular">{inactivas.length}</span>
             </p>
-            <p className="bloque__nota">
-              <b>Eliminar solo se ofrece aquí</b>, y se rechaza si algo la nombra.
-            </p>
 
             {inactivas.length === 0 ? (
               <p className="bloque__nota">Nadie dado de baja.</p>

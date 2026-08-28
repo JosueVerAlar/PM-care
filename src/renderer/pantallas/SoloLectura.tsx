@@ -127,10 +127,7 @@ export function SoloLectura({
           <div className="respaldos">
             <h2 className="solo-lectura__subtitulo">Respaldos disponibles</h2>
             {respaldos.length === 0 ? (
-              <p className="solo-lectura__nota">
-                No hay ningún respaldo todavía. Se crea uno por sesión y uno por día, siempre
-                copiando un archivo que ya estaba completo.
-              </p>
+              <p className="solo-lectura__nota">No hay ningún respaldo todavía.</p>
             ) : (
               <>
                 <ul className="respaldos__lista">

@@ -117,9 +117,7 @@ export function VistaEquipos({ documento }: { documento: Documento }) {
 
           {conEquipo.length === 0 ? (
             <p className="seccion__aclaracion">
-              Ningún proyecto tiene equipo capturado todavía. Mientras no lo tengan, la
-              pregunta «¿quién está en esto?» solo se puede contestar mirando quién es
-              responsable de cada tarea.
+              Ningún proyecto tiene equipo capturado todavía.
             </p>
           ) : (
             <div className="rejilla rejilla--equipos">

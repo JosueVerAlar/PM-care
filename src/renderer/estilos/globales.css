@@ -545,3 +545,50 @@
   .fila-backlog__proy,
   .fila-backlog__fecha { display: none; }
 }
+
+/* ── TIEMPOS ──────────────────────────────────────────────────────
+   Sin semáforos y sin pista de fondo en la barra. No existe un «bien» ni un «mal» de días
+   por tarea —depende del tipo de trabajo— y una pista sería un techo: prometería una
+   duración esperada que la app no conoce. La barra solo compara un largo con el de al
+   lado, que es lo único que estos datos sostienen. */
+
+.tiempos-resumen {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 22px;
+  padding: 4px 0 14px; border-bottom: 1px solid var(--hairline); margin-bottom: 12px;
+}
+
+.tiempos-cifra { display: flex; flex-direction: column; gap: 1px; }
+.tiempos-cifra__n { font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+.tiempos-cifra__etq { font-size: 11px; color: var(--tinta-3); }
+
+/* La letra chica ocupa el renglón entero: decide si la cifra de arriba habla de todo el
+   trabajo o de una parte, así que no puede quedar en un hueco entre columnas. */
+.tiempos-resumen__nota {
+  flex: 1 0 100%; font-size: 11.5px; color: var(--tinta-2);
+  line-height: 17px; max-width: 76ch;
+}
+.tiempos-resumen__nota:empty { display: none; }
+
+.tabla-tiempos { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.tabla-tiempos th, .tabla-tiempos td { padding: 6px 10px 6px 0; text-align: left; }
+.tabla-tiempos thead th {
+  font-size: 11px; font-weight: 550; color: var(--tinta-3);
+  border-bottom: 1px solid var(--hairline); white-space: nowrap;
+}
+.tabla-tiempos tbody th { font-weight: 500; }
+.tabla-tiempos tbody tr + tr th,
+.tabla-tiempos tbody tr + tr td { border-top: 1px solid var(--hairline); }
+
+/* «— » de promedio no calculable. Se pinta como dato ausente, no como cero. */
+.tabla-tiempos__pocas { color: var(--tinta-3); cursor: help; }
+.tabla-tiempos__aparte { font-size: 11px; color: var(--tinta-3); font-weight: 400; }
+.tabla-tiempos__lenta { color: var(--tinta-2); font-size: 11.5px; }
+
+.barra-tiempo {
+  display: inline-block; vertical-align: middle; margin-left: 8px;
+  width: 90px; height: 4px; border-radius: 2px;
+}
+.barra-tiempo__relleno {
+  display: block; height: 100%; border-radius: 2px;
+  background: var(--medidor-relleno); min-width: 2px;
+}

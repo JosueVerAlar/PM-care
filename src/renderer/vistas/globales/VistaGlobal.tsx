@@ -17,6 +17,7 @@ import { VistaEquipos } from './VistaEquipos';
 import { VistaPanorama } from './VistaPanorama';
 import { VistaSprintGlobal } from './VistaSprintGlobal';
 import { VistaTerminadas } from './VistaTerminadas';
+import { VistaTiempos } from './VistaTiempos';
 
 export function VistaGlobal({
   id,
@@ -40,6 +41,8 @@ export function VistaGlobal({
       return <VistaBacklog documento={documento} hoy={hoy} />;
     case 'carga':
       return <VistaCarga documento={documento} hoy={hoy} />;
+    case 'tiempos':
+      return <VistaTiempos documento={documento} />;
     case 'equipos':
       return <VistaEquipos documento={documento} />;
   }
