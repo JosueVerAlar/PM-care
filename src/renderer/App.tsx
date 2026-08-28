@@ -41,6 +41,7 @@ import { BarraHerramientas } from './armazon/BarraHerramientas';
 
 import { BarraLateral } from './armazon/BarraLateral';
 import { DialogoConfirmar } from './componentes/DialogoConfirmar';
+import { DialogoProyecto } from './componentes/DialogoProyecto';
 import { ProveedorAlmacen, useAccionesAlmacen, useAlmacen } from './estado/almacen';
 import {
   esVistaAncha,
@@ -146,8 +147,10 @@ function Aplicacion({
   /** No nulo solo en conflicto externo: el documento vale, pero no se escribe. */
   diagnostico: Diagnostico | null;
 }) {
-  const { vista, lateralColapsada, aviso, confirmacion, revertible } = useInterfaz();
-  const { alternarLateral, avisar, confirmar, ofrecerDeshacer } = useAccionesInterfaz();
+  const { vista, lateralColapsada, aviso, confirmacion, revertible, proyectoEnCuestion } =
+    useInterfaz();
+  const { alternarLateral, avisar, confirmar, ofrecerDeshacer, preguntarProyecto } =
+    useAccionesInterfaz();
   const { deshacer } = useAccionesAlmacen();
   const soloLectura = useSoloLectura();
   // Con el archivo en conflicto no se escribe nada, tampoco al revés: el ítem del menú va
@@ -334,6 +337,24 @@ function Aplicacion({
           <VistaProyecto documento={documento} proyecto={proyecto} hoy={hoy} />
         )}
       </div>
+
+      {/* Cerrar o eliminar un proyecto. Vive aquí y no en Administración porque se pide
+          también desde el `⋯` de la lateral, y el flujo es UNO: dos copias de una ceremonia
+          destructiva es lo peor que se puede duplicar. Se resuelve contra el documento
+          vigente, así que una clave que ya no existe simplemente no abre nada. */}
+      {proyectoEnCuestion !== null &&
+        (() => {
+          const objetivo = documento.proyectos.find((p) => p.clave === proyectoEnCuestion.clave);
+          if (objetivo === undefined) return null;
+          return (
+            <DialogoProyecto
+              documento={documento}
+              proyecto={objetivo}
+              accion={proyectoEnCuestion.accion}
+              cerrar={() => preguntarProyecto(null)}
+            />
+          );
+        })()}
 
       {confirmacion !== null && (
         <DialogoConfirmar

@@ -28,6 +28,7 @@ import type { Documento, Fecha } from '../../compartido/modelo/tipos';
 import { ContadorBloqueos } from '../componentes/Chips';
 import { Icono } from '../componentes/iconos';
 import { useAccionesInterfaz, type Vista } from '../estado/interfaz';
+import { useSoloLectura } from '../estado/mutaciones';
 import { SECCIONES_ADMIN } from '../vistas/administracion/VistaAdministracion';
 import { GLOBALES, type EntradaGlobal, type GrupoLateral } from '../vistas/globales/registro';
 
@@ -47,7 +48,8 @@ export function BarraLateral({
   claveActiva: string | null;
   hoy: Fecha;
 }) {
-  const { verProyecto, verGlobal, verAdmin } = useAccionesInterfaz();
+  const { verProyecto, verGlobal, verAdmin, preguntarProyecto } = useAccionesInterfaz();
+  const soloLectura = useSoloLectura();
 
   /** Las vistas de un grupo, en el orden en que están escritas en el registro. */
   const porGrupo = (grupo: GrupoLateral) => GLOBALES.filter((entrada) => entrada.grupo === grupo);
@@ -109,8 +111,10 @@ export function BarraLateral({
         </h2>
         {proyectos.length === 0 && <p className="lat-vacio">No hay proyectos capturados.</p>}
         {proyectos.map((p) => (
+          // El `⋯` no puede vivir DENTRO del botón que abre el proyecto: un control
+          // anidado en otro no es marcado válido y el clic se lo comería el de fuera.
+          <div className="lat-fila" key={p.clave}>
           <button
-            key={p.clave}
             type="button"
             className="lat-item"
             title={p.nombre}
@@ -129,6 +133,12 @@ export function BarraLateral({
             <span className="lat-item__texto">{p.clave}</span>
             <ContadorBloqueos n={p.bloqueadas} />
           </button>
+          <MenuProyecto
+            clave={p.clave}
+            soloLectura={soloLectura}
+            preguntar={(accion) => preguntarProyecto({ clave: p.clave, accion })}
+          />
+          </div>
         ))}
       </div>
 
@@ -219,5 +229,53 @@ function ItemGlobal({
       <span className="lat-item__texto">{texto ?? entrada.texto}</span>
       {contador !== undefined && <ContadorBloqueos n={contador} />}
     </button>
+  );
+}
+
+/**
+ * El `⋯` de un proyecto en la lista lateral.
+ *
+ * Cerrar vivía solo dentro de «Administración · Proyectos», una pantalla a la que hay que
+ * saber ir. Aquí está donde el proyecto ya se está mirando, que es donde uno decide que
+ * sobra. La ceremonia no cambia: la abre `DialogoProyecto`, la misma para las dos entradas.
+ *
+ * **Solo ofrece cerrar, y eso no es una omisión.** Esta lista muestra los proyectos
+ * ACTIVOS —cerrar archiva, así que lo cerrado sale de aquí—, y eliminar exige que el
+ * proyecto esté cerrado. Reabrir y eliminar viven en Administración, que es donde están
+ * los cerrados. Ofrecerlos aquí sería pintar dos acciones que nunca podrían dispararse.
+ *
+ * Mismo `<select>` nativo que el `⋯` de las filas del árbol, y por lo mismo: sin submenús
+ * no se justifican doscientas líneas de menú a mano, y el sistema trae teclado, `Escape` y
+ * posicionamiento gratis. Nombre accesible específico, nunca «Más».
+ */
+function MenuProyecto({
+  clave,
+  soloLectura,
+  preguntar,
+}: {
+  clave: string;
+  soloLectura: boolean;
+  preguntar: (accion: 'cerrar') => void;
+}) {
+  // En solo lectura no se ofrece: un menú de acciones que las rechaza todas enseña que la
+  // app no responde, en vez de que el archivo está en conflicto.
+  if (soloLectura) return null;
+
+  return (
+    <select
+      className="lat-menu"
+      tabIndex={-1}
+      value=""
+      aria-label={`Acciones de ${clave}`}
+      title={`Acciones de ${clave}`}
+      onChange={(evento) => {
+        const accion = evento.target.value;
+        evento.target.value = '';
+        if (accion === 'cerrar') preguntar('cerrar');
+      }}
+    >
+      <option value="">⋯</option>
+      <option value="cerrar">Cerrar proyecto…</option>
+    </select>
   );
 }

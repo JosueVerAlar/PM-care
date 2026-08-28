@@ -333,3 +333,9 @@
   color: var(--tinta-2); font-size: 12.5px;
 }
 .franja-revertir__texto { min-width: 0; }
+
+/* El diálogo de proyecto es más ancho que la confirmación simple: lleva un párrafo que
+   enumera lo que se pierde y, al eliminar, un campo donde escribir la clave. */
+.dialogo--proyecto { max-width: 560px; }
+.dialogo--proyecto .dialogo__titulo { display: flex; align-items: center; gap: 8px; }
+.dialogo--proyecto .campo { margin-top: 12px; }

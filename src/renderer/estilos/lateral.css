@@ -94,3 +94,31 @@
 /* En rail de 48 px el título del grupo se oculta, y con él su acción: ahí no cabe y el
    `＋` quedaría flotando sin contexto. Se recupera al desplegar la lateral. */
 .app--rail .lat-mas { display: none; }
+
+/* ── LA FILA DE PROYECTO CON SU ⋯ ────────────────────────────────
+   El menú NO puede ir dentro del botón que abre el proyecto —un control anidado en otro
+   no es marcado válido y el clic se lo comería el de fuera—, así que los dos son hermanos
+   dentro de una fila. El botón se estira; el menú ocupa lo suyo. */
+.lat-fila { display: flex; align-items: center; }
+.lat-fila .lat-item { flex: 1; min-width: 0; }
+
+/* Este SÍ se esconde hasta que el ratón pasa o el foco entra, al revés que el `⋯` del
+   árbol. La diferencia no es capricho: en el árbol el menú lleva la acción más frecuente
+   de la app, y aquí lleva «cerrar proyecto», que se usa un puñado de veces al año. Once
+   puntos suspensivos permanentes en una columna de 216 px son ruido en la lista que más
+   se mira. */
+.lat-menu {
+  flex: 0 0 auto; width: 22px; height: 22px; margin-right: 2px;
+  appearance: none; -webkit-appearance: none;
+  border: 0; border-radius: 5px; background: none;
+  color: var(--tinta-3); font-size: 12px; line-height: 1;
+  text-align: center; text-align-last: center;
+  cursor: pointer; padding: 0; opacity: 0;
+}
+.lat-fila:hover .lat-menu,
+.lat-fila:focus-within .lat-menu { opacity: 1; }
+.lat-menu:hover { background: var(--seleccion); color: var(--tinta-1); }
+.lat-menu:focus-visible { opacity: 1; outline: 2px solid var(--foco); outline-offset: -1px; }
+
+/* En rail de 48 px no cabe: quedan el icono y las tres letras de la clave. */
+.app--rail .lat-menu { display: none; }

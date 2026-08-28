@@ -37,6 +37,7 @@ import {
   type FilaProyectoAdmin,
 } from '../../../compartido/dominio/administracion';
 import type { Documento } from '../../../compartido/modelo/tipos';
+import { useAccionesInterfaz } from '../../estado/interfaz';
 import { useMutar, useSoloLectura } from '../../estado/mutaciones';
 import { cuenta, fechaCorta, nombreSinClave } from '../../util/presentacion';
 import { Advertencia, Candado } from '../../componentes/iconos';
@@ -46,6 +47,9 @@ import { Lienzo } from '../globales/piezas';
 export function SeccionProyectos({ documento }: { documento: Documento }) {
   const mutar = useMutar();
   const soloLectura = useSoloLectura();
+  // La ceremonia de cerrar y de eliminar vive en `DialogoProyecto`, que App pinta: se pide
+  // también desde el `⋯` de la lateral y no puede haber dos copias de un flujo destructivo.
+  const { preguntarProyecto } = useAccionesInterfaz();
 
   const { activos, cerrados } = useMemo(() => proyectosParaAdmin(documento), [documento]);
 
@@ -54,10 +58,6 @@ export function SeccionProyectos({ documento }: { documento: Documento }) {
   const [nombre, setNombre] = useState('');
   const [clave, setClave] = useState('');
   const [claveTocada, setClaveTocada] = useState(false);
-  /** Qué fila tiene abierta su confirmación de cierre, y cuál su zona de peligro. */
-  const [cerrando, setCerrando] = useState<string | null>(null);
-  const [eliminando, setEliminando] = useState<string | null>(null);
-  const [textoBorrar, setTextoBorrar] = useState('');
 
   const clavePropuesta = claveTocada ? clave : claveSugerida(nombre);
   const claveFinal = clavePropuesta.trim().toUpperCase();
@@ -76,11 +76,6 @@ export function SeccionProyectos({ documento }: { documento: Documento }) {
     setClaveTocada(false);
   };
 
-  const cerrarTodo = () => {
-    setCerrando(null);
-    setEliminando(null);
-    setTextoBorrar('');
-  };
 
   return (
     <>
@@ -164,25 +159,9 @@ export function SeccionProyectos({ documento }: { documento: Documento }) {
                   key={fila.clave}
                   fila={fila}
                   soloLectura={soloLectura}
-                  cerrando={cerrando === fila.clave}
-                  eliminando={false}
-                  textoBorrar={textoBorrar}
-                  alEscribirBorrar={setTextoBorrar}
-                  alPedirCerrar={() => {
-                    setEliminando(null);
-                    setCerrando(fila.clave);
-                  }}
+                  alPedirCerrar={() => preguntarProyecto({ clave: fila.clave, accion: 'cerrar' })}
                   alPedirEliminar={() => undefined}
-                  alCancelar={cerrarTodo}
-                  alConfirmarCerrar={() => {
-                    cerrarTodo();
-                    void mutar(
-                      { comando: 'cerrarProyecto', clave: fila.clave },
-                      `Cerrar ${fila.clave}`,
-                    );
-                  }}
                   alReabrir={() => undefined}
-                  alConfirmarEliminar={() => undefined}
                 />
               ))
             )}
@@ -201,43 +180,11 @@ export function SeccionProyectos({ documento }: { documento: Documento }) {
                   key={fila.clave}
                   fila={fila}
                   soloLectura={soloLectura}
-                  cerrando={false}
-                  eliminando={eliminando === fila.clave}
-                  textoBorrar={textoBorrar}
-                  alEscribirBorrar={setTextoBorrar}
                   alPedirCerrar={() => undefined}
-                  alPedirEliminar={() => {
-                    setCerrando(null);
-                    setTextoBorrar('');
-                    setEliminando(fila.clave);
-                  }}
-                  alCancelar={cerrarTodo}
-                  alConfirmarCerrar={() => undefined}
-                  alReabrir={() => {
-                    cerrarTodo();
-                    void mutar(
-                      { comando: 'reabrirProyecto', clave: fila.clave },
-                      `Reabrir ${fila.clave}`,
-                    );
-                  }}
-                  alConfirmarEliminar={() => {
-                    // La confirmación viaja al comando: el reductor vuelve a comprobarla,
-                    // porque es la última capa antes del disco y un `eliminarProyecto`
-                    // disparado por un bug de la vista no puede llevarse un año de capturas.
-                    void mutar(
-                      {
-                        comando: 'eliminarProyecto',
-                        clave: fila.clave,
-                        confirmacion: textoBorrar.trim().toUpperCase(),
-                      },
-                      `Eliminar ${fila.clave}`,
-                    ).then((ok) => {
-                      // Si el reductor lo rechazó, la zona de peligro se queda abierta con lo
-                      // tecleado: no se revierte lo que el usuario escribió (regla 5), y el
-                      // mensaje del rechazo ya está en la franja de aviso de arriba.
-                      if (ok) cerrarTodo();
-                    });
-                  }}
+                  alPedirEliminar={() => preguntarProyecto({ clave: fila.clave, accion: 'eliminar' })}
+                  alReabrir={() =>
+                    void mutar({ comando: 'reabrirProyecto', clave: fila.clave }, `Reabrir ${fila.clave}`)
+                  }
                 />
               ))
             )}
@@ -250,37 +197,29 @@ export function SeccionProyectos({ documento }: { documento: Documento }) {
   );
 }
 
+/**
+ * La fila solo DISPARA: la ceremonia la pinta `DialogoProyecto` desde App.
+ *
+ * Antes esta fila llevaba ocho props porque cargaba con las dos confirmaciones dentro —el
+ * texto tecleado de la clave incluido—. Al mudarse el flujo, se queda con lo suyo: pintar
+ * qué hay en el proyecto y ofrecer las tres puertas.
+ */
 interface PropsFila {
   fila: FilaProyectoAdmin;
   soloLectura: boolean;
-  cerrando: boolean;
-  eliminando: boolean;
-  textoBorrar: string;
-  alEscribirBorrar: (texto: string) => void;
   alPedirCerrar: () => void;
   alPedirEliminar: () => void;
-  alCancelar: () => void;
-  alConfirmarCerrar: () => void;
   alReabrir: () => void;
-  alConfirmarEliminar: () => void;
 }
 
 function FilaProyecto({
   fila,
   soloLectura,
-  cerrando,
-  eliminando,
-  textoBorrar,
-  alEscribirBorrar,
   alPedirCerrar,
   alPedirEliminar,
-  alCancelar,
-  alConfirmarCerrar,
   alReabrir,
-  alConfirmarEliminar,
 }: PropsFila) {
   const cerrado = fila.cerradoEn !== null || fila.archivado;
-  const { contenido } = fila;
   const nombreCorto = nombreSinClave(fila.clave, fila.nombre) ?? fila.nombre;
 
   return (
@@ -317,72 +256,6 @@ function FilaProyecto({
         )}
       </span>
 
-      {cerrando && (
-        <div className="confirmar">
-          <Candado />
-          <span>
-            Cerrar <b>{nombreCorto}</b> conserva sus{' '}
-            {cuenta(contenido.tareas, 'tarea', 'tareas')} y su historial, y lo saca del Panorama
-            y de la vista diaria. <b>Se puede reabrir cuando quieras.</b>
-          </span>
-          <span className="crece" />
-          <button type="button" className="boton-solido" onClick={alConfirmarCerrar}>
-            Cerrar proyecto
-          </button>
-          <button type="button" className="boton-texto" onClick={alCancelar}>
-            Cancelar
-          </button>
-        </div>
-      )}
-
-      {eliminando && (
-        <div className="peligro">
-          <p className="peligro__titulo">
-            <Advertencia /> Eliminar {fila.clave} para siempre
-          </p>
-          <p className="peligro__texto">
-            Se borra <b>{describirPerdida(fila)}</b>. Cerrarlo lo habría guardado; esto no. <b>No hay deshacer desde la app</b> una vez escrito:
-            solo se recupera restaurando un respaldo anterior a este momento.
-            {contenido.sprintsCerrados > 0 && (
-              <>
-                {' '}
-                Además,{' '}
-                <b>
-                  {cuenta(contenido.tareasEnSprintsCerrados, 'de sus tareas está', 'de sus tareas están')}{' '}
-                  en {cuenta(contenido.sprintsCerrados, 'sprint cerrado', 'sprints cerrados')}
-                </b>
-                : es muy probable que la app lo rechace para no reescribir lo que esos sprints
-                dicen que pasó.
-              </>
-            )}
-          </p>
-          <div className="peligro__fila">
-            <label className="campo campo--clave">
-              <span className="campo__etq">Escribe {fila.clave} para confirmar</span>
-              <input
-                type="text"
-                value={textoBorrar}
-                autoComplete="off"
-                spellCheck={false}
-                autoFocus
-                placeholder={fila.clave}
-                onChange={(evento) => alEscribirBorrar(evento.target.value)}
-              />
-            </label>
-            <button
-              type="button"
-              className="boton-peligro"
-              disabled={textoBorrar.trim().toUpperCase() !== fila.clave}
-              onClick={alConfirmarEliminar}
-            >
-              Eliminar {fila.clave} para siempre
-            </button>
-            <button type="button" className="boton-texto" onClick={alCancelar}>
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

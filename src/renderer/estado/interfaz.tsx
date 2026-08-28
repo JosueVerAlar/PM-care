@@ -191,6 +191,15 @@ export interface EstadoInterfaz {
    * para lo que se lleva hijos por delante, y para todo lo demás basta con poder volver.
    */
   revertible: string | null;
+  /**
+   * El proyecto sobre el que se está preguntando algo destructivo, y qué.
+   *
+   * Vive aquí y no en la pantalla de Administración porque desde E13 se pide desde DOS
+   * sitios —el `⋯` de la lista lateral y la pantalla— y el flujo es uno solo. Dos copias
+   * de una ceremonia destructiva es lo peor que se puede duplicar: el día que una gane una
+   * salvaguarda, la otra se queda sin ella y nadie lo nota hasta que borra algo.
+   */
+  proyectoEnCuestion: { clave: string; accion: 'cerrar' | 'eliminar' } | null;
 }
 
 /*
@@ -226,7 +235,8 @@ type AccionInterfaz =
   | { tipo: 'confirmar'; confirmacion: Confirmacion | null }
   | { tipo: 'avisar'; aviso: string | null }
   | { tipo: 'recordarPersona'; personaId: string | null }
-  | { tipo: 'ofrecerDeshacer'; que: string | null };
+  | { tipo: 'ofrecerDeshacer'; que: string | null }
+  | { tipo: 'preguntarProyecto'; pregunta: EstadoInterfaz['proyectoEnCuestion'] };
 
 
 const INICIAL: EstadoInterfaz = {
@@ -246,6 +256,7 @@ const INICIAL: EstadoInterfaz = {
   aviso: null,
   ultimaPersona: null,
   revertible: null,
+  proyectoEnCuestion: null,
 };
 
 
@@ -375,6 +386,8 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
       return { ...estado, ultimaPersona: accion.personaId };
     case 'ofrecerDeshacer':
       return estado.revertible === accion.que ? estado : { ...estado, revertible: accion.que };
+    case 'preguntarProyecto':
+      return { ...estado, proyectoEnCuestion: accion.pregunta };
   }
 }
 
@@ -416,6 +429,8 @@ export interface AccionesInterfaz {
   recordarPersona(personaId: string | null): void;
   /** Ofrece recuperar lo que se acaba de borrar. `null` retira la oferta. */
   ofrecerDeshacer(que: string | null): void;
+  /** Abre la ceremonia de cerrar o eliminar un proyecto. `null` la cancela. */
+  preguntarProyecto(pregunta: EstadoInterfaz['proyectoEnCuestion']): void;
 }
 
 
@@ -451,6 +466,7 @@ export function ProveedorInterfaz({ children }: { children: ReactNode }) {
       avisar: (aviso) => despachar({ tipo: 'avisar', aviso }),
       recordarPersona: (personaId) => despachar({ tipo: 'recordarPersona', personaId }),
       ofrecerDeshacer: (que) => despachar({ tipo: 'ofrecerDeshacer', que }),
+      preguntarProyecto: (pregunta) => despachar({ tipo: 'preguntarProyecto', pregunta }),
     }),
     [],
   );
