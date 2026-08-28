@@ -783,16 +783,15 @@ describe('cerrarSprint — el sprint siguiente', () => {
     expect(idsDeItems(sprintDe(documento, 'S-35'))).toEqual([]);
   });
 
-  it('un siguienteSprintId que no existe se crea con ESE id, y planeado', () => {
-    const { documento } = exigirOk(
+  it('un siguienteSprintId que no existe se rechaza: no acuña ids fuera del contador', () => {
+    const error = exigirError(
       reducirSinMutar(conUnaPendiente(), {
         comando: 'cerrarSprint',
         sprintId: 'S-34',
         siguienteSprintId: 'S-2026-Q4',
       }),
     );
-    expect(sprintDe(documento, 'S-2026-Q4')).toMatchObject({ id: 'S-2026-Q4', estado: 'planeado' });
-    expect(idsDeItems(sprintDe(documento, 'S-2026-Q4'))).toEqual(['PM-T1']);
+    expect(error.codigo).toBe('no-encontrado');
   });
 });
 

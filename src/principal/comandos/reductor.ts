@@ -30,7 +30,7 @@ import { diasEntre, fechaDe, primerDiaHabil, sumarDias } from '../../compartido/
 import type { Compromiso, Contenedor } from '../../compartido/dominio/derivar';
 import { compromisoEfectivo, tareasDe, tareasDeProyecto } from '../../compartido/dominio/derivar';
 import { validarDocumento } from '../../compartido/modelo/esquema';
-import { siguienteId } from '../../compartido/modelo/ids';
+import { parsearId, siguienteId } from '../../compartido/modelo/ids';
 import type {
   Documento,
   Epica,
@@ -1069,6 +1069,12 @@ function aplicar(
       const sprint = doc.sprints.find((s) => s.id === comando.sprintId);
       if (sprint === undefined) return falta(`el sprint "${comando.sprintId}"`);
       if (sprint.estado === 'cerrado') return sprintCerrado(sprint);
+      if (comando.siguienteSprintId !== undefined) {
+        const pedido = doc.sprints.find((s) => s.id === comando.siguienteSprintId);
+        if (pedido !== undefined && pedido.clave !== sprint.clave) {
+          return invalido(`${pedido.id} pertenece a otra clave y no puede seguir a ${sprint.id}`);
+        }
+      }
 
       const porTarea = new Map<string, Tarea>();
       for (const proyecto of doc.proyectos) {
@@ -1220,6 +1226,8 @@ function aplicar(
       const sprint = doc.sprints.find((s) => s.id === comando.sprintId);
       if (sprint === undefined) return falta(`el sprint "${comando.sprintId}"`);
       if (sprint.estado === 'cerrado') return sprintCerrado(sprint);
+      const proyectoBloqueado = proyectoNoOperable(doc, sprint);
+      if (proyectoBloqueado !== null) return proyectoBloqueado;
       if (sprint.estado === 'activo') {
         return { ok: false, error: { codigo: 'invalido', mensaje: `${sprint.id} ya está activo` } };
       }
@@ -1250,10 +1258,19 @@ function aplicar(
       if (solapado !== undefined) return invalido(`las fechas se solapan con ${solapado.nombre}`);
       const emitido = siguienteId(proyecto.clave, proyecto.contadores, 'sprint');
       proyecto.contadores = { ...emitido.contadores };
-      const anterior = [...doc.sprints].filter((s) => s.clave === proyecto.clave).at(-1);
       const sprint: Sprint = {
         id: emitido.id,
-        nombre: comando.nombre ?? (anterior ? siguienteDeLaSerie(anterior.nombre) ?? emitido.id : 'Sprint 1'),
+        /**
+         * El nombre es TEXTO LIBRE, y cuando no viene se propone «Sprint N» con la N del
+         * CONTADOR del proyecto, no de la serie del nombre anterior.
+         *
+         * La diferencia importa en el caso que el usuario nombró: quien llama a uno
+         * «Quincena de septiembre» rompía la serie y el siguiente se quedaba sin número
+         * —caía al id—. Con el contador, el sexto sprint de SICOE es «Sprint 6» aunque
+         * el quinto se llamara como se llamara, y aunque alguno se haya eliminado. Es
+         * exactamente para lo que un contador persistido sirve (regla 15).
+         */
+        nombre: comando.nombre ?? `Sprint ${emitido.contadores.sprints}`,
         inicio: comando.inicio,
         fin: comando.fin,
         estado: 'planeado',
@@ -1268,6 +1285,8 @@ function aplicar(
       const sprint = doc.sprints.find((s) => s.id === comando.sprintId);
       if (sprint === undefined) return falta(`el sprint "${comando.sprintId}"`);
       if (sprint.estado === 'cerrado') return sprintCerrado(sprint);
+      const proyectoBloqueado = proyectoNoOperable(doc, sprint);
+      if (proyectoBloqueado !== null) return proyectoBloqueado;
       if (comando.nombre === undefined && comando.inicio === undefined && comando.fin === undefined) return sinCambios();
       // Se edita lo que describe el futuro del sprint, nunca lo que reescribe su pasado.
       if (sprint.estado === 'activo' && comando.inicio !== undefined) return invalido(`no se puede cambiar el inicio de ${sprint.id} mientras está activo`);
@@ -1286,6 +1305,8 @@ function aplicar(
       const indice = doc.sprints.findIndex((s) => s.id === comando.sprintId);
       const sprint = doc.sprints[indice];
       if (sprint === undefined) return falta(`el sprint "${comando.sprintId}"`);
+      const proyectoBloqueado = proyectoNoOperable(doc, sprint);
+      if (proyectoBloqueado !== null) return proyectoBloqueado;
       if (sprint.estado !== 'planeado') return invalido(`${sprint.id} no está planeado`);
       if (sprint.items.length > 0) return invalido(`${sprint.id} tiene items y no se puede eliminar`);
       doc.sprints.splice(indice, 1);
@@ -1295,6 +1316,8 @@ function aplicar(
     case 'desactivarSprint': {
       const sprint = doc.sprints.find((s) => s.id === comando.sprintId);
       if (sprint === undefined) return falta(`el sprint "${comando.sprintId}"`);
+      const proyectoBloqueado = proyectoNoOperable(doc, sprint);
+      if (proyectoBloqueado !== null) return proyectoBloqueado;
       if (sprint.estado !== 'activo') return invalido(`${sprint.id} no está activo`);
       sprint.estado = 'planeado';
       return { ok: true, documento: doc, evento: anotar({ proyecto_id: sprint.clave, sprint_id: sprint.id, resumen: `Sprint desactivado: ${sprint.nombre}` }) };
@@ -1837,7 +1860,9 @@ function resolverSprintSiguiente(
       }
       return { ok: true, destino: existente, creado: false };
     }
-    return { ok: true, destino: crearSprintSiguiente(doc, cerrando, pedido), creado: true };
+    // Un id explícito es una referencia, no una puerta lateral para acuñar ids sin el
+    // contador persistido. Si no existe, el cierre sin id crea el siguiente correctamente.
+    return falta(`el sprint siguiente "${pedido}"`);
   }
 
   const yaPlaneado = doc.sprints
@@ -1854,9 +1879,13 @@ function crearSprintSiguiente(doc: Documento, anterior: Sprint, id: string): Spr
   const inicio = primerDiaHabil(sumarDias(anterior.fin, 1));
   const nuevo: Sprint = {
     id,
-    // El nombre sigue la serie del anterior ("Sprint 34" → "Sprint 35"). Si no la tiene,
-    // el id es mejor nombre que uno inventado: al menos coincide con lo que se busca.
-    nombre: siguienteDeLaSerie(anterior.nombre) ?? id,
+    // Mismo criterio que `crearSprint`: la N sale del CONTADOR del proyecto, que es el
+    // número que el id acaba de llevarse, no de la serie del nombre anterior. Así el
+    // conteo sobrevive a que el usuario bautice uno «Quincena de septiembre».
+    //
+    // En un transversal legado no hay contador que consultar —no tiene proyecto raíz—, y
+    // ahí sí se conserva la serie del nombre: es lo único que existe.
+    nombre: nombreDelSiguiente(anterior, id),
     inicio,
     // Misma duración que el que se cierra: la cadencia del usuario es el único dato que
     // tenemos, y no hay comando para corregir fechas de sprint. Nada de inventar dos
@@ -1888,7 +1917,31 @@ function sprintSolapado(
   );
 }
 
+/** Los archivados siguen operables; solo una conclusión real bloquea la serie. */
+function proyectoNoOperable(
+  doc: Documento,
+  sprint: Sprint,
+): { ok: false; error: ErrorComando } | null {
+  if (sprint.clave === null) return null;
+  const proyecto = doc.proyectos.find((p) => p.clave === sprint.clave);
+  if (proyecto === undefined) return falta(`el proyecto "${sprint.clave}"`);
+  return proyecto.cerrado_en === null ? null : invalido(`${proyecto.clave} está cerrado`);
+}
+
 /** Emite desde el contador persistido; nunca inspecciona el máximo ni recicla historia. */
+/**
+ * «Sprint 6» a partir del id recién emitido (`SICOE-S6`).
+ *
+ * Se lee del id y no del contador porque el id ya lo consumió: dos fuentes para el mismo
+ * número son dos fuentes que pueden separarse, que es la clase de deriva que este
+ * proyecto ha pagado ya dos veces.
+ */
+function nombreDelSiguiente(anterior: Sprint, id: string): string {
+  const parseado = parsearId(id);
+  if (parseado !== null && parseado.tipo === 'sprint') return `Sprint ${parseado.numero}`;
+  return siguienteDeLaSerie(anterior.nombre) ?? id;
+}
+
 function idSprintNuevo(doc: Documento, anterior: Sprint): string {
   if (anterior.clave === null) {
     // Solo los transversales legados carecen de proyecto raíz y, por tanto, de contador.
