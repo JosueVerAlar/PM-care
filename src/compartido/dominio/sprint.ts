@@ -37,6 +37,7 @@ import {
   type Avance,
   type Compromiso,
   type UbicacionTarea,
+  tareasDe,
 } from './derivar';
 
 /** Una tarjeta del sprint con todo lo que la tarjeta enseña, ya calculado. */
@@ -225,17 +226,23 @@ export function personaPorOmision(doc: Documento): PersonaId | null {
 /**
  * A dónde puede caer una tarea capturada desde el sprint.
  *
- * El sprint guarda `tarea_id` y nada más: una tarea SIEMPRE vive en una historia del
- * árbol. Así que capturar aquí es elegir la historia, no crear una tarea suelta — y por
- * eso el destino se ofrece explícito en vez de inventar una épica «Varios».
+ * El sprint guarda `tarea_id` y nada más: la tarea vive en el árbol de su proyecto. Así
+ * que capturar aquí es elegir DÓNDE va a vivir, y por eso el destino se ofrece explícito
+ * en vez de inventar una épica «Varios».
+ *
+ * Desde N9 el destino puede ser una historia, una épica o el proyecto entero (regla 18).
+ * Ofrecer solo historias dejaba sin ningún destino a los cinco proyectos que no tienen
+ * ese nivel: el diálogo decía «no hay dónde capturar» en un Jira lleno de trabajo.
  */
 export interface DestinoCaptura {
-  historiaId: string;
+  /** Historia, épica o CLAVE del proyecto: lo que espera `crearTarea`. */
+  contenedorId: string;
   /** Clave del proyecto. Es lo que agrupa el desplegable. */
   clave: string;
   proyecto: string;
-  epica: string;
-  historia: string;
+  /** Los niveles que EXISTEN. `null` no es un dato que falte: es un nivel que no hay. */
+  epica: string | null;
+  historia: string | null;
   /** Lo que le va a pasar a la tarea al nacer. Se dice ANTES de capturar. */
   naceNoPlaneada: boolean;
   planeacionCerradaEn: Fecha | null;
@@ -248,19 +255,28 @@ export function destinosDeCaptura(doc: Documento, hoy: Fecha): DestinoCaptura[] 
     // invitar a meter una tarea en algo que ya salió de la vista diaria.
     if (proyecto.archivado || proyecto.cerrado_en !== null) continue;
     const naceNoPlaneada = capturaNaceNoPlaneada(proyecto, hoy);
+    const comun = {
+      clave: proyecto.clave,
+      proyecto: proyecto.nombre,
+      naceNoPlaneada,
+      planeacionCerradaEn: proyecto.planeacion_cerrada_en,
+    };
+
+    // De más hondo a menos: la historia es el destino más preciso y va primero en la
+    // lista, que es la que el desplegable enseña en orden.
     for (const epica of proyecto.epicas) {
       for (const historia of epica.historias) {
         destinos.push({
-          historiaId: historia.id,
-          clave: proyecto.clave,
-          proyecto: proyecto.nombre,
+          ...comun,
+          contenedorId: historia.id,
           epica: epica.titulo,
           historia: historia.titulo,
-          naceNoPlaneada,
-          planeacionCerradaEn: proyecto.planeacion_cerrada_en,
         });
       }
+      destinos.push({ ...comun, contenedorId: epica.id, epica: epica.titulo, historia: null });
     }
+    // El proyecto entero: el único destino de un trabajo continuo sin épicas.
+    destinos.push({ ...comun, contenedorId: proyecto.clave, epica: null, historia: null });
   }
   return destinos;
 }
@@ -286,13 +302,23 @@ export function capturaNaceNoPlaneada(proyecto: Proyecto, hoy: Fecha): boolean {
 }
 
 /** Ids de las tareas de una historia. Sirve para localizar la que se acaba de crear. */
-export function idsDeHistoria(doc: Documento, historiaId: string): Set<string> {
+export function idsDeContenedor(doc: Documento, contenedorId: string): Set<string> {
   const ids = new Set<string>();
   for (const proyecto of doc.proyectos) {
+    // Los tres contenedores posibles (regla 18). La CLAVE del proyecto identifica al
+    // proyecto mismo, igual que en `crearTarea`.
+    if (proyecto.clave === contenedorId) {
+      for (const tarea of tareasDe(proyecto)) ids.add(tarea.id);
+      continue;
+    }
     for (const epica of proyecto.epicas) {
+      if (epica.id === contenedorId) {
+        for (const tarea of tareasDe(epica)) ids.add(tarea.id);
+        continue;
+      }
       for (const historia of epica.historias) {
-        if (historia.id !== historiaId) continue;
-        for (const tarea of historia.tareas) ids.add(tarea.id);
+        if (historia.id !== contenedorId) continue;
+        for (const tarea of tareasDe(historia)) ids.add(tarea.id);
       }
     }
   }
@@ -300,7 +326,7 @@ export function idsDeHistoria(doc: Documento, historiaId: string): Set<string> {
 }
 
 /**
- * La tarea que apareció en la historia entre dos documentos.
+ * La tarea que apareció en el contenedor entre dos documentos.
  *
  * El comando `crearTarea` responde con el documento nuevo pero no con el id que emitió, y
  * el id lo decide el contador del proyecto: adivinarlo desde el renderer sería replicar
@@ -308,10 +334,10 @@ export function idsDeHistoria(doc: Documento, historiaId: string): Set<string> {
  */
 export function tareaRecienCreada(
   doc: Documento,
-  historiaId: string,
+  contenedorId: string,
   idsPrevios: ReadonlySet<string>,
 ): string | null {
-  for (const id of idsDeHistoria(doc, historiaId)) {
+  for (const id of idsDeContenedor(doc, contenedorId)) {
     if (!idsPrevios.has(id)) return id;
   }
   return null;

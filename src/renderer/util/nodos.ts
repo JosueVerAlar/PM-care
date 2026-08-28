@@ -11,6 +11,7 @@
  * `compartido/dominio/`, y hay que pedírselo a `backend`. Hoy son dos recorridos.
  */
 
+import { tareasDe } from '../../compartido/dominio/derivar';
 import type { Epica, Historia, Proyecto, Tarea } from '../../compartido/modelo/tipos';
 
 export interface NodoEpica {
@@ -24,8 +25,10 @@ export interface NodoHistoria {
 }
 export interface NodoTarea {
   clase: 'tarea';
-  epica: Epica;
-  historia: Historia;
+  /** `null` cuando la tarea cuelga del proyecto (regla 18). */
+  epica: Epica | null;
+  /** `null` cuando cuelga de una épica o del proyecto. */
+  historia: Historia | null;
   tarea: Tarea;
 }
 
@@ -37,10 +40,18 @@ export function buscarNodo(proyecto: Proyecto, id: string): Nodo | null {
     if (epica.id === id) return { clase: 'epica', epica };
     for (const historia of epica.historias) {
       if (historia.id === id) return { clase: 'historia', epica, historia };
-      for (const tarea of historia.tareas) {
+      for (const tarea of tareasDe(historia)) {
         if (tarea.id === id) return { clase: 'tarea', epica, historia, tarea };
       }
     }
+    // Tareas colgadas de la épica, sin historia (regla 18).
+    for (const tarea of tareasDe(epica)) {
+      if (tarea.id === id) return { clase: 'tarea', epica, historia: null, tarea };
+    }
+  }
+  // Y las del propio proyecto.
+  for (const tarea of tareasDe(proyecto)) {
+    if (tarea.id === id) return { clase: 'tarea', epica: null, historia: null, tarea };
   }
   return null;
 }
@@ -52,8 +63,13 @@ export function rutaDeNodo(proyecto: Proyecto, nodo: Nodo): string[] {
       return [proyecto.clave, nodo.epica.titulo];
     case 'historia':
       return [proyecto.clave, nodo.epica.titulo, nodo.historia.titulo];
-    case 'tarea':
-      return [proyecto.clave, nodo.epica.titulo, nodo.historia.titulo, nodo.tarea.titulo];
+    case 'tarea': {
+      // Se omiten los niveles que no existen; nunca se rellenan con un hueco.
+      const ruta = [proyecto.clave];
+      if (nodo.epica) ruta.push(nodo.epica.titulo);
+      if (nodo.historia) ruta.push(nodo.historia.titulo);
+      return [...ruta, nodo.tarea.titulo];
+    }
   }
 }
 

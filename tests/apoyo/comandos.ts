@@ -130,7 +130,7 @@ export function arbolConTareas(cuantas: number, clave = 'PM'): Arbol {
     base.doc,
     Array.from({ length: cuantas }, (_, i) => ({
       comando: 'crearTarea' as const,
-      historiaId: base.historiaId,
+      contenedorId: base.historiaId,
       titulo: `Tarea ${i + 1}`,
     })),
   );

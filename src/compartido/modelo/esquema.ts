@@ -39,6 +39,26 @@ const EsquemaInstante = z.string().min(1);
 export const EsquemaPrioridad = z.enum(['alta', 'media', 'baja']);
 
 /**
+ * Esfuerzo de una tarea, en la escala de Fibonacci que usa Jira.
+ *
+ * Los saltos crecientes admiten lo que una escala lineal niega: estimar algo grande es más
+ * impreciso que estimar algo chico. Y al no existir el 6 ni el 7, no hay discusión posible
+ * sobre si algo es uno u otro — se elige el de al lado y se sigue.
+ *
+ * Se guarda como NÚMERO, no como etiqueta, para que se pueda sumar. Toda suma de esfuerzos
+ * que se muestre lleva al lado cuántas tareas la componen y cuántas no están estimadas:
+ * «34 pts · 12 de 18 tareas», nunca «34 pts» a secas, que sobre un conjunto medio estimado
+ * es un número inventado con formato de dato (misma razón que la regla 3).
+ */
+export const EsquemaEsfuerzo = z.union([
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+  z.literal(5),
+  z.literal(8),
+]);
+
+/**
  * Estado de una tarea. `bloqueada` NO está aquí a propósito: el bloqueo es ortogonal al
  * avance — una tarea bloqueada estaba en curso y se atoró, y conserva ese avance. Vive
  * en `Tarea.bloqueos` como lista histórica.
@@ -144,6 +164,12 @@ export const EsquemaTarea = z
     responsable: z.string().nullable().default(null),
     fecha_limite: EsquemaFecha.nullable().default(null),
     prioridad: EsquemaPrioridad.nullable().default(null),
+    /**
+     * Cuánto trabajo implica. `null` es lo NORMAL, no un hueco por llenar: la mayoría de
+     * las tareas no se van a estimar nunca, y obligar a hacerlo cobraría un clic en cada
+     * captura para dar un dato que nadie iba a mirar. Se pone donde importa.
+     */
+    esfuerzo: EsquemaEsfuerzo.nullable().default(null),
     /** Nullable: una tarea escrita a mano no debería tumbar la app por omitirla. */
     creada_en: EsquemaInstante.nullable().default(null),
     /** Cuándo pasó a `hecha`. Las métricas que lo necesiten ignoran las que no lo tengan. */
@@ -167,6 +193,25 @@ export const EsquemaTarea = z
     }
   });
 
+/**
+ * Lo único que hace a un nodo «contenedor de tareas»: N9 · la jerarquía es opcional.
+ *
+ * Una épica y una historia son formas de ORGANIZAR, no requisitos. Infraestructura y
+ * DGETI web son trabajo continuo sin épicas, y obligarlos a una épica «General»
+ * inventada sería mentirle a la estructura para que quepa en el modelo.
+ *
+ * Se declara aquí y se compone en los tres contenedores —proyecto, épica, historia— para
+ * que el campo tenga una sola definición y un solo comentario. **Nadie itera estas listas
+ * directamente: todo acceso pasa por `tareasDe(nodo)` en `dominio/derivar.ts`**, que es
+ * lo que impide que una función futura recuerde dos de los tres sitios.
+ *
+ * Aditivo: `.default([])` deja validar sin tocarlos todos los documentos escritos antes.
+ */
+const CONTIENE_TAREAS = {
+  /** Puede estar vacío: contenedor declarado pero sin desglosar. Avance `null`, no 0%. */
+  tareas: z.array(EsquemaTarea).default([]),
+};
+
 export const EsquemaHistoria = z
   .object({
     id: z.string().min(1),
@@ -174,8 +219,7 @@ export const EsquemaHistoria = z
     descripcion: z.string().nullable().default(null),
     planeada: z.boolean().default(true),
     clave_externa: z.string().nullable().default(null),
-    /** Puede estar vacío: historia declarada pero sin desglosar. Avance `null`, no 0%. */
-    tareas: z.array(EsquemaTarea).default([]),
+    ...CONTIENE_TAREAS,
   })
   .passthrough();
 
@@ -188,6 +232,8 @@ export const EsquemaEpica = z
     clave_externa: z.string().nullable().default(null),
     /** Puede estar vacío: épica declarada pero sin desglosar. */
     historias: z.array(EsquemaHistoria).default([]),
+    /** Tareas colgadas de la épica sin historia de por medio (N9). */
+    ...CONTIENE_TAREAS,
   })
   .passthrough();
 
@@ -243,6 +289,11 @@ export const EsquemaProyecto = z
     contadores: EsquemaContadores.default({ epicas: 0, historias: 0, tareas: 0 }),
     equipo: z.array(EsquemaMiembroEquipo).default([]),
     epicas: z.array(EsquemaEpica).default([]),
+    /**
+     * Tareas colgadas del proyecto, sin épica ni historia (N9). Es el caso de un proyecto
+     * de trabajo continuo, no una excepción a tratar aparte.
+     */
+    ...CONTIENE_TAREAS,
     clave_externa: z.string().nullable().default(null),
   })
   .passthrough();
@@ -266,6 +317,18 @@ export const EsquemaItemSprint = z
     responsable: z.string().nullable().default(null),
     fecha_limite: EsquemaFecha.nullable().default(null),
     prioridad: EsquemaPrioridad.nullable().default(null),
+    /**
+     * Cuándo entró esta tarea a ESTE sprint.
+     *
+     * El reloj de resolución corre desde que arranca el sprint (decisión del usuario),
+     * pero una tarea metida a mitad de la quincena no puede cargar con los días en que ni
+     * siquiera estaba comprometida. Esto permite topar el arranque sin cambiar la regla:
+     * `max(sprint.inicio, comprometida_en)`.
+     *
+     * `null` en los items escritos antes de que el campo existiera: ahí se cae al inicio
+     * del sprint, que es exactamente lo que se hacía hasta ahora.
+     */
+    comprometida_en: EsquemaInstante.nullable().default(null),
     /** `null` mientras el sprint no esté cerrado. */
     desenlace: EsquemaDesenlaceItem.nullable().default(null),
   })
@@ -390,22 +453,38 @@ function validacionesCruzadas(
       }
     };
 
+    /**
+     * Una lista de tareas, viva donde viva (N9). Se llama tres veces con la ruta de su
+     * contenedor: el mensaje de error tiene que decir en qué parte del archivo está el
+     * problema, y el usuario edita este archivo a mano.
+     */
+    const revisarTareas = (
+      tareas: readonly z.infer<typeof EsquemaTarea>[],
+      rutaContenedor: (string | number)[],
+    ) => {
+      tareas.forEach((tarea, t) => {
+        const rutaTarea = [...rutaContenedor, 'tareas', t];
+        revisarId(tarea.id, [...rutaTarea, 'id']);
+        idsDeTarea.add(tarea.id);
+        if (!personaConocida(tarea.responsable)) {
+          anotar(
+            [...rutaTarea, 'responsable'],
+            `${tarea.id}: responsable "${tarea.responsable}" no está en personas`,
+          );
+        }
+      });
+    };
+
+    revisarTareas(proyecto.tareas, rutaProyecto);
+
     proyecto.epicas.forEach((epica, e) => {
-      revisarId(epica.id, [...rutaProyecto, 'epicas', e, 'id']);
+      const rutaEpica = [...rutaProyecto, 'epicas', e];
+      revisarId(epica.id, [...rutaEpica, 'id']);
+      revisarTareas(epica.tareas, rutaEpica);
       epica.historias.forEach((historia, h) => {
-        const rutaHistoria = [...rutaProyecto, 'epicas', e, 'historias', h];
+        const rutaHistoria = [...rutaEpica, 'historias', h];
         revisarId(historia.id, [...rutaHistoria, 'id']);
-        historia.tareas.forEach((tarea, t) => {
-          const rutaTarea = [...rutaHistoria, 'tareas', t];
-          revisarId(tarea.id, [...rutaTarea, 'id']);
-          idsDeTarea.add(tarea.id);
-          if (!personaConocida(tarea.responsable)) {
-            anotar(
-              [...rutaTarea, 'responsable'],
-              `${tarea.id}: responsable "${tarea.responsable}" no está en personas`,
-            );
-          }
-        });
+        revisarTareas(historia.tareas, rutaHistoria);
       });
     });
 

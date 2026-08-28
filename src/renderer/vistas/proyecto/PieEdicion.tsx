@@ -144,7 +144,7 @@ function FormularioCaptura({
         ? ({ comando: 'crearEpica', proyecto: proyecto.clave, titulo: limpio } as const)
         : clase === 'historia'
           ? ({ comando: 'crearHistoria', epicaId: padreId, titulo: limpio } as const)
-          : ({ comando: 'crearTarea', historiaId: padreId, titulo: limpio } as const);
+          : ({ comando: 'crearTarea', contenedorId: padreId, titulo: limpio } as const);
 
     const ok = await mutar(comando, `Capturar ${NOMBRE_CLASE[clase]}`);
     if (!ok) return; // el título sigue en el campo: no se descarta lo tecleado (regla 5)
@@ -153,8 +153,12 @@ function FormularioCaptura({
     // una historia colapsada la manda a un sitio que el usuario no ve, y parece que no
     // pasó nada.
     if (nodoPadre !== null) {
-      const ancestros =
-        nodoPadre.clase === 'historia' ? [nodoPadre.epica.id, nodoPadre.historia.id] : [nodoPadre.epica.id];
+      // Los ancestros que de verdad existan (regla 18): una tarea capturada en un
+      // proyecto sin épicas no tiene ninguno, y ahí no hay nada que desplegar.
+      const ancestros = [
+        nodoPadre.clase !== 'epica' ? nodoPadre.epica?.id : nodoPadre.epica.id,
+        nodoPadre.clase === 'historia' ? nodoPadre.historia.id : undefined,
+      ].filter((id): id is string => id !== undefined && id !== null);
       expandir(ancestros);
     }
     setUltimo(limpio);

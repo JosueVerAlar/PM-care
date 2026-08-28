@@ -25,6 +25,7 @@ import {
   sprintActivo,
   sprintsCerrados,
   type UbicacionTarea,
+  tareasDeProyecto,
 } from './derivar';
 import { estaAbierta, estaBloqueada, estaEnSprint, mediana } from './clasificar';
 
@@ -411,13 +412,9 @@ export function conformacionDeEquipos(doc: Documento): ConformacionEquipo[] {
 
   return doc.proyectos.map((proyecto) => {
     const abiertasPor = new Map<PersonaId, number>();
-    for (const epica of proyecto.epicas) {
-      for (const historia of epica.historias) {
-        for (const tarea of historia.tareas) {
-          if (tarea.responsable === null || !estaAbierta(tarea)) continue;
-          abiertasPor.set(tarea.responsable, (abiertasPor.get(tarea.responsable) ?? 0) + 1);
-        }
-      }
+    for (const tarea of tareasDeProyecto(proyecto)) {
+      if (tarea.responsable === null || !estaAbierta(tarea)) continue;
+      abiertasPor.set(tarea.responsable, (abiertasPor.get(tarea.responsable) ?? 0) + 1);
     }
 
     const enEquipo = new Set(proyecto.equipo.map((m) => m.persona_id));

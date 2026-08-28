@@ -148,9 +148,11 @@ export function textoDeTerminadas(
 ): string {
   const lineas: string[] = [encabezado];
 
-  for (const proyecto of porProyecto) {
-    lineas.push('', `${proyecto.nombre} (${proyecto.tareas.length})`);
-    for (const terminada of proyecto.tareas) {
+  // `grupo`, no `proyecto`: es un agrupamiento de la vista, no un nodo del modelo. El
+  // nombre importa porque su campo `tareas` no es el arreglo del documento (regla 18).
+  for (const grupo of porProyecto) {
+    lineas.push('', `${grupo.nombre} (${grupo.tareas.length})`);
+    for (const terminada of grupo.tareas) {
       const fecha =
         terminada.hechaEn === null ? 'sin fecha' : formatearFecha(terminada.hechaEn);
       lineas.push(`  · ${terminada.ubicacion.tarea.id} — ${terminada.ubicacion.tarea.titulo} (${fecha})`);

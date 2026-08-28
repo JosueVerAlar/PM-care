@@ -61,6 +61,8 @@ describe('moverAlSprint', () => {
       responsable: null,
       fecha_limite: null,
       prioridad: null,
+      // El anclaje del reloj: SÍ se sella al entrar, y no hereda de la tarea.
+      comprometida_en: AHORA,
       desenlace: null,
     });
   });
@@ -200,7 +202,7 @@ describe('sacarDelSprint — conserva lo escrito', () => {
     const conGente = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana' });
     const conTarea = aplicar(conGente, {
       comando: 'crearTarea',
-      historiaId,
+      contenedorId: historiaId,
       titulo: 'Con todo escrito',
       descripcion: 'lo que hay que hacer',
       responsable: 'ana',
@@ -228,7 +230,7 @@ describe('sacarDelSprint — conserva lo escrito', () => {
     const conGente = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana' });
     const conTarea = aplicar(conGente, {
       comando: 'crearTarea',
-      historiaId,
+      contenedorId: historiaId,
       titulo: 'Sin compromiso propio',
     });
     // La tarea nace sin responsable ni fecha; el compromiso solo existe en el item.
@@ -263,7 +265,7 @@ describe('sacarDelSprint — conserva lo escrito', () => {
     ]);
     const conTarea = aplicar(conGente, {
       comando: 'crearTarea',
-      historiaId,
+      contenedorId: historiaId,
       titulo: 'Con responsable propio',
       responsable: 'ana',
     });
@@ -293,7 +295,7 @@ describe('sacarDelSprint — conserva lo escrito', () => {
     // es la que ordena el backlog del área: perderla al sacar del sprint manda la tarea al
     // fondo de una lista donde el usuario ya no la busca.
     const { doc, historiaId } = arbolConTareas(0);
-    const conTarea = aplicar(doc, { comando: 'crearTarea', historiaId, titulo: 'Sin prioridad propia' });
+    const conTarea = aplicar(doc, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'Sin prioridad propia' });
     const enSprint: Documento = {
       ...conTarea,
       sprints: [
@@ -315,7 +317,7 @@ describe('sacarDelSprint — conserva lo escrito', () => {
     // haciendo que el item se recree con lo de antes y duplicando la fuente de verdad.
     const { doc, historiaId } = arbolConTareas(0);
     const conGente = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana' });
-    const conTarea = aplicar(conGente, { comando: 'crearTarea', historiaId, titulo: 'T' });
+    const conTarea = aplicar(conGente, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T' });
     const enSprint: Documento = {
       ...conTarea,
       sprints: [
@@ -377,7 +379,7 @@ describe('sacarDelSprint — conserva lo escrito', () => {
 
   it('sacar algo que no está en ese sprint se rechaza', () => {
     const doc = comprometido(1);
-    const otra = aplicar(doc, { comando: 'crearTarea', historiaId: 'PM-H1', titulo: 'Fuera' });
+    const otra = aplicar(doc, { comando: 'crearTarea', contenedorId: 'PM-H1', titulo: 'Fuera' });
     expect(
       exigirError(
         reducirSinMutar(otra, { comando: 'sacarDelSprint', tareaId: 'PM-T2', sprintId: 'S-1' }),
@@ -522,7 +524,7 @@ describe('cerrarSprint — materializa lo heredado antes de congelar', () => {
     const preparado = aplicarTodos(doc, [
       { comando: 'crearPersona', nombre: 'Ana' },
       { comando: 'crearPersona', nombre: 'Beto' },
-      { comando: 'crearTarea', historiaId, titulo: 'T', responsable: 'ana', prioridad: 'alta', fechaLimite: '2026-09-30' },
+      { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T', responsable: 'ana', prioridad: 'alta', fechaLimite: '2026-09-30' },
     ]);
     const enSprint = aplicar(
       { ...preparado, sprints: [unSprint({ id: 'S-1', estado: 'activo' })] },
@@ -550,7 +552,7 @@ describe('cerrarSprint — materializa lo heredado antes de congelar', () => {
     const preparado = aplicarTodos(doc, [
       { comando: 'crearPersona', nombre: 'Ana' },
       { comando: 'crearPersona', nombre: 'Beto' },
-      { comando: 'crearTarea', historiaId, titulo: 'T', responsable: 'ana' },
+      { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T', responsable: 'ana' },
     ]);
     const enSprint = copiaProfunda(
       aplicar(

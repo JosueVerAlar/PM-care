@@ -57,6 +57,7 @@ export function unaTarea(over: Con<Tarea> = {}): Tarea {
     responsable: null,
     fecha_limite: null,
     prioridad: null,
+    esfuerzo: null,
     creada_en: null,
     hecha_en: null,
     bloqueos: [],
@@ -89,6 +90,8 @@ export function unaEpica(over: Con<Epica> = {}): Epica {
     planeada: true,
     clave_externa: null,
     historias: [],
+    // N9: una épica también puede llevar tareas colgadas sin historia de por medio.
+    tareas: [],
     ...resto,
   };
 }
@@ -101,6 +104,8 @@ export function unaEpica(over: Con<Epica> = {}): Epica {
 export function unProyecto(over: Partial<Proyecto> = {}): Proyecto {
   const clave = (over.clave as string | undefined) ?? CLAVE;
   const epicas = (over.epicas as Epica[] | undefined) ?? [];
+  // N9: las tareas sueltas cuentan para los contadores igual que las de una historia.
+  const sueltas = (over.tareas as Proyecto['tareas'] | undefined) ?? [];
   const base: Proyecto = {
     clave,
     nombre: `Proyecto ${clave}`,
@@ -109,9 +114,18 @@ export function unProyecto(over: Partial<Proyecto> = {}): Proyecto {
     archivado: false,
     cerrado_en: null,
     planeacion_cerrada_en: null,
-    contadores: { ...maximosUsados({ clave, contadores: { epicas: 0, historias: 0, tareas: 0 }, epicas }) },
+    contadores: {
+      ...maximosUsados({
+        clave,
+        contadores: { epicas: 0, historias: 0, tareas: 0 },
+        epicas,
+        tareas: sueltas,
+      }),
+    },
     equipo: [],
     epicas,
+    /** N9: tareas colgadas del proyecto, sin épica. El caso de un trabajo continuo. */
+    tareas: [],
     clave_externa: null,
   };
   return { ...base, ...over };
@@ -138,6 +152,7 @@ export function unItem(tareaId: string, over: Partial<ItemSprint> = {}): ItemSpr
     responsable: null,
     fecha_limite: null,
     prioridad: null,
+    comprometida_en: null,
     desenlace: null,
     ...over,
   };

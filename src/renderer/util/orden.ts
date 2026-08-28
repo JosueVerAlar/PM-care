@@ -94,7 +94,7 @@ export function comandoDeOrden(ubicacion: Ubicacion, aIndice: number): Comando {
     case 'tarea':
       return {
         comando: 'reordenarTarea',
-        historiaId: ubicacion.padre,
+        contenedorId: ubicacion.padre,
         tareaId: ubicacion.id,
         aIndice,
       };

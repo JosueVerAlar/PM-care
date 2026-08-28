@@ -72,8 +72,8 @@ describe('cerrarPlaneacion', () => {
   it('no toca NI UNA tarea existente: eso es justamente lo que significa «esto es lo planeado»', () => {
     const { doc } = arbolVacio(CLAVE);
     const conTareas = aplicarTodos(doc, [
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Uno' },
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Dos', planeada: false },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Uno' },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Dos', planeada: false },
       { comando: 'cambiarEstado', id: 'PM-T1', estado: 'hecha' },
     ]);
 
@@ -125,9 +125,9 @@ describe('cerrarPlaneacion', () => {
   it('el evento cuenta cuántas tareas quedaron del lado planeado', () => {
     const { doc } = arbolVacio(CLAVE);
     const conTareas = aplicarTodos(doc, [
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Uno' },
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Dos' },
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Coló', planeada: false },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Uno' },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Dos' },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Coló', planeada: false },
     ]);
     const { evento } = exigirOk(
       reducirSinMutar(conTareas, { comando: 'cerrarPlaneacion', proyecto: CLAVE }),
@@ -198,7 +198,7 @@ describe('reabrirPlaneacion', () => {
     const cerrada = aplicar(doc, { comando: 'cerrarPlaneacion', proyecto: CLAVE });
     const conColada = aplicar(
       cerrada,
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Se coló' },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Se coló' },
       alMediodia('2026-09-01'),
     );
     expect(tareas(conColada)[0]?.planeada).toBe(false);
@@ -215,8 +215,8 @@ describe('reabrirPlaneacion', () => {
     const conTareas = aplicarTodos(
       cerrada,
       [
-        { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Coló una' },
-        { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Coló otra' },
+        { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Coló una' },
+        { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Coló otra' },
         { comando: 'cambiarEstado', id: 'PM-T1', estado: 'en_curso' },
       ],
       alMediodia('2026-09-01'),
@@ -236,8 +236,8 @@ describe('reabrirPlaneacion', () => {
     const conColadas = aplicarTodos(
       cerrada,
       [
-        { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'A' },
-        { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'B' },
+        { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'A' },
+        { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'B' },
       ],
       alMediodia('2026-09-01'),
     );
@@ -259,7 +259,7 @@ describe('reabrirPlaneacion', () => {
     ]);
     const conNueva = aplicar(
       reabierta,
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Después de reabrir' },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Después de reabrir' },
       alMediodia('2026-09-05'),
     );
     expect(tareas(conNueva)[0]?.planeada).toBe(true);
@@ -275,7 +275,7 @@ describe('cerrar → capturar → reabrir → capturar: cada tarea con la proced
     // 1. Planeando todavía: lo capturado ahora es lo previsto.
     const planeando = aplicar(
       doc,
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: '1 · durante la planeación' },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: '1 · durante la planeación' },
       alMediodia('2026-08-20'),
     );
 
@@ -285,7 +285,7 @@ describe('cerrar → capturar → reabrir → capturar: cada tarea con la proced
     // 3. Lo que se cuela el 1 de septiembre: emergente.
     const colada = aplicar(
       cerrada,
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: '2 · se coló con la planeación cerrada' },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: '2 · se coló con la planeación cerrada' },
       alMediodia('2026-09-01'),
     );
 
@@ -295,7 +295,7 @@ describe('cerrar → capturar → reabrir → capturar: cada tarea con la proced
     // 5. Lo capturado después vuelve a ser planeado.
     const final = aplicar(
       reabierta,
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: '3 · con la planeación reabierta' },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: '3 · con la planeación reabierta' },
       alMediodia('2026-09-06'),
     );
 
@@ -313,14 +313,14 @@ describe('cerrar → capturar → reabrir → capturar: cada tarea con la proced
       aplicarTodos(
         aplicarTodos(doc, [{ comando: 'cerrarPlaneacion', proyecto: CLAVE }], alMediodia('2026-08-26')),
         [
-          { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'A · emergente' },
+          { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'A · emergente' },
           { comando: 'reabrirPlaneacion', proyecto: CLAVE },
-          { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'B · planeada' },
+          { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'B · planeada' },
           { comando: 'cerrarPlaneacion', proyecto: CLAVE },
         ],
         alMediodia('2026-09-01'),
       ),
-      [{ comando: 'crearTarea', historiaId: HISTORIA, titulo: 'C · emergente otra vez' }],
+      [{ comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'C · emergente otra vez' }],
       alMediodia('2026-09-02'),
     );
 
@@ -346,7 +346,7 @@ describe('crearTarea acepta planeada explícito, y es `??` — no `||`', () => {
     const { documento } = exigirOk(
       reducirSinMutar(doc, {
         comando: 'crearTarea',
-        historiaId: HISTORIA,
+        contenedorId: HISTORIA,
         titulo: 'Capturada directo en el sprint',
         planeada: false,
       }),
@@ -361,7 +361,7 @@ describe('crearTarea acepta planeada explícito, y es `??` — no `||`', () => {
     const { documento } = exigirOk(
       reducirSinMutar(
         cerrada,
-        { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Sí estaba en el plan', planeada: true },
+        { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Sí estaba en el plan', planeada: true },
         alMediodia('2026-09-15'),
       ),
     );
@@ -370,13 +370,13 @@ describe('crearTarea acepta planeada explícito, y es `??` — no `||`', () => {
 
   it('ausente = lo decide el proyecto, en los dos sentidos', () => {
     const { doc } = arbolVacio(CLAVE);
-    const abierta = aplicar(doc, { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Sin cerrar' });
+    const abierta = aplicar(doc, { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Sin cerrar' });
     expect(tareas(abierta)[0]?.planeada).toBe(true);
 
     const cerrada = aplicar(doc, { comando: 'cerrarPlaneacion', proyecto: CLAVE });
     const despues = aplicar(
       cerrada,
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Con la planeación cerrada' },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Con la planeación cerrada' },
       alMediodia('2026-09-15'),
     );
     expect(tareas(despues)[0]?.planeada).toBe(false);
@@ -387,7 +387,7 @@ describe('crearTarea acepta planeada explícito, y es `??` — no `||`', () => {
     const explicita = exigirOk(
       reducirSinMutar(doc, {
         comando: 'crearTarea',
-        historiaId: HISTORIA,
+        contenedorId: HISTORIA,
         titulo: 'Emergente a mano',
         planeada: false,
       }),
@@ -395,7 +395,7 @@ describe('crearTarea acepta planeada explícito, y es `??` — no `||`', () => {
     expect(explicita.detalle).toMatchObject({ planeada: false, explicita: true });
 
     const implicita = exigirOk(
-      reducirSinMutar(doc, { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Normal' }),
+      reducirSinMutar(doc, { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Normal' }),
     ).evento;
     expect(implicita.detalle).toMatchObject({ planeada: true, explicita: false });
   });
@@ -403,13 +403,13 @@ describe('crearTarea acepta planeada explícito, y es `??` — no `||`', () => {
   it('el payload NO acepta null: dos formas de decir «ausente» son dos ramas que divergen', () => {
     const conNull = validarComando({
       comando: 'crearTarea',
-      historiaId: HISTORIA,
+      contenedorId: HISTORIA,
       titulo: 'X',
       planeada: null,
     });
     expect(conNull.ok).toBe(false);
 
-    const sinCampo = validarComando({ comando: 'crearTarea', historiaId: HISTORIA, titulo: 'X' });
+    const sinCampo = validarComando({ comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'X' });
     expect(sinCampo.ok).toBe(true);
   });
 
@@ -430,7 +430,7 @@ describe('el día del cierre es de gracia: lo capturado ese mismo día sigue sie
     // Más tarde, el mismo día.
     const mismoDia = aplicar(
       cerrada,
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Por la tarde del mismo día' },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Por la tarde del mismo día' },
       `2026-08-26T23:59:00-06:00`,
     );
     expect(tareas(mismoDia)[0]?.planeada).toBe(true);
@@ -441,7 +441,7 @@ describe('el día del cierre es de gracia: lo capturado ese mismo día sigue sie
     const cerrada = aplicar(doc, { comando: 'cerrarPlaneacion', proyecto: CLAVE }, alMediodia('2026-08-26'));
     const alDiaSiguiente = aplicar(
       cerrada,
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'A la mañana siguiente' },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'A la mañana siguiente' },
       `2026-08-27T00:01:00-06:00`,
     );
     expect(tareas(alDiaSiguiente)[0]?.planeada).toBe(false);
@@ -455,7 +455,7 @@ describe('el día del cierre es de gracia: lo capturado ese mismo día sigue sie
     };
     const capturada = aplicar(
       conFuturo,
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Antes del cierre' },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Antes del cierre' },
       alMediodia('2026-09-01'),
     );
     expect(tareas(capturada)[0]?.planeada).toBe(true);
@@ -492,7 +492,7 @@ describe('el día del cierre es de gracia: lo capturado ese mismo día sigue sie
       for (const dia of dias) {
         const capturada = aplicar(
           conCierre,
-          { comando: 'crearTarea', historiaId: HISTORIA, titulo: `Capturada el ${dia}` },
+          { comando: 'crearTarea', contenedorId: HISTORIA, titulo: `Capturada el ${dia}` },
           alMediodia(dia),
         );
         const escribioNoPlaneada = tareas(capturada)[0]?.planeada === false;
@@ -655,7 +655,7 @@ describe('una referencia que cita historia prohíbe el borrado; una que dice el 
     const { doc } = arbolVacio(CLAVE);
     const conAna = aplicarTodos(doc, [
       { comando: 'crearPersona', nombre: 'Ana García' },
-      { comando: 'crearTarea', historiaId: HISTORIA, titulo: 'Suya', responsable: 'ana-garcia' },
+      { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Suya', responsable: 'ana-garcia' },
       { comando: 'fijarUsuario', id: 'ana-garcia' },
     ]);
     const error = exigirError(reducirSinMutar(conAna, { comando: 'eliminarPersona', id: 'ana-garcia' }));

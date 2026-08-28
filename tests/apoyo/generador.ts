@@ -63,6 +63,48 @@ export function unProyectoAleatorio(rng: Aleatorio, opciones: OpcionesArbol = {}
   let nH = 0;
   let nT = 0;
 
+  /**
+   * Una lista de tareas. Se llama desde los tres niveles (N9): las invariantes solo valen
+   * si los árboles generados incluyen tareas colgadas de una épica y del propio proyecto,
+   * que es justo la forma que ningún caso escrito a mano cubre.
+   */
+  const tareas = (cuantas: number) =>
+    Array.from({ length: cuantas }, () => {
+      nT += 1;
+      const estado = elegir(rng, ESTADOS);
+      return {
+        id: `${clave}-T${nT}`,
+        titulo: `Tarea ${nT}`,
+        descripcion: null,
+        estado,
+        planeada: rng() < 0.75,
+        responsable: null,
+        fecha_limite: null,
+        prioridad: null,
+        // Una de cada tres estimada: lo normal es NO estimar, y el generador tiene que
+        // parecerse a eso o las pruebas de esfuerzo medirían un mundo que no existe.
+        esfuerzo: rng() < 0.33 ? elegir(rng, [1, 2, 3, 5, 8] as const) : null,
+        creada_en: null,
+        // Solo lo hecho tiene fecha de cierre. Una hecha sin `hecha_en` también se genera
+        // —pasa con las editadas a mano— y ahí la duración tiene que salir `null`.
+        hecha_en:
+          estado === 'hecha' && rng() < 0.85
+            ? `2026-06-${String(entero(rng, 1, 28)).padStart(2, '0')}T12:00:00-06:00`
+            : null,
+        bloqueos: rng() < 0.15
+          ? [
+              {
+                tipo: 'dependencia' as const,
+                motivo: 'generado',
+                bloqueada_en: '2026-08-10T09:00:00-06:00',
+                desbloqueada_en: null,
+              },
+            ]
+          : [],
+        clave_externa: null,
+      };
+    });
+
   const epicas = Array.from({ length: entero(rng, 0, maxEpicas) }, () => {
     nE += 1;
     return {
@@ -79,36 +121,16 @@ export function unProyectoAleatorio(rng: Aleatorio, opciones: OpcionesArbol = {}
           descripcion: null,
           planeada: rng() < 0.8,
           clave_externa: null,
-          tareas: Array.from({ length: entero(rng, 0, maxTareas) }, () => {
-            nT += 1;
-            return {
-              id: `${clave}-T${nT}`,
-              titulo: `Tarea ${nT}`,
-              descripcion: null,
-              estado: elegir(rng, ESTADOS),
-              planeada: rng() < 0.75,
-              responsable: null,
-              fecha_limite: null,
-              prioridad: null,
-              creada_en: null,
-              hecha_en: null,
-              bloqueos: rng() < 0.15
-                ? [
-                    {
-                      tipo: 'dependencia' as const,
-                      motivo: 'generado',
-                      bloqueada_en: '2026-08-10T09:00:00-06:00',
-                      desbloqueada_en: null,
-                    },
-                  ]
-                : [],
-              clave_externa: null,
-            };
-          }),
+          tareas: tareas(entero(rng, 0, maxTareas)),
         };
       }),
+      // Una de cada cuatro épicas lleva trabajo colgado sin historia de por medio.
+      tareas: rng() < 0.25 ? tareas(entero(rng, 1, 3)) : [],
     };
   });
+
+  // Y uno de cada cinco proyectos es trabajo continuo con tareas directas.
+  const sueltas = rng() < 0.2 ? tareas(entero(rng, 1, 4)) : [];
 
   return {
     clave,
@@ -121,6 +143,7 @@ export function unProyectoAleatorio(rng: Aleatorio, opciones: OpcionesArbol = {}
     contadores: { epicas: nE, historias: nH, tareas: nT },
     equipo: [],
     epicas,
+    tareas: sueltas,
     clave_externa: null,
   };
 }
@@ -184,6 +207,8 @@ export function unDocumentoAleatorio(rng: Aleatorio, semilla: number): Documento
         responsable: null,
         fecha_limite: null,
         prioridad: null,
+        comprometida_en:
+          rng() < 0.7 ? `2026-06-${String(entero(rng, 1, 28)).padStart(2, '0')}T09:00:00-06:00` : null,
         desenlace: cerrado
           ? elegir(rng, ['completada', 'no_terminada', 'cancelada'] as const)
           : null,

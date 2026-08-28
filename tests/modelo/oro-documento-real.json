@@ -1,0 +1,1037 @@
+{
+  "proyectos": [
+    {
+      "clave": "SICOE",
+      "avance": {
+        "hojas": 27,
+        "hechas": 10,
+        "enCurso": 3,
+        "pendientes": 14,
+        "canceladas": 1,
+        "pct": 37,
+        "contenedoresSinDesglosar": 2
+      },
+      "estado": "en_movimiento",
+      "mostrarPct": true,
+      "sinDesglosar": 2,
+      "epicas": [
+        {
+          "id": "SICOE-E1",
+          "avance": {
+            "hojas": 5,
+            "hechas": 0,
+            "enCurso": 0,
+            "pendientes": 5,
+            "canceladas": 0,
+            "pct": 0,
+            "contenedoresSinDesglosar": 1
+          },
+          "estado": "pendiente",
+          "sinDesglosar": 1,
+          "historias": [
+            {
+              "id": "SICOE-H1",
+              "avance": {
+                "hojas": 4,
+                "hechas": 0,
+                "enCurso": 0,
+                "pendientes": 4,
+                "canceladas": 0,
+                "pct": 0,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "pendiente",
+              "tareas": [
+                "SICOE-T1",
+                "SICOE-T2",
+                "SICOE-T3",
+                "SICOE-T4"
+              ]
+            },
+            {
+              "id": "SICOE-H2",
+              "avance": {
+                "hojas": 1,
+                "hechas": 0,
+                "enCurso": 0,
+                "pendientes": 1,
+                "canceladas": 0,
+                "pct": 0,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "pendiente",
+              "tareas": [
+                "SICOE-T5"
+              ]
+            },
+            {
+              "id": "SICOE-H3",
+              "avance": {
+                "hojas": 0,
+                "hechas": 0,
+                "enCurso": 0,
+                "pendientes": 0,
+                "canceladas": 0,
+                "pct": null,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "sin_desglosar",
+              "tareas": []
+            }
+          ]
+        },
+        {
+          "id": "SICOE-E2",
+          "avance": {
+            "hojas": 4,
+            "hechas": 0,
+            "enCurso": 1,
+            "pendientes": 3,
+            "canceladas": 0,
+            "pct": 0,
+            "contenedoresSinDesglosar": 0
+          },
+          "estado": "en_movimiento",
+          "sinDesglosar": 0,
+          "historias": [
+            {
+              "id": "SICOE-H4",
+              "avance": {
+                "hojas": 3,
+                "hechas": 0,
+                "enCurso": 1,
+                "pendientes": 2,
+                "canceladas": 0,
+                "pct": 0,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "en_movimiento",
+              "tareas": [
+                "SICOE-T6",
+                "SICOE-T7",
+                "SICOE-T8"
+              ]
+            },
+            {
+              "id": "SICOE-H5",
+              "avance": {
+                "hojas": 1,
+                "hechas": 0,
+                "enCurso": 0,
+                "pendientes": 1,
+                "canceladas": 0,
+                "pct": 0,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "pendiente",
+              "tareas": [
+                "SICOE-T9"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "SICOE-E3",
+          "avance": {
+            "hojas": 6,
+            "hechas": 3,
+            "enCurso": 1,
+            "pendientes": 2,
+            "canceladas": 0,
+            "pct": 50,
+            "contenedoresSinDesglosar": 0
+          },
+          "estado": "en_movimiento",
+          "sinDesglosar": 0,
+          "historias": [
+            {
+              "id": "SICOE-H6",
+              "avance": {
+                "hojas": 3,
+                "hechas": 3,
+                "enCurso": 0,
+                "pendientes": 0,
+                "canceladas": 0,
+                "pct": 100,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "hecha",
+              "tareas": [
+                "SICOE-T10",
+                "SICOE-T11",
+                "SICOE-T12"
+              ]
+            },
+            {
+              "id": "SICOE-H7",
+              "avance": {
+                "hojas": 3,
+                "hechas": 0,
+                "enCurso": 1,
+                "pendientes": 2,
+                "canceladas": 0,
+                "pct": 0,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "en_movimiento",
+              "tareas": [
+                "SICOE-T13",
+                "SICOE-T14",
+                "SICOE-T15"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "SICOE-E4",
+          "avance": {
+            "hojas": 12,
+            "hechas": 7,
+            "enCurso": 1,
+            "pendientes": 4,
+            "canceladas": 1,
+            "pct": 58,
+            "contenedoresSinDesglosar": 0
+          },
+          "estado": "en_movimiento",
+          "sinDesglosar": 0,
+          "historias": [
+            {
+              "id": "SICOE-H8",
+              "avance": {
+                "hojas": 4,
+                "hechas": 4,
+                "enCurso": 0,
+                "pendientes": 0,
+                "canceladas": 0,
+                "pct": 100,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "hecha",
+              "tareas": [
+                "SICOE-T16",
+                "SICOE-T17",
+                "SICOE-T18",
+                "SICOE-T19"
+              ]
+            },
+            {
+              "id": "SICOE-H9",
+              "avance": {
+                "hojas": 5,
+                "hechas": 2,
+                "enCurso": 1,
+                "pendientes": 2,
+                "canceladas": 0,
+                "pct": 40,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "en_movimiento",
+              "tareas": [
+                "SICOE-T20",
+                "SICOE-T21",
+                "SICOE-T22",
+                "SICOE-T23",
+                "SICOE-T24"
+              ]
+            },
+            {
+              "id": "SICOE-H10",
+              "avance": {
+                "hojas": 3,
+                "hechas": 1,
+                "enCurso": 0,
+                "pendientes": 2,
+                "canceladas": 1,
+                "pct": 33,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "en_movimiento",
+              "tareas": [
+                "SICOE-T25",
+                "SICOE-T26",
+                "SICOE-T27",
+                "SICOE-T28"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "SICOE-E5",
+          "avance": {
+            "hojas": 0,
+            "hechas": 0,
+            "enCurso": 0,
+            "pendientes": 0,
+            "canceladas": 0,
+            "pct": null,
+            "contenedoresSinDesglosar": 0
+          },
+          "estado": "sin_desglosar",
+          "sinDesglosar": 0,
+          "historias": []
+        }
+      ]
+    },
+    {
+      "clave": "INFRA",
+      "avance": {
+        "hojas": 5,
+        "hechas": 1,
+        "enCurso": 1,
+        "pendientes": 3,
+        "canceladas": 0,
+        "pct": 20,
+        "contenedoresSinDesglosar": 0
+      },
+      "estado": "en_movimiento",
+      "mostrarPct": true,
+      "sinDesglosar": 0,
+      "epicas": [
+        {
+          "id": "INFRA-E1",
+          "avance": {
+            "hojas": 4,
+            "hechas": 0,
+            "enCurso": 1,
+            "pendientes": 3,
+            "canceladas": 0,
+            "pct": 0,
+            "contenedoresSinDesglosar": 0
+          },
+          "estado": "en_movimiento",
+          "sinDesglosar": 0,
+          "historias": [
+            {
+              "id": "INFRA-H1",
+              "avance": {
+                "hojas": 2,
+                "hechas": 0,
+                "enCurso": 1,
+                "pendientes": 1,
+                "canceladas": 0,
+                "pct": 0,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "en_movimiento",
+              "tareas": [
+                "INFRA-T1",
+                "INFRA-T2"
+              ]
+            },
+            {
+              "id": "INFRA-H2",
+              "avance": {
+                "hojas": 2,
+                "hechas": 0,
+                "enCurso": 0,
+                "pendientes": 2,
+                "canceladas": 0,
+                "pct": 0,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "pendiente",
+              "tareas": [
+                "INFRA-T3",
+                "INFRA-T4"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "INFRA-E2",
+          "avance": {
+            "hojas": 1,
+            "hechas": 1,
+            "enCurso": 0,
+            "pendientes": 0,
+            "canceladas": 0,
+            "pct": 100,
+            "contenedoresSinDesglosar": 0
+          },
+          "estado": "hecha",
+          "sinDesglosar": 0,
+          "historias": [
+            {
+              "id": "INFRA-H3",
+              "avance": {
+                "hojas": 1,
+                "hechas": 1,
+                "enCurso": 0,
+                "pendientes": 0,
+                "canceladas": 0,
+                "pct": 100,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "hecha",
+              "tareas": [
+                "INFRA-T5"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "clave": "PED",
+      "avance": {
+        "hojas": 2,
+        "hechas": 0,
+        "enCurso": 1,
+        "pendientes": 1,
+        "canceladas": 0,
+        "pct": 0,
+        "contenedoresSinDesglosar": 0
+      },
+      "estado": "en_movimiento",
+      "mostrarPct": false,
+      "sinDesglosar": 0,
+      "epicas": [
+        {
+          "id": "PED-E1",
+          "avance": {
+            "hojas": 2,
+            "hechas": 0,
+            "enCurso": 1,
+            "pendientes": 1,
+            "canceladas": 0,
+            "pct": 0,
+            "contenedoresSinDesglosar": 0
+          },
+          "estado": "en_movimiento",
+          "sinDesglosar": 0,
+          "historias": [
+            {
+              "id": "PED-H1",
+              "avance": {
+                "hojas": 2,
+                "hechas": 0,
+                "enCurso": 1,
+                "pendientes": 1,
+                "canceladas": 0,
+                "pct": 0,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "en_movimiento",
+              "tareas": [
+                "PED-T1",
+                "PED-T2"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "indice": [
+    {
+      "id": "INFRA-T1",
+      "ruta": [
+        "INFRA",
+        "Operación continua de servidores",
+        "Respaldos y monitoreo"
+      ]
+    },
+    {
+      "id": "INFRA-T2",
+      "ruta": [
+        "INFRA",
+        "Operación continua de servidores",
+        "Respaldos y monitoreo"
+      ]
+    },
+    {
+      "id": "INFRA-T3",
+      "ruta": [
+        "INFRA",
+        "Operación continua de servidores",
+        "Certificados y acceso"
+      ]
+    },
+    {
+      "id": "INFRA-T4",
+      "ruta": [
+        "INFRA",
+        "Operación continua de servidores",
+        "Certificados y acceso"
+      ]
+    },
+    {
+      "id": "INFRA-T5",
+      "ruta": [
+        "INFRA",
+        "Migración a contenedores",
+        "Preparación"
+      ]
+    },
+    {
+      "id": "PED-T1",
+      "ruta": [
+        "PED",
+        "Aulas virtuales",
+        "Acceso de alumnos y docentes"
+      ]
+    },
+    {
+      "id": "PED-T2",
+      "ruta": [
+        "PED",
+        "Aulas virtuales",
+        "Acceso de alumnos y docentes"
+      ]
+    },
+    {
+      "id": "SICOE-T1",
+      "ruta": [
+        "SICOE",
+        "Módulo de regularización",
+        "Grupos de regularización y recursamiento"
+      ]
+    },
+    {
+      "id": "SICOE-T10",
+      "ruta": [
+        "SICOE",
+        "Módulo de usuarios",
+        "Alta y consulta de usuarios"
+      ]
+    },
+    {
+      "id": "SICOE-T11",
+      "ruta": [
+        "SICOE",
+        "Módulo de usuarios",
+        "Alta y consulta de usuarios"
+      ]
+    },
+    {
+      "id": "SICOE-T12",
+      "ruta": [
+        "SICOE",
+        "Módulo de usuarios",
+        "Alta y consulta de usuarios"
+      ]
+    },
+    {
+      "id": "SICOE-T13",
+      "ruta": [
+        "SICOE",
+        "Módulo de usuarios",
+        "Datos y contraseña del usuario"
+      ]
+    },
+    {
+      "id": "SICOE-T14",
+      "ruta": [
+        "SICOE",
+        "Módulo de usuarios",
+        "Datos y contraseña del usuario"
+      ]
+    },
+    {
+      "id": "SICOE-T15",
+      "ruta": [
+        "SICOE",
+        "Módulo de usuarios",
+        "Datos y contraseña del usuario"
+      ]
+    },
+    {
+      "id": "SICOE-T16",
+      "ruta": [
+        "SICOE",
+        "Portabilidad interna",
+        "Catálogos y consultas base"
+      ]
+    },
+    {
+      "id": "SICOE-T17",
+      "ruta": [
+        "SICOE",
+        "Portabilidad interna",
+        "Catálogos y consultas base"
+      ]
+    },
+    {
+      "id": "SICOE-T18",
+      "ruta": [
+        "SICOE",
+        "Portabilidad interna",
+        "Catálogos y consultas base"
+      ]
+    },
+    {
+      "id": "SICOE-T19",
+      "ruta": [
+        "SICOE",
+        "Portabilidad interna",
+        "Catálogos y consultas base"
+      ]
+    },
+    {
+      "id": "SICOE-T2",
+      "ruta": [
+        "SICOE",
+        "Módulo de regularización",
+        "Grupos de regularización y recursamiento"
+      ]
+    },
+    {
+      "id": "SICOE-T20",
+      "ruta": [
+        "SICOE",
+        "Portabilidad interna",
+        "Alta y aceptación de solicitudes"
+      ]
+    },
+    {
+      "id": "SICOE-T21",
+      "ruta": [
+        "SICOE",
+        "Portabilidad interna",
+        "Alta y aceptación de solicitudes"
+      ]
+    },
+    {
+      "id": "SICOE-T22",
+      "ruta": [
+        "SICOE",
+        "Portabilidad interna",
+        "Alta y aceptación de solicitudes"
+      ]
+    },
+    {
+      "id": "SICOE-T23",
+      "ruta": [
+        "SICOE",
+        "Portabilidad interna",
+        "Alta y aceptación de solicitudes"
+      ]
+    },
+    {
+      "id": "SICOE-T24",
+      "ruta": [
+        "SICOE",
+        "Portabilidad interna",
+        "Alta y aceptación de solicitudes"
+      ]
+    },
+    {
+      "id": "SICOE-T25",
+      "ruta": [
+        "SICOE",
+        "Portabilidad interna",
+        "Rechazo, cancelación y expiración"
+      ]
+    },
+    {
+      "id": "SICOE-T26",
+      "ruta": [
+        "SICOE",
+        "Portabilidad interna",
+        "Rechazo, cancelación y expiración"
+      ]
+    },
+    {
+      "id": "SICOE-T27",
+      "ruta": [
+        "SICOE",
+        "Portabilidad interna",
+        "Rechazo, cancelación y expiración"
+      ]
+    },
+    {
+      "id": "SICOE-T28",
+      "ruta": [
+        "SICOE",
+        "Portabilidad interna",
+        "Rechazo, cancelación y expiración"
+      ]
+    },
+    {
+      "id": "SICOE-T3",
+      "ruta": [
+        "SICOE",
+        "Módulo de regularización",
+        "Grupos de regularización y recursamiento"
+      ]
+    },
+    {
+      "id": "SICOE-T4",
+      "ruta": [
+        "SICOE",
+        "Módulo de regularización",
+        "Grupos de regularización y recursamiento"
+      ]
+    },
+    {
+      "id": "SICOE-T5",
+      "ruta": [
+        "SICOE",
+        "Módulo de regularización",
+        "Grupos extraordinarios"
+      ]
+    },
+    {
+      "id": "SICOE-T6",
+      "ruta": [
+        "SICOE",
+        "Movimientos de alumno y auditoría",
+        "Registro auditable de movimientos"
+      ]
+    },
+    {
+      "id": "SICOE-T7",
+      "ruta": [
+        "SICOE",
+        "Movimientos de alumno y auditoría",
+        "Registro auditable de movimientos"
+      ]
+    },
+    {
+      "id": "SICOE-T8",
+      "ruta": [
+        "SICOE",
+        "Movimientos de alumno y auditoría",
+        "Registro auditable de movimientos"
+      ]
+    },
+    {
+      "id": "SICOE-T9",
+      "ruta": [
+        "SICOE",
+        "Movimientos de alumno y auditoría",
+        "Cambio de carrera con revalidación"
+      ]
+    }
+  ],
+  "vistas": {
+    "sprint": [
+      "SICOE-T22",
+      "SICOE-T14",
+      "SICOE-T6",
+      "SICOE-T1",
+      "SICOE-T2",
+      "SICOE-T26",
+      "SICOE-T13",
+      "INFRA-T1",
+      "INFRA-T3",
+      "PED-T1"
+    ],
+    "bloqueos": [
+      "SICOE-T14"
+    ],
+    "terminadas": [
+      "SICOE-T10",
+      "SICOE-T11",
+      "SICOE-T12",
+      "SICOE-T16",
+      "SICOE-T17",
+      "SICOE-T18",
+      "SICOE-T19",
+      "SICOE-T20",
+      "SICOE-T21",
+      "SICOE-T25",
+      "INFRA-T5"
+    ],
+    "backlogDelArea": [
+      "SICOE-T3",
+      "SICOE-T4",
+      "SICOE-T5",
+      "SICOE-T7",
+      "SICOE-T8",
+      "SICOE-T9",
+      "SICOE-T15",
+      "SICOE-T23",
+      "SICOE-T24",
+      "SICOE-T27",
+      "INFRA-T2",
+      "INFRA-T4",
+      "PED-T2"
+    ]
+  },
+  "carga": {
+    "personas": [
+      {
+        "id": "roberto-cortes",
+        "abiertas": {
+          "total": 0,
+          "porProyecto": [],
+          "proyectosDistintos": 0
+        },
+        "enSprint": {
+          "total": 0,
+          "abiertas": 0,
+          "hechas": 0,
+          "bloqueadas": 0,
+          "vencidas": 0,
+          "porProyecto": [],
+          "proyectosDistintos": 0
+        },
+        "abiertasFueraDelSprint": 0,
+        "historial": {
+          "porSprint": [
+            {
+              "sprintId": "S-2026-31",
+              "nombre": "Sprint 31",
+              "cerradas": 1
+            },
+            {
+              "sprintId": "S-2026-32",
+              "nombre": "Sprint 32",
+              "cerradas": 0
+            },
+            {
+              "sprintId": "S-2026-33",
+              "nombre": "Sprint 33",
+              "cerradas": 1
+            }
+          ],
+          "medianaCerradas": 1
+        }
+      },
+      {
+        "id": "jesus-castillo",
+        "abiertas": {
+          "total": 6,
+          "porProyecto": [
+            {
+              "clave": "SICOE",
+              "nombre": "SICOE — Control escolar",
+              "abiertas": 5
+            },
+            {
+              "clave": "INFRA",
+              "nombre": "Infraestructura",
+              "abiertas": 1
+            }
+          ],
+          "proyectosDistintos": 2
+        },
+        "enSprint": {
+          "total": 5,
+          "abiertas": 5,
+          "hechas": 0,
+          "bloqueadas": 1,
+          "vencidas": 1,
+          "porProyecto": [
+            {
+              "clave": "SICOE",
+              "nombre": "SICOE — Control escolar",
+              "total": 4,
+              "abiertas": 4
+            },
+            {
+              "clave": "INFRA",
+              "nombre": "Infraestructura",
+              "total": 1,
+              "abiertas": 1
+            }
+          ],
+          "proyectosDistintos": 2
+        },
+        "abiertasFueraDelSprint": 1,
+        "historial": {
+          "porSprint": [
+            {
+              "sprintId": "S-2026-31",
+              "nombre": "Sprint 31",
+              "cerradas": 0
+            },
+            {
+              "sprintId": "S-2026-32",
+              "nombre": "Sprint 32",
+              "cerradas": 4
+            },
+            {
+              "sprintId": "S-2026-33",
+              "nombre": "Sprint 33",
+              "cerradas": 3
+            }
+          ],
+          "medianaCerradas": 3
+        }
+      },
+      {
+        "id": "josue-vergara",
+        "abiertas": {
+          "total": 7,
+          "porProyecto": [
+            {
+              "clave": "SICOE",
+              "nombre": "SICOE — Control escolar",
+              "abiertas": 7
+            }
+          ],
+          "proyectosDistintos": 1
+        },
+        "enSprint": {
+          "total": 2,
+          "abiertas": 2,
+          "hechas": 0,
+          "bloqueadas": 0,
+          "vencidas": 0,
+          "porProyecto": [
+            {
+              "clave": "SICOE",
+              "nombre": "SICOE — Control escolar",
+              "total": 2,
+              "abiertas": 2
+            }
+          ],
+          "proyectosDistintos": 1
+        },
+        "abiertasFueraDelSprint": 5,
+        "historial": {
+          "porSprint": [
+            {
+              "sprintId": "S-2026-31",
+              "nombre": "Sprint 31",
+              "cerradas": 0
+            },
+            {
+              "sprintId": "S-2026-32",
+              "nombre": "Sprint 32",
+              "cerradas": 0
+            },
+            {
+              "sprintId": "S-2026-33",
+              "nombre": "Sprint 33",
+              "cerradas": 1
+            }
+          ],
+          "medianaCerradas": 0
+        }
+      },
+      {
+        "id": "jose-dominguez",
+        "abiertas": {
+          "total": 5,
+          "porProyecto": [
+            {
+              "clave": "SICOE",
+              "nombre": "SICOE — Control escolar",
+              "abiertas": 5
+            }
+          ],
+          "proyectosDistintos": 1
+        },
+        "enSprint": {
+          "total": 1,
+          "abiertas": 1,
+          "hechas": 0,
+          "bloqueadas": 0,
+          "vencidas": 0,
+          "porProyecto": [
+            {
+              "clave": "SICOE",
+              "nombre": "SICOE — Control escolar",
+              "total": 1,
+              "abiertas": 1
+            }
+          ],
+          "proyectosDistintos": 1
+        },
+        "abiertasFueraDelSprint": 4,
+        "historial": {
+          "porSprint": [
+            {
+              "sprintId": "S-2026-31",
+              "nombre": "Sprint 31",
+              "cerradas": 1
+            },
+            {
+              "sprintId": "S-2026-32",
+              "nombre": "Sprint 32",
+              "cerradas": 0
+            },
+            {
+              "sprintId": "S-2026-33",
+              "nombre": "Sprint 33",
+              "cerradas": 0
+            }
+          ],
+          "medianaCerradas": 0
+        }
+      },
+      {
+        "id": "miguel-medina",
+        "abiertas": {
+          "total": 5,
+          "porProyecto": [
+            {
+              "clave": "INFRA",
+              "nombre": "Infraestructura",
+              "abiertas": 3
+            },
+            {
+              "clave": "PED",
+              "nombre": "Plataforma de educación a distancia",
+              "abiertas": 2
+            }
+          ],
+          "proyectosDistintos": 2
+        },
+        "enSprint": {
+          "total": 2,
+          "abiertas": 2,
+          "hechas": 0,
+          "bloqueadas": 0,
+          "vencidas": 0,
+          "porProyecto": [
+            {
+              "clave": "INFRA",
+              "nombre": "Infraestructura",
+              "total": 1,
+              "abiertas": 1
+            },
+            {
+              "clave": "PED",
+              "nombre": "Plataforma de educación a distancia",
+              "total": 1,
+              "abiertas": 1
+            }
+          ],
+          "proyectosDistintos": 2
+        },
+        "abiertasFueraDelSprint": 3,
+        "historial": {
+          "porSprint": [
+            {
+              "sprintId": "S-2026-31",
+              "nombre": "Sprint 31",
+              "cerradas": 0
+            },
+            {
+              "sprintId": "S-2026-32",
+              "nombre": "Sprint 32",
+              "cerradas": 0
+            },
+            {
+              "sprintId": "S-2026-33",
+              "nombre": "Sprint 33",
+              "cerradas": 0
+            }
+          ],
+          "medianaCerradas": 0
+        }
+      }
+    ],
+    "sinAsignar": {
+      "abiertas": {
+        "total": 0,
+        "porProyecto": [],
+        "proyectosDistintos": 0
+      },
+      "enSprint": {
+        "total": 0,
+        "abiertas": 0,
+        "hechas": 0,
+        "bloqueadas": 0,
+        "vencidas": 0,
+        "porProyecto": [],
+        "proyectosDistintos": 0
+      }
+    }
+  }
+}

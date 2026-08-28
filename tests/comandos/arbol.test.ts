@@ -36,7 +36,7 @@ describe('regla 15: los contadores solo suben y los ids no se reciclan', () => {
       { comando: 'eliminarTarea', id: `${clave}-T3` },
     ]);
     const { documento } = exigirOk(
-      reducirSinMutar(borradas, { comando: 'crearTarea', historiaId, titulo: 'La cuarta' }),
+      reducirSinMutar(borradas, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'La cuarta' }),
     );
     const ids = documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas.map((t) => t.id);
     expect(ids).toEqual([`${clave}-T1`, `${clave}-T4`]);
@@ -60,7 +60,7 @@ describe('regla 15: los contadores solo suben y los ids no se reciclan', () => {
     ]);
     expect(vacia.proyectos[0]?.contadores.tareas).toBe(2);
     const { documento } = exigirOk(
-      reducirSinMutar(vacia, { comando: 'crearTarea', historiaId, titulo: 'X' }),
+      reducirSinMutar(vacia, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'X' }),
     );
     expect(documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.id).toBe(`${clave}-T3`);
   });
@@ -70,7 +70,7 @@ describe('regla 15: los contadores solo suben y los ids no se reciclan', () => {
     const sinHistoria = aplicar(doc, { comando: 'eliminarHistoria', id: `${clave}-H1` });
     const conOtra = aplicar(sinHistoria, { comando: 'crearHistoria', epicaId, titulo: 'Otra' });
     const { documento } = exigirOk(
-      reducirSinMutar(conOtra, { comando: 'crearTarea', historiaId: `${clave}-H2`, titulo: 'X' }),
+      reducirSinMutar(conOtra, { comando: 'crearTarea', contenedorId: `${clave}-H2`, titulo: 'X' }),
     );
     expect(documento.proyectos[0]?.epicas[0]?.historias[0]?.id).toBe(`${clave}-H2`);
     expect(documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.id).toBe(`${clave}-T3`);
@@ -86,7 +86,7 @@ describe('regla 15: los contadores solo suben y los ids no se reciclan', () => {
     const dos = arbolVacio('DOS');
     const juntos = { ...uno.doc, proyectos: [...uno.doc.proyectos, ...dos.doc.proyectos] };
     const { documento } = exigirOk(
-      reducirSinMutar(juntos, { comando: 'crearTarea', historiaId: 'DOS-H1', titulo: 'X' }),
+      reducirSinMutar(juntos, { comando: 'crearTarea', contenedorId: 'DOS-H1', titulo: 'X' }),
     );
     expect(documento.proyectos[1]?.epicas[0]?.historias[0]?.tareas[0]?.id).toBe('DOS-T1');
   });
@@ -118,6 +118,8 @@ describe('crearEpica', () => {
       planeada: true,
       clave_externa: null,
       historias: [],
+      // N9: las dos formas de colgarle trabajo nacen a la vez; ninguna es la excepción.
+      tareas: [],
     });
     expect(Object.keys(epica ?? {})).not.toContain('estado');
     expect(Object.keys(epica ?? {})).not.toContain('porcentaje');
@@ -261,7 +263,7 @@ describe('crearTarea', () => {
   it('nace pendiente, sin bloqueos y con la fecha de creación del instante recibido', () => {
     const { doc, historiaId, clave } = arbolVacio();
     const { documento } = exigirOk(
-      reducirSinMutar(doc, { comando: 'crearTarea', historiaId, titulo: 'Nueva' }),
+      reducirSinMutar(doc, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'Nueva' }),
     );
     expect(documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]).toEqual({
       id: `${clave}-T1`,
@@ -273,6 +275,8 @@ describe('crearTarea', () => {
       fecha_limite: null,
       prioridad: null,
       creada_en: AHORA,
+      // Sin estimar: `null` es lo normal, no un hueco por llenar.
+      esfuerzo: null,
       hecha_en: null,
       bloqueos: [],
       clave_externa: null,
@@ -287,7 +291,7 @@ describe('crearTarea', () => {
     proyecto.planeacion_cerrada_en = '2026-08-01';
 
     const { documento } = exigirOk(
-      reducirSinMutar(conCierre, { comando: 'crearTarea', historiaId, titulo: 'Emergente' }),
+      reducirSinMutar(conCierre, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'Emergente' }),
     );
     expect(documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.planeada).toBe(false);
   });
@@ -300,7 +304,7 @@ describe('crearTarea', () => {
     proyecto.planeacion_cerrada_en = '2026-08-26';
 
     const { documento } = exigirOk(
-      reducirSinMutar(conCierre, { comando: 'crearTarea', historiaId, titulo: 'Justo hoy' }),
+      reducirSinMutar(conCierre, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'Justo hoy' }),
     );
     expect(documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.planeada).toBe(true);
   });
@@ -308,7 +312,7 @@ describe('crearTarea', () => {
   it('regla 17: sin planeación cerrada todo nace planeado — degradación segura', () => {
     const { doc, historiaId } = arbolVacio();
     const { documento } = exigirOk(
-      reducirSinMutar(doc, { comando: 'crearTarea', historiaId, titulo: 'X' }),
+      reducirSinMutar(doc, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'X' }),
     );
     expect(documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.planeada).toBe(true);
   });
@@ -319,7 +323,7 @@ describe('crearTarea', () => {
     const { documento } = exigirOk(
       reducirSinMutar(conPersona, {
         comando: 'crearTarea',
-        historiaId,
+        contenedorId: historiaId,
         titulo: 'X',
         responsable: 'ana',
         prioridad: 'alta',
@@ -336,11 +340,11 @@ describe('crearTarea', () => {
   it('el payload rechaza una fecha límite que no sea YYYY-MM-DD', () => {
     const { doc, historiaId } = arbolVacio();
     expect(
-      reducir(doc, { comando: 'crearTarea', historiaId, titulo: 'X' }, AHORA).ok,
+      reducir(doc, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'X' }, AHORA).ok,
     ).toBe(true);
     // La forma de la fecha la ataja el esquema del payload, antes de llegar al reductor.
     expect(
-      validarComando({ comando: 'crearTarea', historiaId, titulo: 'X', fechaLimite: '30/09/2026' })
+      validarComando({ comando: 'crearTarea', contenedorId: historiaId, titulo: 'X', fechaLimite: '30/09/2026' })
         .ok,
     ).toBe(false);
   });
@@ -351,7 +355,7 @@ describe('editarTarea', () => {
     const { doc, historiaId, clave } = arbolVacio();
     const conTarea = aplicar(doc, {
       comando: 'crearTarea',
-      historiaId,
+      contenedorId: historiaId,
       titulo: 'X',
       descripcion: 'una nota',
       prioridad: 'alta',

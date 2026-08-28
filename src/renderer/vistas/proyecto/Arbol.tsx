@@ -1,5 +1,10 @@
 /**
- * El árbol de tres niveles: épica -> historia -> tarea.
+ * El árbol: épica -> historia -> tarea, con los niveles que el proyecto tenga.
+ *
+ * La jerarquía es opcional (regla 18): una tarea puede colgar de una historia, de una
+ * épica o del proyecto. En el Jira real cinco de los once proyectos no tienen nivel de
+ * historia, así que no es un caso raro. Qué filas existen y en qué orden lo decide
+ * `filas.ts`, que es puro y está probado aparte.
  *
  * **Un solo componente con un predicado por panel** (PLAN, E6), nunca tres árboles
  * copiados. La pestaña «Terminadas» es este mismo árbol con `predicado = estaHecha`.
@@ -79,6 +84,7 @@ import {
   avanceDeEpica,
   avanceDeHistoria,
   estadoDerivado,
+  tareasDe,
   tareasDeEpica,
   type Avance,
 } from '../../../compartido/dominio/derivar';
@@ -108,6 +114,7 @@ import { useAccionesInterfaz, useInterfaz } from '../../estado/interfaz';
 import { useMutar } from '../../estado/mutaciones';
 import { enCampoDeTexto, letraSuelta } from '../../util/atajos';
 import { chipDeArrastre, esArrastreDeOrden, TIPO_ORDEN, TIPO_TAREA } from '../../util/arrastre';
+import { construirFilas, type Fila } from './filas';
 import {
   destinoDesdeHueco,
   quieto,
@@ -134,56 +141,6 @@ const CICLO: Record<EstadoTarea, EstadoTarea> = {
   hecha: 'pendiente',
   cancelada: 'pendiente',
 };
-
-/**
- * Una fila ya resuelta: todo lo que hace falta para pintarla, sin volver a calcular.
- *
- * `posicion` / `hermanos` son lo que se ANUNCIA (`aria-posinset`), y salen de la lista
- * filtrada: quien oye «3 de 4» tiene que poder contar cuatro filas. `orden`, en cambio,
- * sale de la lista REAL del documento, porque es lo que se va a mandar en un comando. En
- * la pestaña «Terminadas» las dos cuentas difieren —y ahí reordenar está apagado, que es
- * justamente por lo que no se pueden mezclar.
- */
-type Fila =
-  | {
-      tipo: 'epica';
-      id: string;
-      nivel: 1;
-      padre: null;
-      posicion: number;
-      hermanos: number;
-      orden: Ubicacion;
-      epica: Epica;
-      avance: Avance;
-      bloqueadas: number;
-      expandible: boolean;
-    }
-  | {
-      tipo: 'historia';
-      id: string;
-      nivel: 2;
-      padre: string;
-      posicion: number;
-      hermanos: number;
-      orden: Ubicacion;
-      epica: Epica;
-      historia: Historia;
-      avance: Avance;
-      bloqueadas: number;
-      expandible: boolean;
-    }
-  | {
-      tipo: 'tarea';
-      id: string;
-      nivel: 3;
-      padre: string;
-      posicion: number;
-      hermanos: number;
-      orden: Ubicacion;
-      historia: Historia;
-      tarea: Tarea;
-      enSprint: boolean;
-    };
 
 /** Un arrastre no señala una posición, señala un HUECO: el de arriba o el de abajo. */
 type Borde = 'antes' | 'despues';
@@ -225,12 +182,16 @@ function tituloDeFila(fila: Fila): string {
 function resumenDeRama(fila: Fila): string | null {
   if (fila.tipo === 'epica') {
     const historias = fila.epica.historias.length;
-    if (historias === 0) return null;
     const tareas = tareasDeEpica(fila.epica).length;
+    if (historias === 0) {
+      // Una épica sin historias pero con tareas propias (regla 18) SÍ se lleva algo. Antes
+      // de N9 esto devolvía `null` y el chip del arrastre decía que no movía nada.
+      return tareas === 0 ? null : cuenta(tareas, 'tarea', 'tareas');
+    }
     return `${cuenta(historias, 'historia', 'historias')} y ${cuenta(tareas, 'tarea', 'tareas')}`;
   }
   if (fila.tipo === 'historia') {
-    const tareas = fila.historia.tareas.length;
+    const tareas = tareasDe(fila.historia).length;
     return tareas === 0 ? null : cuenta(tareas, 'tarea', 'tareas');
   }
   return null;
@@ -433,7 +394,7 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
         return;
       }
       const tareas =
-        fila.tipo === 'epica' ? tareasDeEpica(fila.epica).length : fila.historia.tareas.length;
+        fila.tipo === 'epica' ? tareasDeEpica(fila.epica).length : tareasDe(fila.historia).length;
       if (tareas === 0) {
         void mutar(
           fila.tipo === 'epica'
@@ -460,9 +421,13 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
           redactar({ tipo: 'capturar', clase: 'historia', padreId: fila.id });
           break;
         case 'historia':
+          redactar({ tipo: 'capturar', clase: 'tarea', padreId: fila.id });
+          break;
         case 'tarea':
-          // Desde una tarea se captura una HERMANA, no una hija: la tarea es la hoja.
-          redactar({ tipo: 'capturar', clase: 'tarea', padreId: fila.historia.id });
+          // Desde una tarea se captura una HERMANA, no una hija: la tarea es la hoja. Su
+          // contenedor puede ser una historia, una épica o el proyecto (regla 18), y
+          // `fila.padre` ya lo nombra sin tener que preguntar de qué clase es.
+          redactar({ tipo: 'capturar', clase: 'tarea', padreId: fila.padre });
           break;
       }
     },
@@ -659,8 +624,35 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
         <p className="vacio__nota">
           {predicado
             ? 'Este proyecto todavía no tiene ninguna tarea terminada.'
-            : 'Este proyecto no tiene épicas capturadas.'}
+            : 'Este proyecto todavía no tiene nada capturado.'}
         </p>
+        {/* Un estado vacío sin salida obliga a buscar la acción en otra parte de la
+            pantalla. Las dos opciones se ofrecen aquí porque las dos son legítimas
+            (regla 18): un proyecto puede empezar por una épica o por una tarea suelta, y
+            cuál de las dos es lo normal depende del proyecto, no de la app. */}
+        {!predicado && editable && (
+          <div className="vacio__acciones">
+            <button
+              type="button"
+              className="cab__primario"
+              onClick={() =>
+                redactar({ tipo: 'capturar', clase: 'epica', padreId: proyecto.clave })
+              }
+            >
+              <Mas /> Nueva épica
+            </button>
+            <button
+              type="button"
+              className="cab__accion"
+              title={`Una tarea colgada de ${proyecto.clave}, sin épica`}
+              onClick={() =>
+                redactar({ tipo: 'capturar', clase: 'tarea', padreId: proyecto.clave })
+              }
+            >
+              <Mas /> Nueva tarea suelta
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -714,106 +706,6 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
       </p>
     </>
   );
-}
-
-// --- construcción de la lista plana -----------------------------------------
-
-function construirFilas(
-  proyecto: Proyecto,
-  sprint: Sprint | undefined,
-  expandidos: ReadonlySet<string>,
-  predicado?: (tarea: Tarea) => boolean,
-): Fila[] {
-  const filas: Fila[] = [];
-
-  // Con predicado se ocultan los contenedores que no aportan ninguna hoja visible: una
-  // pestaña «Terminadas» llena de épicas vacías no informa de nada. Sin predicado se
-  // muestran TODAS, incluidas las que no tienen historias: ahí «sin desglosar» es
-  // justamente el dato.
-  const epicas = predicado
-    ? proyecto.epicas.filter((e) => tareasDeEpica(e).some(predicado))
-    : proyecto.epicas;
-
-  epicas.forEach((epica, i) => {
-    const historias = predicado
-      ? epica.historias.filter((h) => h.tareas.some(predicado))
-      : epica.historias;
-
-    filas.push({
-      tipo: 'epica',
-      id: epica.id,
-      nivel: 1,
-      padre: null,
-      posicion: i + 1,
-      hermanos: epicas.length,
-      // El padre afirmado de una épica es la CLAVE del proyecto, no un id: un proyecto
-      // tiene clave, y así lo llaman ya `crearEpica` y `editarEquipo`.
-      orden: {
-        clase: 'epica',
-        id: epica.id,
-        padre: proyecto.clave,
-        indice: proyecto.epicas.indexOf(epica),
-        hermanos: proyecto.epicas.length,
-      },
-      epica,
-      // Siempre sobre TODAS las hojas de la épica, nunca sobre las filtradas.
-      avance: avanceDeEpica(epica),
-      bloqueadas: tareasDeEpica(epica).filter(estaBloqueada).length,
-      expandible: historias.length > 0,
-    });
-
-    if (historias.length === 0 || !expandidos.has(epica.id)) return;
-
-    historias.forEach((historia, j) => {
-      const tareas = predicado ? historia.tareas.filter(predicado) : historia.tareas;
-
-      filas.push({
-        tipo: 'historia',
-        id: historia.id,
-        nivel: 2,
-        padre: epica.id,
-        posicion: j + 1,
-        hermanos: historias.length,
-        orden: {
-          clase: 'historia',
-          id: historia.id,
-          padre: epica.id,
-          indice: epica.historias.indexOf(historia),
-          hermanos: epica.historias.length,
-        },
-        epica,
-        historia,
-        avance: avanceDeHistoria(historia),
-        bloqueadas: historia.tareas.filter(estaBloqueada).length,
-        expandible: tareas.length > 0,
-      });
-
-      if (tareas.length === 0 || !expandidos.has(historia.id)) return;
-
-      tareas.forEach((tarea, k) => {
-        filas.push({
-          tipo: 'tarea',
-          id: tarea.id,
-          nivel: 3,
-          padre: historia.id,
-          posicion: k + 1,
-          hermanos: tareas.length,
-          orden: {
-            clase: 'tarea',
-            id: tarea.id,
-            padre: historia.id,
-            indice: historia.tareas.indexOf(tarea),
-            hermanos: historia.tareas.length,
-          },
-          historia,
-          tarea,
-          enSprint: estaEnSprint(tarea.id, sprint),
-        });
-      });
-    });
-  });
-
-  return filas;
 }
 
 // --- la fila ----------------------------------------------------------------
@@ -984,6 +876,14 @@ function FilaArbol({
           <ChipBloqueo diasBloqueada={diasBloqueada(tarea, hoy) ?? 0} motivo={bloqueo.motivo} />
         )}
         {mostrarProcedencia(tarea) && <ChipNuevo />}
+        {/* El esfuerzo, cuando lo hay. Sin estimar NO pinta nada: un «—» en cada una de
+            trescientas filas sería ruido en la columna más estrecha del árbol, y «sin
+            estimar» es el estado normal, no una falta que haya que señalar. */}
+        {tarea.esfuerzo !== null && (
+          <span className="esfuerzo tabular" title={`Esfuerzo ${tarea.esfuerzo}`}>
+            {tarea.esfuerzo}
+          </span>
+        )}
         {fila.enSprint && <ChipNeutro texto="en el sprint" titulo="Comprometida en el sprint activo" />}
         {arrastrable && (
           <button

@@ -99,10 +99,10 @@ function casosPorComando(): { comando: Comando; doc: Documento }[] {
     { comando: { comando: 'editarHistoria', id: 'PM-H1', titulo: 'Otra' }, doc: conSprints },
     { comando: { comando: 'eliminarHistoria', id: 'PM-H1' }, doc: conSprints },
     { comando: { comando: 'reordenarHistoria', epicaId: 'PM-E1', historiaId: 'PM-H2', aIndice: 0 }, doc: dosEpicas },
-    { comando: { comando: 'crearTarea', historiaId: 'PM-H1', titulo: 'Otra' }, doc: conSprints },
+    { comando: { comando: 'crearTarea', contenedorId: 'PM-H1', titulo: 'Otra' }, doc: conSprints },
     { comando: { comando: 'editarTarea', id: 'PM-T1', titulo: 'Otra' }, doc: conSprints },
     { comando: { comando: 'eliminarTarea', id: 'PM-T2' }, doc: conSprints },
-    { comando: { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T2', aIndice: 0 }, doc: conSprints },
+    { comando: { comando: 'reordenarTarea', contenedorId: 'PM-H1', tareaId: 'PM-T2', aIndice: 0 }, doc: conSprints },
     { comando: { comando: 'cambiarEstado', id: 'PM-T1', estado: 'hecha' }, doc: conSprints },
     { comando: { comando: 'moverAlSprint', tareaId: 'PM-T2', sprintId: 'S-1' }, doc: conSprints },
     { comando: { comando: 'sacarDelSprint', tareaId: 'PM-T1', sprintId: 'S-1' }, doc: conSprints },
@@ -144,7 +144,7 @@ describe('el reductor es puro', () => {
     const { doc } = arbolConTareas(1);
     const antes = copiaProfunda(doc);
     for (const comando of [
-      { comando: 'crearTarea', historiaId: 'PM-H1', titulo: 'X', responsable: 'fantasma' },
+      { comando: 'crearTarea', contenedorId: 'PM-H1', titulo: 'X', responsable: 'fantasma' },
       { comando: 'editarTarea', id: 'PM-T1', responsable: 'fantasma' },
       { comando: 'cambiarEstado', id: 'PM-T1', estado: 'pendiente' },
       { comando: 'eliminarProyecto', clave: 'PM', confirmacion: 'mal' },
@@ -179,8 +179,8 @@ describe('el reductor es puro', () => {
 
   it('el mismo comando sobre el mismo documento da siempre el mismo resultado', () => {
     const { doc } = arbolConTareas(2);
-    const uno = exigirOk(reducir(doc, { comando: 'crearTarea', historiaId: 'PM-H1', titulo: 'X' }, AHORA));
-    const dos = exigirOk(reducir(doc, { comando: 'crearTarea', historiaId: 'PM-H1', titulo: 'X' }, AHORA));
+    const uno = exigirOk(reducir(doc, { comando: 'crearTarea', contenedorId: 'PM-H1', titulo: 'X' }, AHORA));
+    const dos = exigirOk(reducir(doc, { comando: 'crearTarea', contenedorId: 'PM-H1', titulo: 'X' }, AHORA));
     expect(uno.documento).toEqual(dos.documento);
     expect(uno.evento).toEqual(dos.evento);
   });
@@ -388,7 +388,7 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
     },
     () => ({
       comando: 'crearTarea',
-      historiaId: unId(inv.historias, 'FANTASMA-H1'),
+      contenedorId: unId(inv.historias, 'FANTASMA-H1'),
       titulo: `Tarea ${entero(rng, 1, 99)}`,
       responsable: talVez(rng() < 0.2 ? null : persona),
       prioridad: talVez(elegir(rng, PRIORIDADES)),
@@ -404,7 +404,7 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
     () => ({ comando: 'eliminarTarea', id: tarea }),
     () => ({
       comando: 'reordenarTarea',
-      historiaId: padreDe(tarea, 'FANTASMA-H1'),
+      contenedorId: padreDe(tarea, 'FANTASMA-H1'),
       tareaId: tarea,
       aIndice: entero(rng, 0, 6),
     }),

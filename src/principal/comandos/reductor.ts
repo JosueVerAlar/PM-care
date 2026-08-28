@@ -27,8 +27,8 @@
  */
 
 import { diasEntre, fechaDe } from '../../compartido/dominio/clasificar';
-import type { Compromiso } from '../../compartido/dominio/derivar';
-import { compromisoEfectivo } from '../../compartido/dominio/derivar';
+import type { Compromiso, Contenedor } from '../../compartido/dominio/derivar';
+import { compromisoEfectivo, tareasDe, tareasDeProyecto } from '../../compartido/dominio/derivar';
 import { validarDocumento } from '../../compartido/modelo/esquema';
 import { siguienteId } from '../../compartido/modelo/ids';
 import type {
@@ -130,6 +130,9 @@ function aplicar(
         archivado: false,
         cerrado_en: null,
         planeacion_cerrada_en: null,
+        // Un proyecto nace sin épicas y sin tareas sueltas: las dos formas de colgarle
+        // trabajo existen desde el principio (N9), ninguna es el caso raro.
+        tareas: [],
         // Arranca en cero y de ahí solo sube (regla 15). Nunca se recalcula.
         contadores: { epicas: 0, historias: 0, tareas: 0 },
         equipo: [],
@@ -533,6 +536,7 @@ function aplicar(
         planeada: naceComoPlaneada(proyecto, ahora),
         clave_externa: null,
         historias: [],
+        tareas: [],
       };
       proyecto.epicas.push(epica);
 
@@ -773,8 +777,10 @@ function aplicar(
 
     // --- tareas ---------------------------------------------------------
     case 'crearTarea': {
-      const sitio = buscarHistoria(doc, comando.historiaId);
-      if (sitio === null) return falta(`la historia "${comando.historiaId}"`);
+      // Nace en cualquiera de los tres contenedores (regla 18): una tarea de un proyecto
+      // de trabajo continuo no tiene por qué inventarse una épica para existir.
+      const sitio = buscarContenedor(doc, comando.contenedorId);
+      if (sitio === null) return falta(`el contenedor "${comando.contenedorId}"`);
       const responsable = comando.responsable ?? null;
       if (responsable !== null) {
         const problema = noAsignable(doc, responsable);
@@ -800,22 +806,20 @@ function aplicar(
         responsable,
         fecha_limite: comando.fechaLimite ?? null,
         prioridad: comando.prioridad ?? null,
+        // Sin estimar. Se pone después, y solo donde importa.
+        esfuerzo: comando.esfuerzo ?? null,
         creada_en: ahora,
         hecha_en: null,
         bloqueos: [],
         clave_externa: null,
       };
-      sitio.historia.tareas.push(tarea);
+      sitio.contenedor.tareas.push(tarea);
 
       return {
         ok: true,
         documento: doc,
         evento: anotar({
-          proyecto_id: sitio.proyecto.clave,
-          origen: rutaLegible([sitio.proyecto.clave, sitio.epica.titulo, sitio.historia.titulo]),
-          epica_id: sitio.epica.id,
-          historia_id: sitio.historia.id,
-          item_id: tarea.id,
+          ...ubicacionDeTarea({ ...sitio, tarea }),
           resumen: `Tarea capturada: ${tarea.titulo}`,
           // `explicita` distingue «lo marcó la regla del proyecto» de «lo dijo quien
           // capturó». Es barato y es lo único que permitirá, dentro de un año, defender
@@ -848,6 +852,7 @@ function aplicar(
       }
       if (comando.prioridad !== undefined) { tarea.prioridad = comando.prioridad; cambios.push('prioridad'); }
       if (comando.fechaLimite !== undefined) { tarea.fecha_limite = comando.fechaLimite; cambios.push('fecha_limite'); }
+      if (comando.esfuerzo !== undefined) { tarea.esfuerzo = comando.esfuerzo; cambios.push('esfuerzo'); }
       if (cambios.length === 0) return sinCambios();
 
       return {
@@ -869,7 +874,8 @@ function aplicar(
       if (cerrado !== null) return atadaASprintCerrado(cerrado, soloEsta);
 
       quitarDeSprintsAbiertos(doc, soloEsta);
-      sitio.historia.tareas.splice(sitio.historia.tareas.indexOf(sitio.tarea), 1);
+      // Del contenedor que la tiene, sea historia, épica o el propio proyecto (N9).
+      sitio.contenedor.tareas.splice(sitio.contenedor.tareas.indexOf(sitio.tarea), 1);
 
       return {
         ok: true,
@@ -889,29 +895,31 @@ function aplicar(
      * cerrado aquí —no habría nada que proteger de qué—, al revés que en `eliminarTarea`.
      */
     case 'reordenarTarea': {
-      const sitioHistoria = buscarHistoria(doc, comando.historiaId);
-      if (sitioHistoria === null) return falta(`la historia "${comando.historiaId}"`);
+      // El contenedor puede ser una historia, una épica o el propio proyecto (regla 18).
+      const sitioContenedor = buscarContenedor(doc, comando.contenedorId);
+      if (sitioContenedor === null) return falta(`el contenedor "${comando.contenedorId}"`);
+      const { contenedor } = sitioContenedor;
 
-      const tarea = sitioHistoria.historia.tareas.find((t) => t.id === comando.tareaId);
+      const tarea = contenedor.tareas.find((t) => t.id === comando.tareaId);
       if (tarea === undefined) {
         const otra = buscarTarea(doc, comando.tareaId);
         return otra === null
           ? falta(`la tarea "${comando.tareaId}"`)
-          : otroPadre(`la tarea "${comando.tareaId}"`, sitioHistoria.historia.id, otra.historia.id);
+          : otroPadre(`la tarea "${comando.tareaId}"`, comando.contenedorId, idDeContenedor(otra));
       }
 
-      const desde = sitioHistoria.historia.tareas.indexOf(tarea);
-      const hasta = indiceDeDestino(comando.aIndice, sitioHistoria.historia.tareas.length);
+      const desde = contenedor.tareas.indexOf(tarea);
+      const hasta = indiceDeDestino(comando.aIndice, contenedor.tareas.length);
       if (hasta === desde) return yaEnPosicion(tarea.id, desde);
-      reubicar(sitioHistoria.historia.tareas, desde, hasta);
+      reubicar(contenedor.tareas, desde, hasta);
 
       return {
         ok: true,
         documento: doc,
         evento: anotar({
-          ...ubicacionDeTarea({ ...sitioHistoria, tarea }),
-          resumen: `Tarea reordenada: ${tarea.titulo} (posición ${desde + 1} → ${hasta + 1} de ${sitioHistoria.historia.tareas.length})`,
-          detalle: { desde, hasta, orden: sitioHistoria.historia.tareas.map((t) => t.id) },
+          ...ubicacionDeTarea({ ...sitioContenedor, tarea }),
+          resumen: `Tarea reordenada: ${tarea.titulo} (posición ${desde + 1} → ${hasta + 1} de ${contenedor.tareas.length})`,
+          detalle: { desde, hasta, orden: contenedor.tareas.map((t) => t.id) },
         }),
       };
     }
@@ -968,6 +976,8 @@ function aplicar(
           responsable: null,
           fecha_limite: null,
           prioridad: null,
+          // El anclaje del reloj de resolución: cuándo entró a ESTE sprint.
+          comprometida_en: ahora,
           desenlace: null,
         });
       }
@@ -1029,11 +1039,7 @@ function aplicar(
 
       const porTarea = new Map<string, Tarea>();
       for (const proyecto of doc.proyectos) {
-        for (const epica of proyecto.epicas) {
-          for (const historia of epica.historias) {
-            for (const tarea of historia.tareas) porTarea.set(tarea.id, tarea);
-          }
-        }
+        for (const tarea of tareasDeProyecto(proyecto)) porTarea.set(tarea.id, tarea);
       }
 
       // 1. Las decisiones se validan ENTERAS antes de tocar nada. Media ceremonia
@@ -1095,6 +1101,11 @@ function aplicar(
               responsable: item.responsable,
               fecha_limite: item.fecha_limite,
               prioridad: item.prioridad,
+              // Entra al sprint nuevo AHORA. Conservar la marca del anterior haría que el
+              // reloj del sprint nuevo empezara antes de que el sprint existiera, y una
+              // tarea arrastrada tres veces acumularía un tiempo que nadie trabajó. Lo
+              // que se arrastra se cuenta aparte, contando sprints, no sumando días.
+              comprometida_en: ahora,
               desenlace: null,
             });
           } else {
@@ -1283,7 +1294,21 @@ function aplicar(
 
 interface SitioEpica { proyecto: Proyecto; epica: Epica }
 interface SitioHistoria extends SitioEpica { historia: Historia }
-interface SitioTarea extends SitioHistoria { tarea: Tarea }
+
+/**
+ * Dónde está una tarea, con la jerarquía que de verdad tenga (N9).
+ *
+ * `historia` y `epica` en `null` significan que cuelga de un nivel superior, no que falte
+ * un dato. `contenedor` es el nodo cuyo arreglo `tareas` la contiene: es lo que necesita
+ * quien la va a mover o borrar, y evita tener que volver a deducirlo con tres `if`.
+ */
+interface SitioTarea {
+  proyecto: Proyecto;
+  epica: Epica | null;
+  historia: Historia | null;
+  contenedor: Contenedor;
+  tarea: Tarea;
+}
 
 function buscarEpica(doc: Documento, id: string): SitioEpica | null {
   for (const proyecto of doc.proyectos) {
@@ -1303,27 +1328,78 @@ function buscarHistoria(doc: Documento, id: string): SitioHistoria | null {
   return null;
 }
 
-function buscarTarea(doc: Documento, id: string): SitioTarea | null {
+/** Un contenedor localizado, con la jerarquía que tenga por encima. */
+interface SitioContenedor {
+  proyecto: Proyecto;
+  epica: Epica | null;
+  historia: Historia | null;
+  contenedor: Contenedor;
+}
+
+/**
+ * Localiza un contenedor de tareas por su id: una historia, una épica, o el proyecto por
+ * su CLAVE (regla 18). Los tres pueden llevar tareas colgando, así que los tres son un
+ * destino válido para capturar o reordenar dentro.
+ */
+function buscarContenedor(doc: Documento, id: string): SitioContenedor | null {
   for (const proyecto of doc.proyectos) {
+    if (proyecto.clave === id) {
+      return { proyecto, epica: null, historia: null, contenedor: proyecto };
+    }
     for (const epica of proyecto.epicas) {
+      if (epica.id === id) return { proyecto, epica, historia: null, contenedor: epica };
       for (const historia of epica.historias) {
-        for (const tarea of historia.tareas) {
-          if (tarea.id === id) return { proyecto, epica, historia, tarea };
-        }
+        if (historia.id === id) return { proyecto, epica, historia, contenedor: historia };
       }
     }
   }
   return null;
 }
 
+/**
+ * Busca en los tres sitios donde una tarea puede colgar (N9), de más profundo a menos.
+ *
+ * El orden no importa para el resultado —los ids son únicos en todo el documento, y el
+ * esquema lo verifica— pero sí para leerlo: primero el caso común.
+ */
+function buscarTarea(doc: Documento, id: string): SitioTarea | null {
+  for (const proyecto of doc.proyectos) {
+    for (const epica of proyecto.epicas) {
+      for (const historia of epica.historias) {
+        for (const tarea of tareasDe(historia)) {
+          if (tarea.id === id) {
+            return { proyecto, epica, historia, contenedor: historia, tarea };
+          }
+        }
+      }
+      for (const tarea of tareasDe(epica)) {
+        if (tarea.id === id) {
+          return { proyecto, epica, historia: null, contenedor: epica, tarea };
+        }
+      }
+    }
+    for (const tarea of tareasDe(proyecto)) {
+      if (tarea.id === id) {
+        return { proyecto, epica: null, historia: null, contenedor: proyecto, tarea };
+      }
+    }
+  }
+  return null;
+}
+
+/** Toda tarea que se va con la épica si se borra: las suyas y las de sus historias. */
 function idsDeTareasDeEpica(epica: Epica): Set<string> {
   const ids = new Set<string>();
-  for (const historia of epica.historias) for (const tarea of historia.tareas) ids.add(tarea.id);
+  for (const tarea of tareasDe(epica)) ids.add(tarea.id);
+  for (const historia of epica.historias) {
+    for (const tarea of tareasDe(historia)) ids.add(tarea.id);
+  }
   return ids;
 }
 
 function idsDeTareasDeProyecto(proyecto: Proyecto): Set<string> {
   const ids = new Set<string>();
+  for (const tarea of tareasDe(proyecto)) ids.add(tarea.id);
   for (const epica of proyecto.epicas) {
     for (const id of idsDeTareasDeEpica(epica)) ids.add(id);
   }
@@ -1393,11 +1469,7 @@ function yaEnPosicion(id: string, indice: number): { ok: false; error: ErrorComa
 
 function contarTareas(proyecto: Proyecto, cumple: (tarea: Tarea) => boolean): number {
   let total = 0;
-  for (const epica of proyecto.epicas) {
-    for (const historia of epica.historias) {
-      for (const tarea of historia.tareas) if (cumple(tarea)) total += 1;
-    }
-  }
+  for (const tarea of tareasDeProyecto(proyecto)) if (cumple(tarea)) total += 1;
   return total;
 }
 
@@ -1497,12 +1569,8 @@ function referenciasAPersona(doc: Documento, personaId: string): string[] {
 
   const tareas: string[] = [];
   for (const proyecto of doc.proyectos) {
-    for (const epica of proyecto.epicas) {
-      for (const historia of epica.historias) {
-        for (const tarea of historia.tareas) {
-          if (tarea.responsable === personaId) tareas.push(tarea.id);
-        }
-      }
+    for (const tarea of tareasDeProyecto(proyecto)) {
+      if (tarea.responsable === personaId) tareas.push(tarea.id);
     }
   }
   if (tareas.length > 0) {
@@ -1851,6 +1919,7 @@ function instantaneaDeTarea(tarea: Tarea): Record<string, unknown> {
     responsable: tarea.responsable,
     prioridad: tarea.prioridad,
     fecha_limite: tarea.fecha_limite,
+    esfuerzo: tarea.esfuerzo,
   };
 }
 
@@ -1867,13 +1936,27 @@ interface CamposEvento {
   detalle?: Record<string, unknown> | null;
 }
 
-/** Congela dónde vivía la tarea EN ESE MOMENTO (regla 7). */
+/** El id del nodo que contiene a la tarea. El proyecto se nombra por su clave. */
+function idDeContenedor(sitio: SitioTarea): string {
+  return sitio.historia?.id ?? sitio.epica?.id ?? sitio.proyecto.clave;
+}
+
+/**
+ * Congela dónde vivía la tarea EN ESE MOMENTO (regla 7).
+ *
+ * Desde N9 la jerarquía puede tener uno, dos o tres niveles, y el `origen` se escribe con
+ * los que existan. Se omite lo que no hay en vez de rellenarlo: la bitácora es
+ * append-only y un «—» ahí sería un dato falso que ya no se puede corregir.
+ */
 function ubicacionDeTarea(sitio: SitioTarea): CamposEvento & { resumen: string } {
+  const camino = [sitio.proyecto.clave];
+  if (sitio.epica) camino.push(sitio.epica.titulo);
+  if (sitio.historia) camino.push(sitio.historia.titulo);
   return {
     proyecto_id: sitio.proyecto.clave,
-    origen: rutaLegible([sitio.proyecto.clave, sitio.epica.titulo, sitio.historia.titulo]),
-    epica_id: sitio.epica.id,
-    historia_id: sitio.historia.id,
+    origen: rutaLegible(camino),
+    epica_id: sitio.epica?.id ?? null,
+    historia_id: sitio.historia?.id ?? null,
     item_id: sitio.tarea.id,
     resumen: '',
   };

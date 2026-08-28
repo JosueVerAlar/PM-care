@@ -22,6 +22,7 @@ import {
   EsquemaEstadoTarea,
   EsquemaItemSprint,
   EsquemaMiembroEquipo,
+  EsquemaEsfuerzo,
   EsquemaPrioridad,
   EsquemaProyecto,
   EsquemaTipoBloqueo,
@@ -333,12 +334,17 @@ const ReordenarHistoria = z
 const CrearTarea = z
   .object({
     comando: z.literal('crearTarea'),
-    historiaId: Id,
+    /**
+     * Dónde nace: el id de una historia, el de una épica, o la CLAVE del proyecto
+     * (regla 18). Se llamaba `historiaId` cuando ese era el único sitio posible.
+     */
+    contenedorId: Id,
     titulo: Titulo,
     descripcion: Descripcion.optional(),
     responsable: Responsable.optional(),
     prioridad: EsquemaPrioridad.nullable().optional(),
     fechaLimite: FechaLimite.optional(),
+    esfuerzo: EsquemaEsfuerzo.nullable().optional(),
     /**
      * Fuerza la procedencia en vez de dejar que la decida `planeacion_cerrada_en`.
      *
@@ -372,6 +378,8 @@ const EditarTarea = z
     responsable: Responsable.optional(),
     prioridad: EsquemaPrioridad.nullable().optional(),
     fechaLimite: FechaLimite.optional(),
+    /** `null` explícito borra la estimación; omitirlo la deja como está. */
+    esfuerzo: EsquemaEsfuerzo.nullable().optional(),
   })
   .strict();
 
@@ -388,7 +396,12 @@ const EliminarTarea = z.object({ comando: z.literal('eliminarTarea'), id: Id }).
 const ReordenarTarea = z
   .object({
     comando: z.literal('reordenarTarea'),
-    historiaId: Id,
+    /**
+     * El contenedor donde vive la tarea: el id de una historia, el de una épica, o la
+     * CLAVE del proyecto (regla 18). Se llamaba `historiaId` cuando ese era el único
+     * sitio posible; el nombre cambió con N9 para que no mienta.
+     */
+    contenedorId: Id,
     tareaId: Id,
     aIndice: AIndice,
   })

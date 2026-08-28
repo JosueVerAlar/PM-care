@@ -190,7 +190,7 @@ describe('cerrarProyecto', () => {
 
   it('cerrar no cambia ni un estado de tarea: el dato honesto es «cerró con 1 sin terminar»', () => {
     const { doc, clave, historiaId } = arbolConTareas(0);
-    const conTareas = aplicar(doc, { comando: 'crearTarea', historiaId, titulo: 'Sin terminar' });
+    const conTareas = aplicar(doc, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'Sin terminar' });
     const { documento, evento } = exigirOk(
       reducirSinMutar(conTareas, { comando: 'cerrarProyecto', clave }),
     );
@@ -201,7 +201,7 @@ describe('cerrarProyecto', () => {
 
   it('cerrar no saca las tareas del sprint abierto: eso lo decide el usuario a mano', () => {
     const { doc, clave, historiaId } = arbolConTareas(0);
-    const conTarea = aplicar(doc, { comando: 'crearTarea', historiaId, titulo: 'T' });
+    const conTarea = aplicar(doc, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T' });
     const conSprint = aplicar(
       { ...conTarea, sprints: [unSprint({ id: 'S-1', estado: 'activo' })] },
       { comando: 'moverAlSprint', tareaId: `${clave}-T1`, sprintId: 'S-1' },

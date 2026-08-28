@@ -90,6 +90,19 @@ export interface IdEmitido {
  *
  * Puro a propósito. Si esto mutara el proyecto en memoria, un fallo al escribir el
  * archivo dejaría el contador avanzado y el id ya consumido sin dueño.
+ *
+ * **La regla de numeración, y no cambia con N9: el número sale SIEMPRE del proyecto raíz,
+ * nunca del padre inmediato.**
+ *
+ * Una tarea es `SICOE-T14` cuelgue de una historia, de una épica o del proyecto. La
+ * consecuencia buscada es que **mover una tarea no la renumera**: sacarla de una historia
+ * mal definida y colgarla del proyecto —que es un flujo normal, no un caso raro— deja
+ * intactas todas las referencias que ya la nombran, en `historial.jsonl`, en los items de
+ * sprint cerrados y en lo que el usuario haya escrito a mano.
+ *
+ * La alternativa —numerar por padre— haría que el id dejara de ser estable justo en la
+ * operación más frecuente. No hay vuelta atrás barata: la importación de Jira va a acuñar
+ * cientos de ids con esta regla.
  */
 export function siguienteId(
   clave: string,
@@ -104,12 +117,21 @@ export function siguienteId(
   };
 }
 
-/** Forma mínima que necesita la verificación de contadores. */
+/**
+ * Forma mínima que necesita la verificación de contadores.
+ *
+ * Las tres listas de tareas (N9) son opcionales aquí a propósito: esta interfaz la
+ * cumplen también los objetos a medio construir de las pruebas, y exigirlas obligaría a
+ * rellenar `tareas: []` en sitios donde no aporta nada. Lo que NO puede pasar es que una
+ * lista exista y no se mire: por eso las tres se recorren abajo.
+ */
 export interface ArbolConIds {
   clave: string;
   contadores: Contadores;
+  tareas?: readonly { id: string }[];
   epicas: readonly {
     id: string;
+    tareas?: readonly { id: string }[];
     historias: readonly { id: string; tareas: readonly { id: string }[] }[];
   }[];
 }
@@ -123,8 +145,13 @@ export function maximosUsados(proyecto: ArbolConIds): Contadores {
     const campo = CAMPO_CONTADOR[tipo];
     if (parseado.numero > max[campo]) max[campo] = parseado.numero;
   };
+  // Los tres sitios donde puede colgar una tarea (N9). Olvidar uno significa que un
+  // `SICOE-T500` escrito a mano ahí no levantaría la alarma, y la app volvería a emitir
+  // ese número: dos tareas vivas con el mismo id, que es el fallo que regla 15 previene.
+  for (const tarea of proyecto.tareas ?? []) anotar(tarea.id, 'tarea');
   for (const epica of proyecto.epicas) {
     anotar(epica.id, 'epica');
+    for (const tarea of epica.tareas ?? []) anotar(tarea.id, 'tarea');
     for (const historia of epica.historias) {
       anotar(historia.id, 'historia');
       for (const tarea of historia.tareas) anotar(tarea.id, 'tarea');

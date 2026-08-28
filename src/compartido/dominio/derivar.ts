@@ -118,8 +118,28 @@ export function contarTareas(
   return { hojas, hechas, enCurso, pendientes, canceladas, pct, contenedoresSinDesglosar };
 }
 
+/** Cualquier nodo que pueda tener tareas colgando directamente (N9). */
+export type Contenedor = Proyecto | Epica | Historia;
+
 /**
- * Todas las tareas hoja de una épica, aplanadas.
+ * **La única puerta de acceso a las tareas propias de un nodo.**
+ *
+ * N9 dejó que una tarea cuelgue de una historia, de una épica o del proyecto: tres sitios
+ * donde vivir. El precio de esa flexibilidad es que cualquier función que itere
+ * `nodo.tareas` a mano puede recordar dos de los tres y perder las del tercero en
+ * silencio — no falla, solo deja de contar. Por eso el acceso está centralizado aquí:
+ * **nadie más en el proyecto escribe `.tareas` directamente**, ni el dominio, ni el
+ * reductor, ni las vistas.
+ *
+ * Devuelve las tareas PROPIAS, no las del subárbol. Para el agregado están
+ * `tareasDeEpica` y `tareasDeProyecto`, construidos encima de esto.
+ */
+export function tareasDe(nodo: Contenedor): readonly Tarea[] {
+  return nodo.tareas;
+}
+
+/**
+ * Todas las tareas hoja de una épica, aplanadas: las suyas más las de sus historias.
  *
  * Se aplana a propósito: el avance de una épica se calcula sobre el agregado de sus
  * hojas, no promediando los porcentajes de sus historias (regla 5). Tres historias de
@@ -127,16 +147,14 @@ export function contarTareas(
  * por casualidad, pero con 2/1/1 tareas ya no coincide, y ese es el caso normal.
  */
 export function tareasDeEpica(epica: Epica): Tarea[] {
-  const tareas: Tarea[] = [];
-  for (const historia of epica.historias) tareas.push(...historia.tareas);
+  const tareas: Tarea[] = [...tareasDe(epica)];
+  for (const historia of epica.historias) tareas.push(...tareasDe(historia));
   return tareas;
 }
 
 export function tareasDeProyecto(proyecto: Proyecto): Tarea[] {
-  const tareas: Tarea[] = [];
-  for (const epica of proyecto.epicas) {
-    for (const historia of epica.historias) tareas.push(...historia.tareas);
-  }
+  const tareas: Tarea[] = [...tareasDe(proyecto)];
+  for (const epica of proyecto.epicas) tareas.push(...tareasDeEpica(epica));
   return tareas;
 }
 
@@ -151,8 +169,13 @@ export function tareasDeProyecto(proyecto: Proyecto): Tarea[] {
  */
 export function sinDesglosarDeEpica(epica: Epica): number {
   let cuantos = 0;
-  for (const historia of epica.historias) if (historia.tareas.length === 0) cuantos += 1;
+  for (const historia of epica.historias) if (tareasDe(historia).length === 0) cuantos += 1;
   return cuantos;
+}
+
+/** ¿Este nodo no tiene absolutamente nada debajo? Es lo que significa «sin desglosar». */
+function vacia(epica: Epica): boolean {
+  return epica.historias.length === 0 && tareasDe(epica).length === 0;
 }
 
 /**
@@ -165,7 +188,9 @@ export function sinDesglosarDeEpica(epica: Epica): number {
 export function sinDesglosarDeProyecto(proyecto: Proyecto): number {
   let cuantos = 0;
   for (const epica of proyecto.epicas) {
-    if (epica.historias.length === 0) cuantos += 1;
+    // Una épica con tareas colgadas de ella y sin historias SÍ está desglosada (N9): el
+    // trabajo está a la vista, solo que sin un nivel intermedio que nadie necesitaba.
+    if (vacia(epica)) cuantos += 1;
     else cuantos += sinDesglosarDeEpica(epica);
   }
   return cuantos;
@@ -173,7 +198,7 @@ export function sinDesglosarDeProyecto(proyecto: Proyecto): number {
 
 /** Una historia solo tiene tareas debajo, y una tarea no se desglosa: siempre 0. */
 export function avanceDeHistoria(historia: Historia): Avance {
-  return contarTareas(historia.tareas, 0);
+  return contarTareas(tareasDe(historia), 0);
 }
 
 export function avanceDeEpica(epica: Epica): Avance {
@@ -218,11 +243,19 @@ export function estadoDerivado(avance: Avance): EstadoDerivado {
 
 // --- índice y ubicación -----------------------------------------------------
 
-/** Dónde vive una tarea. */
+/**
+ * Dónde vive una tarea.
+ *
+ * `historia` y `epica` son opcionales desde N9: la jerarquía organiza, no es requisito.
+ * Una tarea de Infraestructura puede colgar del proyecto sin nada de por medio, y el
+ * `null` lo dice en el tipo para que ninguna vista lo descubra en ejecución.
+ *
+ * `proyecto` nunca es nulo: toda tarea pertenece a un proyecto, y su id lo lleva escrito.
+ */
 export interface UbicacionTarea {
   tarea: Tarea;
-  historia: Historia;
-  epica: Epica;
+  historia: Historia | null;
+  epica: Epica | null;
   proyecto: Proyecto;
 }
 
@@ -235,9 +268,16 @@ export interface UbicacionTarea {
 export function indexarTareas(doc: Documento): Map<ItemId, UbicacionTarea> {
   const indice = new Map<ItemId, UbicacionTarea>();
   for (const proyecto of doc.proyectos) {
+    // Los tres sitios donde una tarea puede colgar (N9), de menos a más profundo.
+    for (const tarea of tareasDe(proyecto)) {
+      indice.set(tarea.id, { tarea, historia: null, epica: null, proyecto });
+    }
     for (const epica of proyecto.epicas) {
+      for (const tarea of tareasDe(epica)) {
+        indice.set(tarea.id, { tarea, historia: null, epica, proyecto });
+      }
       for (const historia of epica.historias) {
-        for (const tarea of historia.tareas) {
+        for (const tarea of tareasDe(historia)) {
           indice.set(tarea.id, { tarea, historia, epica, proyecto });
         }
       }
@@ -246,9 +286,18 @@ export function indexarTareas(doc: Documento): Map<ItemId, UbicacionTarea> {
   return indice;
 }
 
-/** Migaja de una tarea: `["SICOE", "Regularización", "Grupos de regularización"]`. */
+/**
+ * Migaja de una tarea: `["SICOE", "Regularización", "Grupos de regularización"]`.
+ *
+ * Desde N9 puede tener uno, dos o tres tramos. Se omiten los niveles que no existen en
+ * vez de rellenarlos con «—» o con una épica inventada: una migaja de un solo tramo dice
+ * la verdad —esta tarea cuelga del proyecto— y una con un hueco no dice nada.
+ */
 export function rutaDe(ubicacion: UbicacionTarea): string[] {
-  return [ubicacion.proyecto.clave, ubicacion.epica.titulo, ubicacion.historia.titulo];
+  const ruta = [ubicacion.proyecto.clave];
+  if (ubicacion.epica) ruta.push(ubicacion.epica.titulo);
+  if (ubicacion.historia) ruta.push(ubicacion.historia.titulo);
+  return ruta;
 }
 
 // --- compromiso de sprint ---------------------------------------------------

@@ -12,7 +12,7 @@
 
 import { useId, type ReactNode } from 'react';
 
-import type { UbicacionTarea } from '../../../compartido/dominio/derivar';
+import { rutaDe, type UbicacionTarea } from '../../../compartido/dominio/derivar';
 import { Chevron } from '../../componentes/iconos';
 import { useAccionesInterfaz } from '../../estado/interfaz';
 
@@ -122,12 +122,17 @@ export function GrupoPlegable({
  *
  * Con tareas de once proyectos mezcladas, el proyecto es lo primero que la vista tiene que
  * poder saltar, así que va en tinta más fuerte que el resto del camino.
+ *
+ * Desde N9 la migaja puede tener un solo tramo: una tarea que cuelga del proyecto no
+ * inventa una épica «General» para rellenar el hueco. `rutaDe` ya omite lo que no existe.
  */
 export function MigajaTarea({ ubicacion }: { ubicacion: UbicacionTarea }) {
-  const { proyecto, epica, historia } = ubicacion;
+  const [clave, ...resto] = rutaDe(ubicacion);
+  const camino = [ubicacion.proyecto.nombre, ...resto].join(' › ');
   return (
-    <p className="migaja" title={`${proyecto.nombre} › ${epica.titulo} › ${historia.titulo}`}>
-      <b>{proyecto.clave}</b> › {epica.titulo} › {historia.titulo}
+    <p className="migaja" title={camino}>
+      <b>{clave}</b>
+      {resto.map((tramo) => ` › ${tramo}`).join('')}
     </p>
   );
 }
@@ -149,12 +154,14 @@ export function BotonIrATarea({
 }) {
   const { irATarea } = useAccionesInterfaz();
   const { proyecto, epica, historia, tarea } = ubicacion;
+  // Los nodos que hay que desplegar para llegar a ella: ninguno si cuelga del proyecto.
+  const abrir = [epica?.id, historia?.id].filter((id): id is string => id !== undefined);
   return (
     <button
       type="button"
       className={clase}
       title={`Abrir ${tarea.id} en el árbol de ${proyecto.clave}`}
-      onClick={() => irATarea(proyecto.clave, [epica.id, historia.id], tarea.id)}
+      onClick={() => irATarea(proyecto.clave, abrir, tarea.id)}
     >
       {texto}
     </button>

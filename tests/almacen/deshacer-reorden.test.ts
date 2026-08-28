@@ -139,7 +139,7 @@ describe('deshacer un reordenamiento del árbol', () => {
 
     const movida = await repo.ejecutar({
       comando: 'reordenarTarea',
-      historiaId: 'PM-H1',
+      contenedorId: 'PM-H1',
       tareaId: 'PM-T2',
       aIndice: 0,
     });

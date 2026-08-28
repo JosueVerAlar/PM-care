@@ -237,13 +237,14 @@ export function VistaTerminadas({ documento }: { documento: Documento }) {
 function ListaPorProyecto({ porProyecto }: { porProyecto: readonly ProyectoTerminadas[] }) {
   return (
     <>
-      {porProyecto.map((proyecto) => (
-        <div className="subgrupo" key={proyecto.clave}>
+      {/* `grupo`, no `proyecto`: agrupamiento de la vista, no un nodo del modelo. */}
+      {porProyecto.map((grupo) => (
+        <div className="subgrupo" key={grupo.clave}>
           <h3 className="subgrupo__titulo">
-            {proyecto.nombre}
-            <span className="subgrupo__n tabular">{cuentaTareas(proyecto.tareas.length)}</span>
+            {grupo.nombre}
+            <span className="subgrupo__n tabular">{cuentaTareas(grupo.tareas.length)}</span>
           </h3>
-          {proyecto.tareas.map((terminada) => (
+          {grupo.tareas.map((terminada) => (
             <div className="fila-hecha" key={terminada.ubicacion.tarea.id}>
               <Glifo forma="hecha" etiqueta="Hecha" />
               <span className="fila-hecha__titulo" title={terminada.ubicacion.tarea.titulo}>

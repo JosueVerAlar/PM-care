@@ -15,7 +15,7 @@
 import type { Documento, Fecha, MiembroEquipo, PersonaId, Proyecto } from '../modelo/tipos';
 import { estaAbierta } from './clasificar';
 import { equiposDe, type PertenenciaEquipo } from './carga';
-import { contarTareas, type Avance } from './derivar';
+import { contarTareas, tareasDeProyecto, type Avance } from './derivar';
 
 // --- proyectos --------------------------------------------------------------
 
@@ -38,17 +38,11 @@ export interface ContenidoProyecto {
 
 export function contenidoDeProyecto(doc: Documento, proyecto: Proyecto): ContenidoProyecto {
   let historias = 0;
-  const ids = new Set<string>();
-  const tareas = [];
-  for (const epica of proyecto.epicas) {
-    historias += epica.historias.length;
-    for (const historia of epica.historias) {
-      for (const tarea of historia.tareas) {
-        ids.add(tarea.id);
-        tareas.push(tarea);
-      }
-    }
-  }
+  for (const epica of proyecto.epicas) historias += epica.historias.length;
+  // Todas sus hojas, colgadas del nivel que sea (regla 18): lo que se lleva por delante
+  // borrar el proyecto tiene que contarlas todas o el diálogo mentiría al usuario.
+  const tareas = tareasDeProyecto(proyecto);
+  const ids = new Set(tareas.map((tarea) => tarea.id));
 
   let sprints = 0;
   let sprintsCerrados = 0;
@@ -177,14 +171,10 @@ export function personasParaAdmin(doc: Documento): FilaPersonaAdmin[] {
       let tareas = 0;
       let abiertas = 0;
       for (const proyecto of doc.proyectos) {
-        for (const epica of proyecto.epicas) {
-          for (const historia of epica.historias) {
-            for (const tarea of historia.tareas) {
-              if (tarea.responsable !== persona.id) continue;
-              tareas += 1;
-              if (estaAbierta(tarea)) abiertas += 1;
-            }
-          }
+        for (const tarea of tareasDeProyecto(proyecto)) {
+          if (tarea.responsable !== persona.id) continue;
+          tareas += 1;
+          if (estaAbierta(tarea)) abiertas += 1;
         }
       }
 

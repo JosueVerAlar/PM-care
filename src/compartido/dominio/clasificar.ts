@@ -17,6 +17,7 @@ import {
   avanceDeProyecto,
   indexarTareas,
   sprintActivo,
+  tareasDeProyecto,
 } from './derivar';
 
 // --- fechas -----------------------------------------------------------------
@@ -229,15 +230,12 @@ export function senalesDeProyecto(doc: Documento, clave: string, hoy: Fecha): Se
   let noPlaneadasAbiertas = 0;
   let enSprintActivo = 0;
 
-  for (const epica of proyecto.epicas) {
-    for (const historia of epica.historias) {
-      for (const tarea of historia.tareas) {
-        if (estaBloqueada(tarea)) bloqueadas += 1;
-        if (estaVencida(tarea, hoy)) vencidas += 1;
-        if (!tarea.planeada && estaAbierta(tarea)) noPlaneadasAbiertas += 1;
-        if (estaEnSprint(tarea.id, activo)) enSprintActivo += 1;
-      }
-    }
+  // Todas las hojas del proyecto, cuelguen del nivel que cuelguen (regla 18).
+  for (const tarea of tareasDeProyecto(proyecto)) {
+    if (estaBloqueada(tarea)) bloqueadas += 1;
+    if (estaVencida(tarea, hoy)) vencidas += 1;
+    if (!tarea.planeada && estaAbierta(tarea)) noPlaneadasAbiertas += 1;
+    if (estaEnSprint(tarea.id, activo)) enSprintActivo += 1;
   }
 
   return {

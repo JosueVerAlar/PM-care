@@ -24,6 +24,7 @@ import {
   rutaDe,
   sprintActivo,
   sprintsCerrados,
+  tareasDe,
   tareasDeEpica,
   tareasDeProyecto,
 } from '../../src/compartido/dominio/derivar';
@@ -704,17 +705,41 @@ describe('invariantes sobre 300 árboles generados', () => {
     }
   });
 
-  it('regla 3: las hojas del padre son la suma de las hojas de sus hijos', () => {
+  /**
+   * Desde N9 un contenedor tiene dos clases de hojas: las de sus hijos y las suyas
+   * propias. La invariante es la misma —el padre es la suma, nunca el promedio— pero la
+   * suma incluye lo que cuelga directamente de él. Si `tareasDe` olvidara uno de los tres
+   * sitios, estas 300 semillas lo verían: el padre contaría menos que sus hijos.
+   */
+  it('regla 3: las hojas del padre son la suma de las de sus hijos MÁS las suyas', () => {
     for (const semilla of SEMILLAS) {
       const { proyecto } = contenedores(semilla);
-      let hojasDelProyecto = 0;
+      let hojasDelProyecto = contarTareas(tareasDe(proyecto)).hojas;
       for (const epica of proyecto.epicas) {
-        const suma = epica.historias.reduce((acc, h) => acc + avanceDeHistoria(h).hojas, 0);
+        const suma =
+          epica.historias.reduce((acc, h) => acc + avanceDeHistoria(h).hojas, 0) +
+          contarTareas(tareasDe(epica)).hojas;
         expect(avanceDeEpica(epica).hojas, `semilla ${semilla} · ${epica.id}`).toBe(suma);
         hojasDelProyecto += suma;
       }
       expect(avanceDeProyecto(proyecto).hojas, `semilla ${semilla} · proyecto`).toBe(hojasDelProyecto);
     }
+  });
+
+  /**
+   * La red de N9 sobre datos generados: que los árboles traigan de verdad las tres formas.
+   * Sin esto, las invariantes de arriba podrían estar pasando sobre 300 árboles clásicos.
+   */
+  it('las 300 semillas incluyen tareas colgadas de épica y de proyecto', () => {
+    let deEpica = 0;
+    let deProyecto = 0;
+    for (const semilla of SEMILLAS) {
+      const { proyecto } = contenedores(semilla);
+      if (tareasDe(proyecto).length > 0) deProyecto += 1;
+      if (proyecto.epicas.some((e) => tareasDe(e).length > 0)) deEpica += 1;
+    }
+    expect(deEpica, 'ninguna épica generada lleva tareas directas').toBeGreaterThan(0);
+    expect(deProyecto, 'ningún proyecto generado lleva tareas sueltas').toBeGreaterThan(0);
   });
 
   it('todo documento que produce el generador es válido: si no, las invariantes medirían ruido', () => {

@@ -204,12 +204,14 @@ export function agruparBacklog(
 function coincide(fila: FilaBacklog, aguja: string): boolean {
   if (aguja === '') return true;
   const { tarea, historia, epica, proyecto } = fila.ubicacion;
+  // Los niveles que no existen (N9) no aportan texto; buscar por «SICOE» o por el título
+  // sigue encontrando una tarea que cuelga directo del proyecto.
   const pajar = normalizar(
     [
       tarea.id,
       tarea.titulo,
-      historia.titulo,
-      epica.titulo,
+      historia?.titulo ?? '',
+      epica?.titulo ?? '',
       proyecto.clave,
       proyecto.nombre,
       fila.responsable ?? '',

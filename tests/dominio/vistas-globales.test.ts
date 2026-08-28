@@ -34,9 +34,11 @@ import {
   terminadasFueraDeSprint,
   textoDeTerminadas,
 } from '../../src/compartido/dominio/terminadas';
+import { destinosDeCaptura } from '../../src/compartido/dominio/sprint';
 import { validarDocumento } from '../../src/compartido/modelo/esquema';
 import type { Documento } from '../../src/compartido/modelo/tipos';
 import { SEMILLAS, prng, unDocumentoAleatorio } from '../apoyo/generador';
+import { unDocumento, unProyecto, unaEpica, unaHistoria } from '../apoyo/constructores';
 
 const HOY = '2026-08-26';
 const ORDENES: readonly OrdenPanorama[] = ['atencion', 'quieto', 'nombre'];
@@ -544,5 +546,54 @@ describe('Carga sobre 300 documentos', () => {
         expect(fila.abiertas, `semilla ${semilla} · ${fila.personaId}`).toBe(porBarra.get(fila.personaId));
       }
     }
+  });
+});
+
+/**
+ * N9 en la captura desde el sprint: los cinco proyectos sin nivel de historia tenían CERO
+ * destinos, así que el diálogo decía «no hay dónde capturar» en un Jira lleno de trabajo.
+ */
+describe('destinosDeCaptura · regla 18', () => {
+  const HOY = '2026-08-27';
+
+  it('un proyecto sin épicas ofrece el proyecto como destino', () => {
+    const doc = unDocumento({ proyectos: [unProyecto({ clave: 'PM', epicas: [] })] });
+    const destinos = destinosDeCaptura(doc, HOY);
+    expect(destinos.map((d) => d.contenedorId)).toEqual(['PM']);
+    expect(destinos[0]?.epica).toBeNull();
+    expect(destinos[0]?.historia).toBeNull();
+  });
+
+  it('una épica sin historias se ofrece a sí misma, además del proyecto', () => {
+    const doc = unDocumento({
+      proyectos: [
+        unProyecto({ clave: 'PM', epicas: [unaEpica({ clave: 'PM', id: 'PM-E1', historias: [] })] }),
+      ],
+    });
+    expect(destinosDeCaptura(doc, HOY).map((d) => d.contenedorId)).toEqual(['PM-E1', 'PM']);
+  });
+
+  /** El más preciso primero: es el que el desplegable deja preseleccionado. */
+  it('con los tres niveles, la historia va antes que la épica y que el proyecto', () => {
+    const doc = unDocumento({
+      proyectos: [
+        unProyecto({
+          clave: 'PM',
+          epicas: [
+            unaEpica({
+              clave: 'PM',
+              id: 'PM-E1',
+              historias: [unaHistoria({ clave: 'PM', id: 'PM-H1' })],
+            }),
+          ],
+        }),
+      ],
+    });
+    expect(destinosDeCaptura(doc, HOY).map((d) => d.contenedorId)).toEqual(['PM-H1', 'PM-E1', 'PM']);
+  });
+
+  it('un proyecto archivado no ofrece ningún destino, tampoco el suyo', () => {
+    const doc = unDocumento({ proyectos: [unProyecto({ clave: 'PM', archivado: true })] });
+    expect(destinosDeCaptura(doc, HOY)).toEqual([]);
   });
 });

@@ -29,7 +29,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   destinosDeCaptura,
-  idsDeHistoria,
+  idsDeContenedor,
   tareaRecienCreada,
   type DestinoCaptura,
 } from '../../../compartido/dominio/sprint';
@@ -55,7 +55,7 @@ export function CapturaEnSprint({
 
   const destinos = useMemo(() => destinosDeCaptura(documento, hoy), [documento, hoy]);
 
-  const [historiaId, setHistoriaId] = useState(() => destinos[0]?.historiaId ?? '');
+  const [contenedorId, setContenedorId] = useState(() => destinos[0]?.contenedorId ?? '');
   const [titulo, setTitulo] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -64,7 +64,7 @@ export function CapturaEnSprint({
     refTitulo.current?.focus();
   }, []);
 
-  const destino: DestinoCaptura | undefined = destinos.find((d) => d.historiaId === historiaId);
+  const destino: DestinoCaptura | undefined = destinos.find((d) => d.contenedorId === contenedorId);
 
   /** Los destinos agrupados por proyecto: el desplegable de once proyectos sin `optgroup`
    *  es una lista de doscientas líneas sin ninguna referencia de dónde está uno. */
@@ -84,14 +84,14 @@ export function CapturaEnSprint({
     if (destino === undefined || titulo.trim() === '') return;
     setEnviando(true);
     try {
-      const previos = idsDeHistoria(documento, destino.historiaId);
+      const previos = idsDeContenedor(documento, destino.contenedorId);
       const creado = await aplicar(
-        { comando: 'crearTarea', historiaId: destino.historiaId, titulo: titulo.trim() },
+        { comando: 'crearTarea', contenedorId: destino.contenedorId, titulo: titulo.trim() },
         `Capturar «${titulo.trim()}» en ${destino.clave}`,
       );
       if (creado === null) return; // el aviso ya lo puso `aplicar`; el texto sigue aquí
 
-      const tareaId = tareaRecienCreada(creado, destino.historiaId, previos);
+      const tareaId = tareaRecienCreada(creado, destino.contenedorId, previos);
       if (tareaId === null) {
         avisar(
           'La tarea se creó pero no se pudo localizar para meterla al sprint. Está en su historia; arrástrala al sprint.',
@@ -115,8 +115,7 @@ export function CapturaEnSprint({
       <div className="alta alta--sprint">
         <p className="alta__titulo">No hay dónde capturar</p>
         <p className="alta__pie">
-          Una tarea siempre vive en una historia del árbol: el sprint solo guarda a cuáles te
-          comprometiste. Crea una épica y una historia en algún proyecto activo y vuelve.
+          No hay ningún proyecto activo. Da de alta uno y vuelve.
         </p>
         <div className="alta__fila">
           <button type="button" className="boton-texto" onClick={() => cerrar(null)}>
@@ -158,12 +157,12 @@ export function CapturaEnSprint({
 
         <label className="campo campo--destino">
           <span className="campo__etq">¿Dónde vive?</span>
-          <select value={historiaId} onChange={(evento) => setHistoriaId(evento.target.value)}>
+          <select value={contenedorId} onChange={(evento) => setContenedorId(evento.target.value)}>
             {porProyecto.map((grupo) => (
               <optgroup key={grupo.clave} label={`${grupo.clave} · ${grupo.nombre}`}>
                 {grupo.destinos.map((d) => (
-                  <option key={d.historiaId} value={d.historiaId}>
-                    {d.epica} › {d.historia}
+                  <option key={d.contenedorId} value={d.contenedorId}>
+                    {[d.epica, d.historia].filter(Boolean).join(' › ') || 'Suelta en el proyecto'}
                   </option>
                 ))}
               </optgroup>
@@ -198,9 +197,7 @@ export function CapturaEnSprint({
           )}
         </p>
       )}
-      <p className="alta__pie">
-        Quién lo hace y para cuándo se piden justo después, en la tarjeta.
-      </p>
+      <p className="alta__pie">Quién lo hace y para cuándo se piden después, en la tarjeta.</p>
     </form>
   );
 }

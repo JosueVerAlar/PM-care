@@ -20,7 +20,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 
-import { avanceDeProyecto, sprintActivo } from '../../../compartido/dominio/derivar';
+import { avanceDeProyecto, sprintActivo, tareasDe } from '../../../compartido/dominio/derivar';
 import { estaHecha } from '../../../compartido/dominio/clasificar';
 import type { Documento, Fecha, Proyecto } from '../../../compartido/modelo/tipos';
 import { Mas } from '../../componentes/iconos';
@@ -60,10 +60,13 @@ export function VistaProyecto({
   const plegables = useMemo(() => {
     const ids: string[] = [];
     for (const epica of proyecto.epicas) {
-      if (epica.historias.length === 0) continue;
+      // Se abre si tiene historias O tareas propias (regla 18). Antes de N9 una épica de
+      // un proyecto sin nivel de historia no entraba, y «Expandir todo» dejaba escondido
+      // justo el trabajo que ese proyecto tiene.
+      if (epica.historias.length === 0 && tareasDe(epica).length === 0) continue;
       ids.push(epica.id);
       for (const historia of epica.historias) {
-        if (historia.tareas.length > 0) ids.push(historia.id);
+        if (tareasDe(historia).length > 0) ids.push(historia.id);
       }
     }
     return ids;

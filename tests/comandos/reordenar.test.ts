@@ -71,7 +71,7 @@ function arbol(forma: readonly (readonly number[])[], clave = CLAVE): Documento 
         tareas += 1;
         comandos.push({
           comando: 'crearTarea',
-          historiaId: `${clave}-H${historias}`,
+          contenedorId: `${clave}-H${historias}`,
           titulo: `Tarea ${tareas}`,
         });
       }
@@ -191,7 +191,7 @@ describe('aIndice es la posición final contada YA SIN el elemento que se mueve'
     const { documento } = exigirOk(
       reducirSinMutar(doc, {
         comando: 'reordenarTarea',
-        historiaId: 'PM-H1',
+        contenedorId: 'PM-H1',
         tareaId: 'PM-T1',
         aIndice: 3,
       }),
@@ -239,7 +239,7 @@ describe('índice fuera de rango: el reductor topa por arriba', () => {
     const conTarea = exigirOk(
       reducirSinMutar(doc, {
         comando: 'reordenarTarea',
-        historiaId: 'PM-H1',
+        contenedorId: 'PM-H1',
         tareaId: 'PM-T1',
         aIndice: 40,
       }),
@@ -275,7 +275,7 @@ describe('el esquema del payload rechaza lo que ningún arrastre bien formado pr
     const rechazos = [
       validarComando({ comando: 'reordenarEpica', proyecto: CLAVE, epicaId: 'PM-E1', aIndice: -1 }),
       validarComando({ comando: 'reordenarHistoria', epicaId: 'PM-E1', historiaId: 'PM-H1', aIndice: -1 }),
-      validarComando({ comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T1', aIndice: -1 }),
+      validarComando({ comando: 'reordenarTarea', contenedorId: 'PM-H1', tareaId: 'PM-T1', aIndice: -1 }),
     ];
     expect(rechazos.map((r) => r.ok)).toEqual([false, false, false]);
   });
@@ -345,7 +345,7 @@ describe('soltar donde ya estaba se rechaza: es el desenlace más común de un a
       exigirError(
         reducirSinMutar(doc, {
           comando: 'reordenarTarea',
-          historiaId: 'PM-H1',
+          contenedorId: 'PM-H1',
           tareaId: 'PM-T1',
           aIndice: 0,
         }),
@@ -359,7 +359,7 @@ describe('soltar donde ya estaba se rechaza: es el desenlace más común de un a
       const error = exigirError(
         reducirSinMutar(doc, {
           comando: 'reordenarTarea',
-          historiaId: 'PM-H1',
+          contenedorId: 'PM-H1',
           tareaId: 'PM-T1',
           aIndice,
         }),
@@ -453,7 +453,7 @@ describe('el padre es una afirmación, no un dato de conveniencia', () => {
     const error = exigirError(
       reducirSinMutar(doc, {
         comando: 'reordenarTarea',
-        historiaId: 'PM-H1',
+        contenedorId: 'PM-H1',
         tareaId: 'PM-T3',
         aIndice: 0,
       }),
@@ -476,7 +476,7 @@ describe('el padre es una afirmación, no un dato de conveniencia', () => {
     ).toBe('no-encontrado');
     expect(
       exigirError(
-        reducirSinMutar(doc, { comando: 'reordenarTarea', historiaId: 'PM-H9', tareaId: 'PM-T1', aIndice: 0 }),
+        reducirSinMutar(doc, { comando: 'reordenarTarea', contenedorId: 'PM-H9', tareaId: 'PM-T1', aIndice: 0 }),
       ).codigo,
     ).toBe('no-encontrado');
   });
@@ -617,7 +617,7 @@ describe('reordenar no cambia ningún hecho: el documento entero, no un campo', 
     const { documento } = exigirOk(
       reducirSinMutar(
         doc,
-        { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T4', aIndice: 1 },
+        { comando: 'reordenarTarea', contenedorId: 'PM-H1', tareaId: 'PM-T4', aIndice: 1 },
         UN_MES_DESPUES,
       ),
     );
@@ -643,7 +643,7 @@ describe('reordenar no cambia ningún hecho: el documento entero, no un campo', 
     const { documento } = exigirOk(
       reducirSinMutar(
         doc,
-        { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T3', aIndice: 0 },
+        { comando: 'reordenarTarea', contenedorId: 'PM-H1', tareaId: 'PM-T3', aIndice: 0 },
         UN_MES_DESPUES,
       ),
     );
@@ -663,7 +663,7 @@ describe('reordenar no cambia ningún hecho: el documento entero, no un campo', 
     const { documento } = exigirOk(
       reducirSinMutar(
         doc,
-        { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T2', aIndice: 0 },
+        { comando: 'reordenarTarea', contenedorId: 'PM-H1', tareaId: 'PM-T2', aIndice: 0 },
         UN_MES_DESPUES,
       ),
     );
@@ -696,7 +696,7 @@ describe('reordenar y los sprints: son dos órdenes independientes', () => {
     const { documento } = exigirOk(
       reducirSinMutar(doc, {
         comando: 'reordenarTarea',
-        historiaId: 'PM-H1',
+        contenedorId: 'PM-H1',
         tareaId: 'PM-T1',
         aIndice: 2,
       }),
@@ -740,7 +740,7 @@ describe('reordenar y los sprints: son dos órdenes independientes', () => {
     const { documento } = exigirOk(
       reducirSinMutar(conCerrado, {
         comando: 'reordenarTarea',
-        historiaId: 'PM-H1',
+        contenedorId: 'PM-H1',
         tareaId: 'PM-T3',
         aIndice: 0,
       }),
@@ -764,9 +764,9 @@ describe('reordenar no escribe marcas de tiempo, así que el proyecto sigue igua
       { comando: 'crearEpica', proyecto: CLAVE, titulo: 'Épica 2' },
       { comando: 'crearHistoria', epicaId: 'PM-E1', titulo: 'Historia 1' },
       { comando: 'crearHistoria', epicaId: 'PM-E1', titulo: 'Historia 2' },
-      { comando: 'crearTarea', historiaId: 'PM-H1', titulo: 'Tarea 1' },
-      { comando: 'crearTarea', historiaId: 'PM-H1', titulo: 'Tarea 2' },
-      { comando: 'crearTarea', historiaId: 'PM-H2', titulo: 'Tarea 3' },
+      { comando: 'crearTarea', contenedorId: 'PM-H1', titulo: 'Tarea 1' },
+      { comando: 'crearTarea', contenedorId: 'PM-H1', titulo: 'Tarea 2' },
+      { comando: 'crearTarea', contenedorId: 'PM-H2', titulo: 'Tarea 3' },
     ];
     return aplicarTodos(unDocumento(), comandos, HACE_TIEMPO);
   }
@@ -787,9 +787,9 @@ describe('reordenar no escribe marcas de tiempo, así que el proyecto sigue igua
         { comando: 'reordenarHistoria', epicaId: 'PM-E1', historiaId: 'PM-H1', aIndice: 1 },
         { comando: 'reordenarHistoria', epicaId: 'PM-E1', historiaId: 'PM-H1', aIndice: 0 },
         { comando: 'reordenarHistoria', epicaId: 'PM-E1', historiaId: 'PM-H2', aIndice: 0 },
-        { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T1', aIndice: 1 },
-        { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T1', aIndice: 0 },
-        { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T2', aIndice: 0 },
+        { comando: 'reordenarTarea', contenedorId: 'PM-H1', tareaId: 'PM-T1', aIndice: 1 },
+        { comando: 'reordenarTarea', contenedorId: 'PM-H1', tareaId: 'PM-T1', aIndice: 0 },
+        { comando: 'reordenarTarea', contenedorId: 'PM-H1', tareaId: 'PM-T2', aIndice: 0 },
         // La épica que cierra la ráfaga es PM-E1 y no la vacía PM-E2: si al mover una
         // rama se escribiera una marca de tiempo dentro, en una épica sin tareas no
         // tendría dónde aparecer y la medición saldría verde sin haber mirado nada.
@@ -809,7 +809,7 @@ describe('reordenar no escribe marcas de tiempo, así que el proyecto sigue igua
     const barajado = aplicarTodos(
       doc,
       [
-        { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T2', aIndice: 0 },
+        { comando: 'reordenarTarea', contenedorId: 'PM-H1', tareaId: 'PM-T2', aIndice: 0 },
         // Se mueve PM-E1, que lleva dos historias y tres tareas. Mover la épica vacía no
         // demostraría que las marcas de las tareas no se tocan: no habría ninguna dentro.
         { comando: 'reordenarEpica', proyecto: CLAVE, epicaId: 'PM-E1', aIndice: 1 },
@@ -837,7 +837,7 @@ describe('reordenar no escribe marcas de tiempo, así que el proyecto sigue igua
     const ordenes: Comando[] = [
       { comando: 'reordenarEpica', proyecto: CLAVE, epicaId: 'PM-E1', aIndice: 1 },
       { comando: 'reordenarHistoria', epicaId: 'PM-E1', historiaId: 'PM-H1', aIndice: 1 },
-      { comando: 'reordenarTarea', historiaId: 'PM-H1', tareaId: 'PM-T1', aIndice: 1 },
+      { comando: 'reordenarTarea', contenedorId: 'PM-H1', tareaId: 'PM-T1', aIndice: 1 },
     ];
     expect(ordenes.map(requiereFlushInmediato)).toEqual([false, false, false]);
     // Contraste, para que la prueba diga algo: crear sí lo exige.
@@ -892,7 +892,7 @@ describe('reordenar se permite en proyectos cerrados y archivados', () => {
     const { documento } = exigirOk(
       reducirSinMutar(doc, {
         comando: 'reordenarTarea',
-        historiaId: 'PM-H1',
+        contenedorId: 'PM-H1',
         tareaId: 'PM-T2',
         aIndice: 0,
       }),
@@ -916,7 +916,7 @@ describe('reordenar se permite en proyectos cerrados y archivados', () => {
     const conTarea = exigirOk(
       reducirSinMutar(doc, {
         comando: 'reordenarTarea',
-        historiaId: 'PM-H1',
+        contenedorId: 'PM-H1',
         tareaId: 'PM-T2',
         aIndice: 0,
       }),
@@ -963,7 +963,7 @@ describe('el evento deja constancia de cuánto se movió y de dónde (regla 7)',
     const { evento } = exigirOk(
       reducirSinMutar(doc, {
         comando: 'reordenarTarea',
-        historiaId: 'PM-H1',
+        contenedorId: 'PM-H1',
         tareaId: 'PM-T3',
         aIndice: 0,
       }),

@@ -171,7 +171,7 @@ describe('editarPersona', () => {
     const conPersona = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana' });
     const conTarea = aplicar(conPersona, {
       comando: 'crearTarea',
-      historiaId,
+      contenedorId: historiaId,
       titulo: 'T',
       responsable: 'ana',
     });
@@ -252,7 +252,7 @@ describe('desactivarPersona', () => {
     const conPersona = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['PM'] });
     const conTarea = aplicar(conPersona, {
       comando: 'crearTarea',
-      historiaId,
+      contenedorId: historiaId,
       titulo: 'T',
       responsable: 'ana',
     });
@@ -333,7 +333,7 @@ describe('reactivarPersona', () => {
       { comando: 'reactivarPersona', id: 'ana' },
     ]);
     const { documento } = exigirOk(
-      reducirSinMutar(ciclo, { comando: 'crearTarea', historiaId, titulo: 'T', responsable: 'ana' }),
+      reducirSinMutar(ciclo, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T', responsable: 'ana' }),
     );
     expect(documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.responsable).toBe('ana');
   });
@@ -349,7 +349,7 @@ describe('a una persona desactivada no se le asigna trabajo nuevo por NINGUNA ru
       { comando: 'crearPersona', nombre: 'Ana' },
       { comando: 'crearPersona', nombre: 'Beto' },
     ]);
-    const conTarea = aplicar(conGente, { comando: 'crearTarea', historiaId, titulo: 'T' });
+    const conTarea = aplicar(conGente, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T' });
     const fuera = aplicar(conTarea, { comando: 'desactivarPersona', id: 'ana' });
     return { doc: fuera, historiaId, tareaId: `${clave}-T1` };
   }
@@ -357,7 +357,7 @@ describe('a una persona desactivada no se le asigna trabajo nuevo por NINGUNA ru
   it('ruta 1 — crearTarea con responsable desactivado se rechaza', () => {
     const { doc, historiaId } = conAnaFuera();
     const error = exigirError(
-      reducirSinMutar(doc, { comando: 'crearTarea', historiaId, titulo: 'X', responsable: 'ana' }),
+      reducirSinMutar(doc, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'X', responsable: 'ana' }),
     );
     expect(error.codigo).toBe('invalido');
     expect(error.mensaje).toContain('reactivarPersona');
@@ -366,7 +366,7 @@ describe('a una persona desactivada no se le asigna trabajo nuevo por NINGUNA ru
   it('ruta 1 — y la tarea NO se crea: el rechazo no puede dejar media captura', () => {
     const { doc, historiaId } = conAnaFuera();
     exigirError(
-      reducirSinMutar(doc, { comando: 'crearTarea', historiaId, titulo: 'X', responsable: 'ana' }),
+      reducirSinMutar(doc, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'X', responsable: 'ana' }),
     );
     expect(doc.proyectos[0]?.epicas[0]?.historias[0]?.tareas).toHaveLength(1);
     expect(doc.proyectos[0]?.contadores.tareas).toBe(1);
@@ -433,7 +433,7 @@ describe('a una persona desactivada no se le asigna trabajo nuevo por NINGUNA ru
 
   it('a alguien ACTIVO sí se le asigna por las tres rutas: el rechazo mide la bandera, no otra cosa', () => {
     const { doc, historiaId, tareaId } = conAnaFuera();
-    exigirOk(reducirSinMutar(doc, { comando: 'crearTarea', historiaId, titulo: 'X', responsable: 'beto' }));
+    exigirOk(reducirSinMutar(doc, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'X', responsable: 'beto' }));
     exigirOk(reducirSinMutar(doc, { comando: 'editarTarea', id: tareaId, responsable: 'beto' }));
     exigirOk(
       reducirSinMutar(doc, {
@@ -447,7 +447,7 @@ describe('a una persona desactivada no se le asigna trabajo nuevo por NINGUNA ru
   it('una persona que no existe se rechaza como no-encontrado, no como desactivada', () => {
     const { doc, historiaId } = conAnaFuera();
     const error = exigirError(
-      reducirSinMutar(doc, { comando: 'crearTarea', historiaId, titulo: 'X', responsable: 'fantasma' }),
+      reducirSinMutar(doc, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'X', responsable: 'fantasma' }),
     );
     expect(error.codigo).toBe('no-encontrado');
   });
@@ -458,7 +458,7 @@ describe('quitar el responsable siempre se permite', () => {
     const { doc, historiaId, clave } = arbolConTareas(0);
     const conAsignada = aplicarTodos(doc, [
       { comando: 'crearPersona', nombre: 'Ana' },
-      { comando: 'crearTarea', historiaId, titulo: 'T', responsable: 'ana' },
+      { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T', responsable: 'ana' },
     ]);
     const { documento } = exigirOk(
       reducirSinMutar(conAsignada, { comando: 'editarTarea', id: `${clave}-T1`, responsable: null }),
@@ -470,7 +470,7 @@ describe('quitar el responsable siempre se permite', () => {
     const { doc, historiaId, clave } = arbolConTareas(0);
     const conAsignada = aplicarTodos(doc, [
       { comando: 'crearPersona', nombre: 'Ana' },
-      { comando: 'crearTarea', historiaId, titulo: 'T', responsable: 'ana' },
+      { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T', responsable: 'ana' },
       { comando: 'desactivarPersona', id: 'ana' },
     ]);
     const { documento } = exigirOk(
@@ -482,7 +482,7 @@ describe('quitar el responsable siempre se permite', () => {
   it('crearTarea sin responsable no consulta a nadie', () => {
     const { doc, historiaId } = arbolConTareas(0);
     const { documento } = exigirOk(
-      reducirSinMutar(doc, { comando: 'crearTarea', historiaId, titulo: 'T', responsable: null }),
+      reducirSinMutar(doc, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T', responsable: null }),
     );
     expect(documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.responsable).toBeNull();
   });
@@ -512,7 +512,7 @@ describe('eliminarPersona — se bloquea si tiene historia, y remite a desactiva
     const { doc, historiaId } = arbolConTareas(0);
     const conTarea = aplicarTodos(doc, [
       { comando: 'crearPersona', nombre: 'Ana' },
-      { comando: 'crearTarea', historiaId, titulo: 'T', responsable: 'ana' },
+      { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T', responsable: 'ana' },
     ]);
     const error = exigirError(reducirSinMutar(conTarea, { comando: 'eliminarPersona', id: 'ana' }));
     expect(error.codigo).toBe('invalido');
@@ -523,7 +523,7 @@ describe('eliminarPersona — se bloquea si tiene historia, y remite a desactiva
     const { doc, historiaId } = arbolConTareas(0);
     const conTarea = aplicarTodos(doc, [
       { comando: 'crearPersona', nombre: 'Ana' },
-      { comando: 'crearTarea', historiaId, titulo: 'T', responsable: 'ana' },
+      { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T', responsable: 'ana' },
     ]);
     const error = exigirError(reducirSinMutar(conTarea, { comando: 'eliminarPersona', id: 'ana' }));
     expect(error.mensaje).toContain('desactivarPersona');
@@ -592,7 +592,7 @@ describe('eliminarPersona — se bloquea si tiene historia, y remite a desactiva
     const { doc, historiaId } = arbolConTareas(0);
     const conTarea = aplicarTodos(doc, [
       { comando: 'crearPersona', nombre: 'Ana' },
-      { comando: 'crearTarea', historiaId, titulo: 'T', responsable: 'ana' },
+      { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T', responsable: 'ana' },
       { comando: 'desactivarPersona', id: 'ana' },
     ]);
     expect(
@@ -604,7 +604,7 @@ describe('eliminarPersona — se bloquea si tiene historia, y remite a desactiva
     const { doc, historiaId, clave } = arbolConTareas(0);
     const conTarea = aplicarTodos(doc, [
       { comando: 'crearPersona', nombre: 'Ana' },
-      { comando: 'crearTarea', historiaId, titulo: 'T', responsable: 'ana' },
+      { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T', responsable: 'ana' },
     ]);
     const liberada = aplicar(conTarea, {
       comando: 'editarTarea',
@@ -663,7 +663,7 @@ describe('editarEquipo', () => {
     const { doc, historiaId } = arbolConTareas(0);
     const conTarea = aplicarTodos(doc, [
       { comando: 'crearPersona', nombre: 'Ana', equipos: ['PM'] },
-      { comando: 'crearTarea', historiaId, titulo: 'T', responsable: 'ana' },
+      { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T', responsable: 'ana' },
     ]);
     const { documento } = exigirOk(
       reducirSinMutar(conTarea, { comando: 'editarEquipo', proyecto: 'PM', miembros: [] }),

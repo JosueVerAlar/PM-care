@@ -40,6 +40,7 @@ import type {
   EsquemaItemSprint,
   EsquemaMiembroEquipo,
   EsquemaPersona,
+  EsquemaEsfuerzo,
   EsquemaPrioridad,
   EsquemaProyecto,
   EsquemaSprint,
@@ -66,6 +67,8 @@ export type ClaveProyecto = string;
 export type ItemId = string;
 
 export type Prioridad = z.infer<typeof EsquemaPrioridad>;
+/** 1 · 2 · 3 · 5 · 8. Ver `EsquemaEsfuerzo` para por qué esta escala y no otra. */
+export type Esfuerzo = z.infer<typeof EsquemaEsfuerzo>;
 export type EstadoTarea = z.infer<typeof EsquemaEstadoTarea>;
 export type TipoBloqueo = z.infer<typeof EsquemaTipoBloqueo>;
 export type EstadoSprint = z.infer<typeof EsquemaEstadoSprint>;
