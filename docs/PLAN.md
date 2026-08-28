@@ -375,6 +375,26 @@ puntos u horas · adjuntos y comentarios en las tareas.
 
 ## Bitácora
 
+**2026-08-27 · 3.4 cerrado y la app con ícono propio. El rediseño no deja pendientes.**
+
+- **Cerrar y eliminar un proyecto se piden desde el `⋯` de la lista lateral**, donde el
+  proyecto ya se está mirando. La ceremonia se sacó a `DialogoProyecto` y la llaman las dos
+  entradas: copiarla habría sido lo peor que se puede duplicar en esta app — el día que una
+  copia gane una salvaguarda, la otra se queda sin ella y nadie lo nota hasta que borra
+  algo. Ni una palabra del texto cambió.
+- **12 pruebas nuevas sobre la ruta destructiva**, la única mutación que `⌘Z` no revierte.
+  Una de ellas lee el código fuente para que la ceremonia no se vuelva a duplicar: si
+  alguien la reescribiera dentro de una vista, las otras once seguirían pasando sobre el
+  componente compartido sin enterarse de la copia.
+- El `⋯` de la lateral **solo ofrece cerrar**, y está razonado: esa lista muestra los
+  activos —cerrar archiva— y eliminar exige que el proyecto esté cerrado. Las otras dos
+  acciones nunca podrían dispararse desde ahí.
+- **Ícono propio.** Generado sin instalar nada: `swift` y `iconutil` vienen con macOS.
+  Verificado en el `.app` reconstruido — es el nuestro byte por byte y `electron.icns` ya no
+  existe dentro del paquete. Legible a 32 px, que es el tamaño al que se ve de verdad.
+
+1006 pruebas. La app corre con la semilla sin un error en el log.
+
 **2026-08-27 · Niveles 2 y 3 del rediseño, casi completos.**
 
 - **Menú `⋯` por fila.** Ocho teclas memorizadas pasan a ser ocho etiquetas con su tecla al

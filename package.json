@@ -28,7 +28,8 @@
     "mac": {
       "category": "public.app-category.productivity",
       "target": "dir",
-      "identity": "-"
+      "identity": "-",
+      "icon": "recursos/icono.icns"
     }
   },
   "dependencies": {
