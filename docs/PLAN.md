@@ -375,6 +375,35 @@ puntos u horas · adjuntos y comentarios en las tareas.
 
 ## Bitácora
 
+**2026-08-27 · Niveles 2 y 3 del rediseño, casi completos.**
+
+- **Menú `⋯` por fila.** Ocho teclas memorizadas pasan a ser ocho etiquetas con su tecla al
+  lado. `<select>` nativo, por la decisión N4: con ocho ítems y sin submenús, el sistema da
+  gratis foco, `Escape`, flechas y posicionamiento. **«Al sprint» dejó de esconderse tras el
+  hover** — era la acción más frecuente de la app y solo aparecía al pasar el ratón.
+- **Panel `?`** con las teclas y con «Cómo se lee». La leyenda encoge a su glosario: una
+  lista de nueve teclas en un pie se lee una vez y nunca más.
+- **Franja de deshacer tras borrar.** Es lo que permite que la app no pregunte «¿seguro?»
+  en cada borrado. Tinta neutra: un borrado reversible no es un error.
+- **Deshacer y capturar se anuncian** (`role="status"`). La etiqueta de lo deshecho se
+  captura ANTES de deshacer, porque la instantánea que vuelve ya nombra el paso de abajo.
+- **Lateral en cuatro grupos**: Hoy · Proyectos · Registro · Gente. Se fue la palabra
+  «Administración», que nombraba una categoría en vez de un contenido — y que además dejó
+  de ser cierta al fusionarse Equipos.
+- **Equipos existe una sola vez** y esa pantalla muestra y edita (codex). La ficha de
+  persona deja la adscripción en solo lectura: dos caminos para el mismo dato es la fuente
+  de que se contradigan.
+
+981 → 994 pruebas. La app corre con la semilla sin un solo error en el log.
+
+**Lo que queda del 3.4, y por qué no se hizo:** el `＋` de dar de alta un proyecto sí está,
+en la cabecera del grupo Proyectos. **Mover cerrar y eliminar al `⋯` de la fila lateral no
+se hizo:** su flujo de confirmación —el que exige escribir la clave a mano— vive dentro de
+`SeccionProyectos`, y sacarlo es un refactor sobre la ruta destructiva. El propio documento
+de rediseño lo llama «el más caro y el menos urgente» y admite partirlo; se partió, y esta
+mitad espera. Hacerlo la noche antes de que el usuario empiece a usar la app era el peor
+momento posible.
+
 **2026-08-27 · Lista para usarse. Empaquetada, corrida y revisada.**
 
 - **Tres commits del trabajo del día** más este. La app se corrió por primera vez con

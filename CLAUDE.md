@@ -15,8 +15,11 @@ eso: **Zod**.
 
 ## Vistas
 
-- **Globales:** Panorama · Sprint (transversal a todos los proyectos) · Bloqueos ·
-  Terminadas · Backlog del área · Carga por persona · Tiempos · Equipos.
+- **Globales**, en cuatro grupos de la lateral nombrados por lo que se hace en ellos:
+  **Hoy** (Panorama · Sprint · Bloqueos) · **Proyectos** (la lista, con su `＋`) ·
+  **Registro** (Terminadas · Backlog del área · Tiempos) · **Gente** (Carga por persona ·
+  Equipos · Personas). No existe un grupo «Administración»: nombraba una categoría, no un
+  contenido. **Equipos existe UNA vez** y esa única pantalla muestra y edita.
 - **De proyecto:** dos paneles. Izquierda, árbol épica → historia → tarea, con los niveles
   que el proyecto tenga (ver regla 18). Derecha, el sprint filtrado a ese proyecto.
   *Terminadas* es una pestaña dentro de la vista, **no** un tercer panel.
@@ -131,7 +134,16 @@ en un solo lugar.
       historial se rompe. *Verificable:* `siguienteId` recibe la clave del proyecto y sus
       contadores; no existe una variante por padre.
 
-19. **El reloj de resolución corre desde que arranca el sprint** hasta `hecha_en`.
+19. **Cada acción de una fila vive en su menú `⋯`, con su tecla al lado.** Techo duro de
+    OCHO ítems: el noveno significa que se añadió una función que nadie pidió. Su nombre
+    accesible es específico («Acciones de SICOE-104», nunca «Más»), lo destructivo va al
+    fondo y en su propio grupo, y los verbos nombran lo que va a pasar («Marcar en curso»,
+    no «Cambiar estado»). **El menú y el teclado comparten implementación**: no hay dos
+    caminos que hagan «lo mismo» por rutas distintas.
+20. **Ningún control que ejecuta una acción se esconde tras el hover.** El menú puede estar
+    cerrado; su puerta, no. Lo que sí puede aparecer al pasar el ratón es lo que solo se
+    LEE (la clave de la fila), porque no hay nada que descubrir.
+21. **El reloj de resolución corre desde que arranca el sprint** hasta `hecha_en`.
     Decisión del usuario, no negociable. Con un solo tope, y por día de calendario: una
     tarea metida DÍAS después empieza a contar el día que entró (`comprometida_en`); una
     comprometida a las nueve del primer día cuenta desde el arranque, no desde las nueve.
@@ -146,7 +158,7 @@ en un solo lugar.
       resolverla con la zona local hacía durar distinto la misma tarea según dónde se
       abriera la app. *Verificable:* `tests/dominio/duracion.test.ts`, «el huso sale de los
       datos».
-20. **`esfuerzo` es Fibonacci `1·2·3·5·8` o `null`, y `null` es lo NORMAL.** Ninguna suma
+22. **`esfuerzo` es Fibonacci `1·2·3·5·8` o `null`, y `null` es lo NORMAL.** Ninguna suma
     de esfuerzo se muestra sin cuántas tareas la componen y cuántas no están estimadas:
     «34 pts · 12 de 18 tareas», nunca «34 pts». Es la misma mentira que el `0%`.
     Prohibido convertir esto en pronóstico: describe lo que pasó, no promete fechas.
