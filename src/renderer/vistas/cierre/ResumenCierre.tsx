@@ -18,6 +18,7 @@
 
 import { resumenTrasCierre } from '../../../compartido/dominio/cierre';
 import type { Documento } from '../../../compartido/modelo/tipos';
+import { RetrospectivaSprint } from '../../componentes/RetrospectivaSprint';
 import { useAccionesAlmacen } from '../../estado/almacen';
 import { useAccionesInterfaz } from '../../estado/interfaz';
 import { useMutar, usePuedeDeshacer, useSoloLectura } from '../../estado/mutaciones';
@@ -122,6 +123,11 @@ export function ResumenCierre({ documento, sprintId }: { documento: Documento; s
           {descartadas > 0 &&
             ` ${descartadas === 1 ? 'La tarea de «ya no aplica» quedó cancelada y sale' : `Las ${descartadas} tareas de «ya no aplica» quedaron canceladas y salen`} de todos los conteos; un cambio de estado lo revierte si hiciera falta.`}
         </p>
+
+        {/* Se ofrece donde aún está fresco el repaso tarea por tarea, pero queda fuera de
+            la barra de salida: la retrospectiva puede escribirse hoy o volver a buscarse
+            semanas después sin convertir el cierre en un formulario obligatorio. */}
+        <RetrospectivaSprint sprint={sprint} abiertaInicialmente />
 
         <div className="cierre-hecho__acciones">
           {destino !== undefined && (

@@ -82,6 +82,24 @@
 }
 .grupo--aparte { border-top: 2px solid var(--hairline); }
 
+/* La misma pieza vive al terminar el cierre y al releerlo meses después. Su medida corta
+   conserva el texto como nota reflexiva, no como otra tabla de ancho completo. */
+.retrospectiva {
+  width: min(100%, 720px);
+  padding: 10px 16px 14px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.retrospectiva__cabecera,
+.retrospectiva__acciones,
+.retrospectiva__vacia { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.retrospectiva__cabecera h3 { font-size: 12.5px; font-weight: 600; }
+.retrospectiva__vacia { color: var(--tinta-2); font-size: 12px; line-height: 17px; }
+.retrospectiva__texto {
+  color: var(--tinta-1); font-size: 12.5px; line-height: 19px;
+  white-space: pre-wrap;
+}
+.retrospectiva__atajo { color: var(--tinta-3); font-size: 11px; }
+
 /* Botón pequeño de acción dentro de una fila. Declaración ÚNICA: `edicion.css` tenía otra
    con 20 px y ganaba la que se cargara después. 24 px es el mínimo de SC 2.5.8. */
 .mini {

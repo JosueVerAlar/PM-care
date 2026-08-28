@@ -190,6 +190,7 @@
   width: 100%; margin-top: 6px;
   padding-top: 14px; border-top: 1px solid var(--hairline);
 }
+.cierre-hecho > .retrospectiva { padding-left: 0; padding-right: 0; }
 
 /* ── umbral duro ──────────────────────────────────────────────── */
 /* Por debajo de 1040 px los controles no caben a la derecha del texto: se bajan bajo la

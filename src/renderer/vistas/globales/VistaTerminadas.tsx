@@ -31,6 +31,7 @@ import {
 } from '../../../compartido/dominio/terminadas';
 import type { Documento } from '../../../compartido/modelo/tipos';
 import { Glifo } from '../../componentes/iconos';
+import { RetrospectivaSprint } from '../../componentes/RetrospectivaSprint';
 import { useAccionesInterfaz } from '../../estado/interfaz';
 import { copiarTexto } from '../../util/portapapeles';
 import { fechaCorta, instanteCorto, tareas as cuentaTareas } from '../../util/presentacion';
@@ -169,6 +170,10 @@ export function VistaTerminadas({ documento }: { documento: Documento }) {
                   </span>
                 )}
               </div>
+              {/* La retro interpreta este registro congelado. Ponerla junto a sus
+                  desenlaces permite releer qué pasó antes de editar qué se aprendió; una
+                  pantalla aparte separaría la conclusión de la evidencia que la sostiene. */}
+              <RetrospectivaSprint sprint={entrada.sprint} />
               {entrada.total === 0 ? (
                 <p className="grupo__vacio">
                   Este sprint se cerró sin ninguna tarea completada. Aparece igual: esconderlo
