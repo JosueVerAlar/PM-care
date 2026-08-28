@@ -19,7 +19,7 @@ import { ContadorBloqueos } from '../componentes/Chips';
 import { Icono } from '../componentes/iconos';
 import { useAccionesInterfaz, type Vista } from '../estado/interfaz';
 import { SECCIONES_ADMIN } from '../vistas/administracion/VistaAdministracion';
-import { GLOBALES } from '../vistas/globales/registro';
+import { EN_LATERAL } from '../vistas/globales/registro';
 
 export function BarraLateral({
   documento,
@@ -60,7 +60,7 @@ export function BarraLateral({
     <nav className="lateral" aria-label="Vistas, proyectos y administración">
       <div className="lat-grupo">
         <h2 className="lat-titulo">Vistas</h2>
-        {GLOBALES.map((entrada) => (
+        {EN_LATERAL.map((entrada) => (
           <button
             key={entrada.id}
             type="button"

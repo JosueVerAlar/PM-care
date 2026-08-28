@@ -113,6 +113,7 @@ import { useAccionesSprint } from '../../estado/acciones-sprint';
 import { useAccionesInterfaz, useInterfaz } from '../../estado/interfaz';
 import { useMutar } from '../../estado/mutaciones';
 import { enCampoDeTexto, letraSuelta } from '../../util/atajos';
+import { copiarTexto } from '../../util/portapapeles';
 import { chipDeArrastre, esArrastreDeOrden, TIPO_ORDEN, TIPO_TAREA } from '../../util/arrastre';
 import { construirFilas, type Fila } from './filas';
 import {
@@ -161,6 +162,41 @@ interface GestoOrden {
 function bordeDe(evento: React.DragEvent): Borde {
   const caja = evento.currentTarget.getBoundingClientRect();
   return evento.clientY < caja.top + caja.height / 2 ? 'antes' : 'despues';
+}
+
+/**
+ * La clave (`SICOE-104`), que se COPIA y no se lee.
+ *
+ * N6 · nadie se orienta escaneando «SICOE-104, SICOE-105, SICOE-106»: se orienta por el
+ * título. La clave hace falta en un momento puntual —cruzar a Jira— y ocupaba 88 px fijos
+ * en cada uno de los tres niveles, que son exactamente los que el `＋` y el título
+ * necesitan. Ahora aparece al pasar el ratón o al enfocar la fila, y un clic la copia.
+ *
+ * Sigue ocupando su sitio aunque esté invisible: si apareciera y desapareciera, el título
+ * cambiaría de ancho al pasar el ratón y el árbol entero temblaría al recorrerlo.
+ */
+function Clave({ id }: { id: string }) {
+  const [copiada, setCopiada] = useState(false);
+
+  return (
+    <button
+      type="button"
+      className={`clave${copiada ? ' clave--copiada' : ''}`}
+      // El árbol tiene UNA parada de tabulador: este botón no puede abrir trescientas más.
+      tabIndex={-1}
+      title={copiada ? `${id} copiada` : `Copiar ${id} para pegarla en Jira`}
+      onClick={(evento) => {
+        evento.stopPropagation();
+        void copiarTexto(id).then((ok) => {
+          if (!ok) return;
+          setCopiada(true);
+          window.setTimeout(() => setCopiada(false), 1200);
+        });
+      }}
+    >
+      {copiada ? 'copiada' : id}
+    </button>
+  );
 }
 
 function tituloDeFila(fila: Fila): string {
@@ -899,7 +935,7 @@ function FilaArbol({
             Al sprint
           </button>
         )}
-        <span className="clave">{tarea.id}</span>
+        <Clave id={tarea.id} />
       </div>
     );
   }
@@ -995,7 +1031,7 @@ function FilaArbol({
       </button>
       <Medidor avance={fila.avance} conBarra={esEpica} />
 
-      <span className="clave">{fila.id}</span>
+      <Clave id={fila.id} />
     </div>
   );
 }

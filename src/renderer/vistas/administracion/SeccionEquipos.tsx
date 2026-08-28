@@ -39,6 +39,7 @@ import {
 import { conformacionDeEquipos } from '../../../compartido/dominio/carga';
 import type { Documento } from '../../../compartido/modelo/tipos';
 import { Equis, Mas } from '../../componentes/iconos';
+import { useAccionesInterfaz } from '../../estado/interfaz';
 import { useMutar, useSoloLectura } from '../../estado/mutaciones';
 import { cuenta, nombreSinClave } from '../../util/presentacion';
 import { Lienzo } from '../globales/piezas';
@@ -46,6 +47,7 @@ import { Lienzo } from '../globales/piezas';
 
 export function SeccionEquipos({ documento }: { documento: Documento }) {
   const soloLectura = useSoloLectura();
+  const { verGlobal } = useAccionesInterfaz();
 
   const activos = useMemo(
     () =>
@@ -94,6 +96,13 @@ export function SeccionEquipos({ documento }: { documento: Documento }) {
           Equipos · {cuenta(conEquipo.length, 'proyecto con equipo', 'proyectos con equipo')} de{' '}
           {activos.length}
         </h2>
+        <span className="crece" />
+        {/* La vista transversal salió de la lateral (N7) porque se abre una vez al mes.
+            Sigue existiendo y se llega desde aquí, que es donde uno ya está pensando en
+            equipos: quitarle su sitio en el mapa no es esconderla. */}
+        <button type="button" className="cab__accion" onClick={() => verGlobal('equipos')}>
+          Ver los once de un vistazo
+        </button>
       </header>
 
       <Lienzo>

@@ -258,3 +258,28 @@ describe('el esfuerzo en la fila', () => {
     expect(container.querySelector('.esfuerzo')).toBeNull();
   });
 });
+
+describe('la clave se copia, no se lee (N6)', () => {
+  const conTarea = () =>
+    unProyecto({
+      clave: CLAVE,
+      epicas: [],
+      tareas: [unaTarea({ clave: CLAVE, id: 'PM-T1', titulo: 'Una tarea' })],
+    });
+
+  /**
+   * Sigue en el DOM aunque el CSS la mantenga invisible: quien navega con teclado la
+   * revela con el foco, y un lector de pantalla tiene que poder anunciarla siempre.
+   */
+  it('es un botón que ofrece copiar, no un texto muerto', () => {
+    montar(conTarea());
+    const boton = screen.getByRole('button', { name: 'PM-T1' });
+    expect(boton.title).toContain('Copiar');
+  });
+
+  /** Conserva su columna: si el hueco desapareciera, el título temblaría al pasar el ratón. */
+  it('ocupa su sitio aunque esté invisible', () => {
+    const { container } = montar(conTarea());
+    expect(container.querySelector('.clave')).not.toBeNull();
+  });
+});

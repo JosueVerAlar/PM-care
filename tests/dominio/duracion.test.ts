@@ -15,6 +15,7 @@ import {
   promediar,
   resoluciones,
   resolucionDe,
+  cerradasSinMedirEnTodo,
   sumarEsfuerzo,
   tiempoPorPersona,
   tiempoPorProyecto,
@@ -329,11 +330,25 @@ describe('esfuerzo', () => {
       { dias: 4, tarea: unaTarea({ clave: CLAVE, esfuerzo: 5 }) },
       { dias: 90, tarea: unaTarea({ clave: CLAVE }) },
     ] as Resolucion[];
-    expect(diasPorPunto(medidas), '10 días entre 8 puntos; la de 90 no está estimada').toBe(1.3);
+    // Solo dos estimadas: por debajo del mínimo NO se da el cociente, pero sí el conteo.
+    expect(diasPorPunto(medidas)).toEqual({ dias: null, sobre: 2, puntos: 8 });
   });
 
   it('sin ninguna estimada no hay días por punto', () => {
-    expect(diasPorPunto([{ dias: 5, tarea: unaTarea({ clave: CLAVE }) } as Resolucion])).toBeNull();
+    expect(diasPorPunto([{ dias: 5, tarea: unaTarea({ clave: CLAVE }) } as Resolucion])).toEqual({
+      dias: null,
+      sobre: 0,
+      puntos: 0,
+    });
+  });
+
+  /** Con suficientes sí, y el cociente viene con sobre cuántas se calculó (regla 3). */
+  it('con cinco estimadas da el cociente, y dice sobre cuántas', () => {
+    const medidas = Array.from({ length: 5 }, () => ({
+      dias: 6,
+      tarea: unaTarea({ clave: CLAVE, esfuerzo: 3 }),
+    })) as Resolucion[];
+    expect(diasPorPunto(medidas)).toEqual({ dias: 2, sobre: 5, puntos: 15 });
   });
 });
 
@@ -431,5 +446,97 @@ describe('invariantes del reloj sobre árboles generados', () => {
       0,
     );
     expect(total, 'si sale 0, el generador dejó de producir tareas cerradas en sprint').toBeGreaterThan(100);
+  });
+});
+
+/**
+ * El defecto que encontró la revisión: un sprint que solo hubiera EMPEZADO antes del cierre
+ * se quedaba con la tarea, aunque el cierre ocurriera semanas después de que el sprint
+ * terminara. Devolvía veintitantos días — un número creíble y falso, que es peor que no dar
+ * ninguno.
+ */
+describe('el sprint tiene que CONTENER el cierre, no solo haber empezado antes', () => {
+  const cerradaFuera = (estadoSprint: 'cerrado' | 'activo') =>
+    conSprint([hecha(`${CLAVE}-T1`, '2026-09-20T00:00:00-06:00')], {
+      inicio: '2026-08-24',
+      fin: '2026-09-06',
+      estado: estadoSprint,
+      items: [unItem(`${CLAVE}-T1`)],
+    });
+
+  it('cerrada dos semanas DESPUÉS de que el sprint terminara: no es medible', () => {
+    expect(primera(cerradaFuera('cerrado')), 'serían 27 días que nadie comprometió').toBeNull();
+  });
+
+  /**
+   * La excepción: el sprint que sigue abierto y se pasó de su fecha de fin. Ahí el cierre
+   * SÍ ocurrió dentro del sprint — la fecha de fin solo era una intención.
+   */
+  it('un sprint abierto que se pasó de su fecha SÍ mide', () => {
+    expect(primera(cerradaFuera('activo'))?.dias).toBe(27);
+  });
+
+  it('cerrada dentro de la ventana se mide normal', () => {
+    const doc = conSprint([hecha(`${CLAVE}-T1`, '2026-09-06T00:00:00-06:00')], {
+      inicio: '2026-08-24',
+      fin: '2026-09-06',
+      items: [unItem(`${CLAVE}-T1`)],
+    });
+    expect(primera(doc)?.dias).toBe(13);
+  });
+
+  /**
+   * Una arrastrada que se cierra fuera del último sprint no cae al anterior: los dos
+   * quedan descartados y el resultado es `null`, no una medida contra un sprint viejo.
+   */
+  it('no cae al sprint anterior cuando el último tampoco la contiene', () => {
+    const doc = unDocumento({
+      proyectos: [
+        unProyecto({
+          clave: CLAVE,
+          epicas: [
+            unaEpica({
+              clave: CLAVE,
+              historias: [
+                unaHistoria({ clave: CLAVE, tareas: [hecha(`${CLAVE}-T1`, '2026-10-01T00:00:00-06:00')] }),
+              ],
+            }),
+          ],
+        }),
+      ],
+      sprints: [
+        unSprint({ id: 'S1', inicio: '2026-08-10', fin: '2026-08-23', estado: 'cerrado', items: [unItem(`${CLAVE}-T1`)] }),
+        unSprint({ id: 'S2', inicio: '2026-08-24', fin: '2026-09-06', estado: 'cerrado', items: [unItem(`${CLAVE}-T1`)] }),
+      ],
+    });
+    expect(primera(doc)).toBeNull();
+  });
+});
+
+/**
+ * El conteo de lo cerrado que NO se pudo medir. Sin él, «promedio sobre 5 tareas» parece
+ * hablar de todo el trabajo cuando puede estar hablando de un tercio.
+ */
+describe('cerradasSinMedirEnTodo', () => {
+  it('cuenta las hechas que ningún sprint contiene', () => {
+    const doc = conSprint(
+      [
+        hecha(`${CLAVE}-T1`, '2026-08-26T00:00:00-06:00'),
+        hecha(`${CLAVE}-T2`, '2026-08-26T00:00:00-06:00'),
+        hecha(`${CLAVE}-T3`, '2026-08-26T00:00:00-06:00'),
+      ],
+      { inicio: '2026-08-24', fin: '2026-09-06', items: [unItem(`${CLAVE}-T1`)] },
+    );
+    expect(resoluciones(doc)).toHaveLength(1);
+    expect(cerradasSinMedirEnTodo(doc), 'T2 y T3 nunca pasaron por el sprint').toBe(2);
+  });
+
+  it('no cuenta lo que sigue abierto', () => {
+    const doc = conSprint([unaTarea({ clave: CLAVE, estado: 'en_curso' })], {
+      inicio: '2026-08-24',
+      fin: '2026-09-06',
+      items: [],
+    });
+    expect(cerradasSinMedirEnTodo(doc)).toBe(0);
   });
 });

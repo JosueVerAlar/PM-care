@@ -112,12 +112,28 @@
    —es lo que hace que las flechas del teclado sean un `indice ± 1`—. Volver a anidar el
    marcado por una guía de 1px sería pagar el rendimiento y el teclado por una línea. */
 
-/* Columna fija: todas las claves alineadas a la derecha en los tres niveles. */
+/* ── LA CLAVE (N6) ────────────────────────────────────────────────
+   Se copia, no se lee. Conserva su columna fija aunque esté invisible: si apareciera y
+   desapareciera, el título cambiaría de ancho al pasar el ratón y el árbol entero
+   temblaría al recorrerlo con el cursor. Lo que cambia es la OPACIDAD, no el hueco. */
 .clave {
   flex: 0 0 88px; text-align: right;
   font-size: 11px; color: var(--tinta-3); letter-spacing: .02em;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border: 0; background: none; padding: 0; font-family: inherit; cursor: pointer;
+  opacity: 0;
+  transition: opacity 90ms linear;
 }
+
+/* Aparece con el ratón, con la selección y con el foco de teclado: las tres formas de
+   señalar una fila tienen que revelarla, o quien navega con teclado no podría copiar. */
+.fila:hover .clave,
+.fila[aria-selected="true"] .clave,
+.fila:focus-within .clave { opacity: 1; }
+
+/* Confirmación en el sitio: sin franja ni aviso. Copiar es reversible y de bajo riesgo,
+   así que la única señal que hace falta es que la acción respondió. */
+.clave--copiada { opacity: 1; color: var(--estado-hecha); font-weight: 600; }
 
 .fila .contador { margin-right: 2px; }
 

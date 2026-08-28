@@ -124,17 +124,26 @@ function arranqueEfectivo(
 }
 
 /**
- * En qué sprint se cerró la tarea.
+ * En qué sprint se cerró la tarea, o `null` si no se cerró dentro de ninguno.
  *
- * El que la tenía comprometida y ya había arrancado cuando se marcó hecha. Si varios
- * cumplen —una tarea arrastrada— gana el que arrancó más tarde: es el sprint durante el
- * cual se cerró de verdad.
+ * El sprint tiene que **contener** el cierre, no solo haber empezado antes. Sin la cota de
+ * arriba, una tarea que salió del sprint al cerrarlo y se terminó tres semanas después,
+ * fuera de todo compromiso, se atribuía a aquel sprint y devolvía veintitantos días: un
+ * número creíble y falso, que es peor que no dar ninguno.
+ *
+ * La excepción es el sprint todavía abierto que se pasó de su fecha de fin. Ahí el cierre
+ * SÍ ocurrió dentro del sprint —el sprint sigue vivo, la fecha solo era una intención— y
+ * medirlo es correcto.
+ *
+ * Si varios cumplen —una tarea arrastrada— gana el que arrancó más tarde.
  */
 function sprintDelCierre(doc: Documento, tareaId: string, hechaEn: Instante): Sprint | null {
+  const dia = fechaDe(hechaEn);
   let elegido: Sprint | null = null;
   for (const sprint of doc.sprints) {
     if (!sprint.items.some((item) => item.tarea_id === tareaId)) continue;
-    if (sprint.inicio > fechaDe(hechaEn)) continue;
+    if (sprint.inicio > dia) continue;
+    if (sprint.estado === 'cerrado' && dia > sprint.fin) continue;
     if (elegido === null || sprint.inicio > elegido.inicio) elegido = sprint;
   }
   return elegido;
@@ -347,14 +356,35 @@ export function sumarEsfuerzo(tareas: readonly Tarea[]): Esfuerzos {
  * permite ver si la escala de alguien está calibrada, y la única lectura honesta de
  * comparar estimado contra real: describe lo que pasó, no promete lo que va a pasar.
  */
-export function diasPorPunto(medidas: readonly Resolucion[]): number | null {
+export interface DiasPorPunto {
+  /** `null` por debajo del mínimo: un cociente sobre una tarea no calibra nada. */
+  dias: number | null;
+  /** Sobre cuántas tareas se calculó. Va SIEMPRE al lado del número (regla 3). */
+  sobre: number;
+  puntos: number;
+}
+
+export function diasPorPunto(medidas: readonly Resolucion[]): DiasPorPunto {
   let dias = 0;
   let puntos = 0;
+  let sobre = 0;
   for (const m of medidas) {
     if (m.tarea.esfuerzo === null) continue;
     dias += m.dias;
     puntos += m.tarea.esfuerzo;
+    sobre += 1;
   }
-  if (puntos === 0) return null;
-  return Math.round((dias / puntos) * 10) / 10;
+  if (puntos === 0) return { dias: null, sobre: 0, puntos: 0 };
+  return {
+    // El mismo mínimo que los promedios, y por lo mismo: con dos tareas el cociente dice
+    // más de cuáles tocaron que de cómo está calibrada la escala.
+    dias: sobre >= MINIMO_TAREAS_PARA_PROMEDIO ? Math.round((dias / puntos) * 10) / 10 : null,
+    sobre,
+    puntos,
+  };
+}
+
+/** Cuántas tareas se cerraron en todo el documento sin poder medirse. */
+export function cerradasSinMedirEnTodo(doc: Documento): number {
+  return cerradasSinMedir(doc, () => true);
 }

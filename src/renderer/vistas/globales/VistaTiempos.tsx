@@ -28,12 +28,14 @@ import { useMemo, useState } from 'react';
 
 import {
   MINIMO_TAREAS_PARA_PROMEDIO,
+  cerradasSinMedirEnTodo,
   diasPorPunto,
   promediar,
   resoluciones,
   tiempoPorEquipo,
   tiempoPorPersona,
   tiempoPorProyecto,
+  type DiasPorPunto,
   type FilaTiempo,
   type Promedio,
   type Resolucion,
@@ -61,7 +63,10 @@ export function VistaTiempos({ documento }: { documento: Documento }) {
   const { verGlobal } = useAccionesInterfaz();
 
   const medidas = useMemo(() => resoluciones(documento), [documento]);
-  const total = useMemo(() => promediar(medidas), [medidas]);
+  // El conteo de lo cerrado que no se pudo medir NO es opcional: sin él, «promedio sobre 5
+  // tareas» parece hablar de todo el trabajo cuando puede estar hablando de un tercio.
+  const sinMedir = useMemo(() => cerradasSinMedirEnTodo(documento), [documento]);
+  const total = useMemo(() => promediar(medidas, sinMedir), [medidas, sinMedir]);
   const porPunto = useMemo(() => diasPorPunto(medidas), [medidas]);
 
   const filas = useMemo<FilaTiempo[]>(() => {
@@ -79,7 +84,18 @@ export function VistaTiempos({ documento }: { documento: Documento }) {
             queHacer={
               <>
                 El reloj corre desde que arranca un sprint hasta que marcas la tarea como
-                hecha. Hace falta al menos una tarea cerrada dentro de un sprint.
+                hecha.{' '}
+                {sinMedir > 0 ? (
+                  // Decir «no hay nada» cuando SÍ hay tareas cerradas es la diferencia
+                  // entre «todavía no empiezas» y «lo que cierras no pasa por el sprint»,
+                  // que es un diagnóstico distinto y accionable.
+                  <>
+                    Hay {cuenta(sinMedir, 'tarea cerrada', 'tareas cerradas')}, pero ninguna
+                    pasó por un sprint, así que no hay contra qué medirlas.
+                  </>
+                ) : (
+                  <>Hace falta al menos una tarea cerrada dentro de un sprint.</>
+                )}
               </>
             }
             accion={{ texto: 'Ver el sprint', alPulsar: () => verGlobal('sprint') }}
@@ -128,7 +144,7 @@ function Resumen({
   medidas,
 }: {
   total: Promedio;
-  porPunto: number | null;
+  porPunto: DiasPorPunto;
   medidas: readonly Resolucion[];
 }) {
   const arrastradas = medidas.filter((m) => m.sprintsAtravesados > 1).length;
@@ -151,10 +167,12 @@ function Resumen({
         <span className="tiempos-cifra__n tabular">{total.cuentan}</span>
         <span className="tiempos-cifra__etq">{cuenta(total.cuentan, 'tarea medida', 'tareas medidas')}</span>
       </div>
-      {porPunto !== null && (
+      {porPunto.dias !== null && (
         <div className="tiempos-cifra">
-          <span className="tiempos-cifra__n tabular">{porPunto.toFixed(1)}</span>
-          <span className="tiempos-cifra__etq">días por punto de esfuerzo</span>
+          <span className="tiempos-cifra__n tabular">{porPunto.dias.toFixed(1)}</span>
+          <span className="tiempos-cifra__etq">
+            días por punto · sobre {cuenta(porPunto.sobre, 'tarea estimada', 'tareas estimadas')}
+          </span>
         </div>
       )}
 

@@ -71,6 +71,19 @@ export const GLOBALES: readonly EntradaGlobal[] = [
   },
 ];
 
+/**
+ * Lo que la barra lateral lista, que NO es todo el registro.
+ *
+ * N7 · **la frecuencia de uso decide la jerarquía de navegación, no la importancia
+ * organizacional.** «Equipos» se consulta una vez al mes; cada entrada que no es diaria
+ * diluye a las que sí lo son, y esta además aparecía dos veces en la misma barra —una en
+ * Vistas y otra en Administración—. La vista sigue existiendo y sigue siendo alcanzable:
+ * lo que se quitó es su sitio en el mapa mental de la app.
+ */
+export const EN_LATERAL: readonly EntradaGlobal[] = GLOBALES.filter(
+  (entrada) => entrada.id !== 'equipos',
+);
+
 const POR_ID = new Map(GLOBALES.map((entrada) => [entrada.id, entrada]));
 
 export function entradaGlobal(id: IdVistaGlobal): EntradaGlobal {
