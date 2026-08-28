@@ -110,6 +110,7 @@ const VERBO_DESHACER: Record<NombreComando, string> = {
   desactivarSprint: 'desactivar el sprint',
   bloquear: 'bloquear',
   desbloquear: 'desbloquear',
+  escribirRetrospectiva: 'escribir la retrospectiva de',
 };
 
 /**

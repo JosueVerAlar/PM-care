@@ -1276,6 +1276,8 @@ function aplicar(
         estado: 'planeado',
         clave: proyecto.clave,
         items: [],
+        // Se escribe al cerrar, no antes: nace sin nada que contar.
+        retrospectiva: null,
       };
       doc.sprints.push(sprint);
       return { ok: true, documento: doc, evento: anotar({ proyecto_id: proyecto.clave, sprint_id: sprint.id, resumen: `Sprint creado: ${sprint.nombre}` }) };
@@ -1299,6 +1301,48 @@ function aplicar(
       if (comando.inicio !== undefined) sprint.inicio = comando.inicio;
       if (comando.fin !== undefined) sprint.fin = comando.fin;
       return { ok: true, documento: doc, evento: anotar({ proyecto_id: sprint.clave, sprint_id: sprint.id, resumen: `Sprint editado: ${sprint.nombre}` }) };
+    }
+
+    /**
+     * La retrospectiva: el único comando cuya guarda es la CONTRARIA a la de los demás.
+     *
+     * Todos los que tocan un sprint empiezan rechazando si está cerrado (regla 8). Éste
+     * lo exige. La razón está escrita en el campo del esquema: la regla 8 protege lo que
+     * el sprint dice que PASÓ —desenlaces, responsables, fechas—, y una retro no toca
+     * ninguno de esos. Es una nota sobre el sprint, no parte de su registro.
+     *
+     * Sobre uno abierto se rechaza, y no por purismo: una retro escrita a mitad de sprint
+     * habla de algo que todavía está cambiando, y quedaría fechada como si fuera la
+     * conclusión.
+     */
+    case 'escribirRetrospectiva': {
+      const sprint = doc.sprints.find((s) => s.id === comando.sprintId);
+      if (sprint === undefined) return falta(`el sprint "${comando.sprintId}"`);
+      if (sprint.estado !== 'cerrado') {
+        return invalido(
+          `la retrospectiva de ${sprint.nombre} se escribe cuando el sprint cierra; ahora está ${sprint.estado}`,
+        );
+      }
+
+      // Vacío y `null` son lo mismo: dos formas de decir «no hay» son dos formas de que
+      // una vista pinte una nota en blanco creyendo que hay algo.
+      const texto = comando.texto === null || comando.texto.trim() === '' ? null : comando.texto.trim();
+      if (texto === sprint.retrospectiva) return sinCambios();
+      const habia = sprint.retrospectiva !== null;
+      sprint.retrospectiva = texto;
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          proyecto_id: sprint.clave,
+          sprint_id: sprint.id,
+          resumen:
+            texto === null
+              ? `Retrospectiva borrada: ${sprint.nombre}`
+              : `Retrospectiva ${habia ? 'reescrita' : 'escrita'}: ${sprint.nombre}`,
+        }),
+      };
     }
 
     case 'eliminarSprint': {
@@ -1894,6 +1938,7 @@ function crearSprintSiguiente(doc: Documento, anterior: Sprint, id: string): Spr
     estado: 'planeado',
     clave: anterior.clave,
     items: [],
+    retrospectiva: null,
   };
   doc.sprints.push(nuevo);
   return nuevo;

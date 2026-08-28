@@ -131,16 +131,18 @@ function casosPorComando(): { comando: Comando; doc: Documento }[] {
     { comando: { comando: 'editarSprint', sprintId: 'S-2', nombre: 'Renombrado' }, doc: conTodo },
     { comando: { comando: 'desactivarSprint', sprintId: 'S-1' }, doc: conSprints },
     { comando: { comando: 'eliminarSprint', sprintId: 'S-2' }, doc: conTodo },
+    // La única guarda invertida de la app: exige que el sprint esté CERRADO.
+    { comando: { comando: 'escribirRetrospectiva', sprintId: 'S-0', texto: 'Salió bien' }, doc: conTodo },
   ];
 }
 
-describe('la tabla de casos cubre los 37 comandos', () => {
+describe('la tabla de casos cubre los 38 comandos', () => {
   it('no falta ninguno de la unión discriminada: un comando nuevo sin caso pone esto en rojo', () => {
     const conCaso = new Set(casosPorComando().map((c) => c.comando.comando));
     const declarados = EsquemaComando.options.map(
       (opcion) => opcion.shape.comando.value as NombreComando,
     );
-    expect(declarados).toHaveLength(37);
+    expect(declarados).toHaveLength(38);
     expect([...declarados].filter((n) => !conCaso.has(n))).toEqual([]);
   });
 });
@@ -343,6 +345,7 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
   const comprometida = comprometidaEn(doc, sprint);
   const tareaDelSprint = comprometida !== null && rng() < 0.8 ? comprometida : tarea;
   const planeado = inv.sprints.filter((s) => s.estado === 'planeado');
+  const cerrados = inv.sprints.filter((s) => s.estado === 'cerrado');
   const sprintActivable = planeado.length > 0 && rng() < 0.8 ? elegir(rng, planeado).id : sprint;
   const talVez = <T>(valor: T): T | undefined => (rng() < 0.5 ? valor : undefined);
   // El padre de verdad casi siempre, y uno equivocado de vez en cuando: así se ejercitan
@@ -445,6 +448,13 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
       };
     },
     () => ({ comando: 'editarSprint', sprintId: sprint, nombre: talVez(`Sprint ${entero(rng, 1, 99)}`) }),
+    // Sobre uno cerrado casi siempre: es el único estado donde procede, y sin el sesgo la
+    // máquina mediría solo rechazos — el peor verde posible.
+    () => ({
+      comando: 'escribirRetrospectiva',
+      sprintId: cerrados.length > 0 && rng() < 0.8 ? elegir(rng, cerrados).id : sprint,
+      texto: rng() < 0.85 ? `Aprendimos ${entero(rng, 1, 99)}` : null,
+    }),
     // Sobre un planeado casi siempre: eliminar solo procede ahí y solo si está vacío.
     () => ({ comando: 'eliminarSprint', sprintId: planeado.length > 0 && rng() < 0.8 ? elegir(rng, planeado).id : sprint }),
     // Y sobre uno activo, que es el único estado desde el que desactivar procede.
@@ -620,7 +630,21 @@ describe('secuencias largas de comandos generados', () => {
     }
   });
 
-  it('regla 8: el sprint cerrado de partida sale igual que entró tras 60 comandos', () => {
+  /**
+   * La regla 8 se estrechó, no se aflojó: un sprint cerrado sigue siendo inmutable EN TODO
+   * salvo su `retrospectiva`, que por definición se escribe después de cerrar.
+   *
+   * Por eso la comparación excluye ese campo en vez de compararlo laxamente: si mañana
+   * `cerrarSprint` o cualquier otro comando tocara un desenlace, un responsable o una
+   * fecha de un sprint ya cerrado, esta prueba se pone en rojo igual que antes. La única
+   * puerta que se abrió mide exactamente un campo de ancho.
+   */
+  const sinRetro = (sprint: unknown) => {
+    const { retrospectiva: _ignorada, ...resto } = sprint as Record<string, unknown>;
+    return resto;
+  };
+
+  it('regla 8: el sprint cerrado de partida sale igual que entró, salvo su retrospectiva', () => {
     for (const semilla of SEMILLAS_COMANDOS.slice(0, 60)) {
       const rng = prng(semilla);
       let clave = 0;
@@ -634,7 +658,7 @@ describe('secuencias largas de comandos generados', () => {
       }
       const viejo = doc.sprints.find((s) => s.id === 'S-viejo');
       expect(viejo, `semilla ${semilla}: el sprint cerrado desapareció`).toBeDefined();
-      expect(viejo, `semilla ${semilla}: el sprint cerrado cambió`).toEqual(original);
+      expect(sinRetro(viejo), `semilla ${semilla}: el sprint cerrado cambió`).toEqual(sinRetro(original));
     }
   });
 
@@ -653,7 +677,7 @@ describe('secuencias largas de comandos generados', () => {
         doc = resultado.documento;
         for (const sprint of doc.sprints) {
           if (sprint.estado !== 'cerrado') continue;
-          const ahora = JSON.stringify(sprint);
+          const ahora = JSON.stringify(sinRetro(sprint));
           const antes = congelados.get(sprint.id);
           if (antes !== undefined && antes !== ahora) {
             throw new Error(

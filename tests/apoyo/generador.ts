@@ -227,6 +227,8 @@ export function unDocumentoAleatorio(rng: Aleatorio, semilla: number): Documento
       fin: `2026-06-${fin}`,
       estado: cerrado ? ('cerrado' as const) : ('activo' as const),
       clave: suyo === null ? null : suyo.clave,
+      // Solo lo cerrado puede tener retro, y no siempre: la mayoría se queda sin escribir.
+      retrospectiva: cerrado && rng() < 0.4 ? `Retro del sprint ${i + 1}` : null,
       items: disponibles.map((tareaId) => ({
         tarea_id: tareaId,
         responsable: null,

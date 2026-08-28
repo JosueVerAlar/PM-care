@@ -405,6 +405,21 @@ export const EsquemaSprint = z
      * fuentes de orden divergen en cuanto alguien arrastra una fila.
      */
     items: z.array(EsquemaItemSprint).default([]),
+    /**
+     * Qué se aprendió, escrito DESPUÉS de cerrar.
+     *
+     * Es el único campo de un sprint cerrado que se puede escribir, y la excepción está
+     * razonada en la regla 8: esa regla existe para que no se reescriba **lo que el
+     * sprint dice que pasó** —desenlaces, responsables, fechas—, y una retrospectiva no
+     * toca ninguno de esos. Es una nota SOBRE el sprint, no parte de su registro.
+     *
+     * Se escribe después porque así ocurre: la retro es una reunión de uno o dos días
+     * más tarde, no un campo que se rellena mientras se pulsa «cerrar». Obligar a
+     * escribirla en ese momento es la forma de que se quede vacía siempre.
+     *
+     * Aditivo con `.default(null)`: no sube `ESQUEMA_VERSION`.
+     */
+    retrospectiva: z.string().nullable().default(null),
   })
   .passthrough()
   .superRefine((sprint, ctx) => {

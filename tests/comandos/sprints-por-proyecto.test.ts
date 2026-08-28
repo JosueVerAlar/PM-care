@@ -114,3 +114,67 @@ describe('el nombre propuesto sigue la cuenta del proyecto', () => {
     expect(doc.sprints[0]?.nombre).toBe('Arranque');
   });
 });
+
+/**
+ * La retrospectiva: la única excepción a la regla 8, y mide exactamente un campo de ancho.
+ *
+ * Se escribe DESPUÉS de cerrar porque así ocurre — la retro es una reunión de uno o dos
+ * días más tarde. Obligar a escribirla en el momento de pulsar «cerrar» es la forma de
+ * que se quede vacía siempre.
+ */
+describe('la retrospectiva de un sprint cerrado', () => {
+  const conSprint = (estado: 'planeado' | 'activo' | 'cerrado') =>
+    unDocumento({
+      // El contador tiene que reflejar el id que ya se usó: un `UNO-S1` con el contador
+      // en cero es un documento inválido, y con razón — la app volvería a emitir ese id.
+      proyectos: [unProyecto({ clave: 'UNO', epicas: [], contadores: { epicas: 0, historias: 0, tareas: 0, sprints: 1 } })],
+      sprints: [unSprint({ id: 'UNO-S1', clave: 'UNO', estado })],
+    });
+
+  const escribir = (doc: Documento, texto: string | null) =>
+    reducir(doc, { comando: 'escribirRetrospectiva', sprintId: 'UNO-S1', texto }, AHORA);
+
+  it('se escribe sobre uno cerrado', () => {
+    const doc = exigirOk(escribir(conSprint('cerrado'), 'Nos faltó QA')).documento;
+    expect(doc.sprints[0]?.retrospectiva).toBe('Nos faltó QA');
+  });
+
+  /** Una retro a mitad de sprint habla de algo que todavía está cambiando. */
+  it('se rechaza sobre uno activo y sobre uno planeado', () => {
+    expect(exigirError(escribir(conSprint('activo'), 'x')).codigo).toBe('invalido');
+    expect(exigirError(escribir(conSprint('planeado'), 'x')).codigo).toBe('invalido');
+  });
+
+  it('se puede reescribir: una retro se corrige', () => {
+    let doc = exigirOk(escribir(conSprint('cerrado'), 'Primera')).documento;
+    doc = exigirOk(reducir(doc, { comando: 'escribirRetrospectiva', sprintId: 'UNO-S1', texto: 'Corregida' }, AHORA)).documento;
+    expect(doc.sprints[0]?.retrospectiva).toBe('Corregida');
+  });
+
+  /** Vacío y `null` son lo mismo, o una vista pintaría una nota en blanco creyendo que hay algo. */
+  it('el texto vacío se guarda como null, no como cadena vacía', () => {
+    let doc = exigirOk(escribir(conSprint('cerrado'), 'Algo')).documento;
+    doc = exigirOk(reducir(doc, { comando: 'escribirRetrospectiva', sprintId: 'UNO-S1', texto: '   ' }, AHORA)).documento;
+    expect(doc.sprints[0]?.retrospectiva).toBeNull();
+  });
+
+  /**
+   * Lo que la excepción NO abre: escribir la retro no puede convertirse en la puerta por
+   * la que se corrige el nombre o las fechas de un sprint cerrado.
+   */
+  it('no toca ningún otro campo del sprint cerrado', () => {
+    const antes = conSprint('cerrado');
+    const original = JSON.parse(JSON.stringify(antes.sprints[0]));
+    const doc = exigirOk(escribir(antes, 'Una nota')).documento;
+    const { retrospectiva: _r, ...resto } = doc.sprints[0] as Record<string, unknown>;
+    const { retrospectiva: _o, ...restoOriginal } = original as Record<string, unknown>;
+    expect(resto).toEqual(restoOriginal);
+  });
+
+  it('`editarSprint` sigue rechazado sobre un cerrado, retro o no', () => {
+    const doc = exigirOk(escribir(conSprint('cerrado'), 'Nota')).documento;
+    expect(
+      exigirError(reducir(doc, { comando: 'editarSprint', sprintId: 'UNO-S1', nombre: 'Otro' }, AHORA)).codigo,
+    ).toBe('sprint-cerrado');
+  });
+});

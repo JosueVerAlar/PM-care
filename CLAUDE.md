@@ -80,7 +80,18 @@ en un solo lugar.
 7. **`historial.jsonl` append-only desde el día uno**, aunque nada lo grafique todavía.
    Cada evento lleva `proyecto_id` y `origen` **desnormalizados**: si el reporte depende del
    árbol vivo, la historia se reescribe sola al reorganizar algo.
-8. **Los sprints cerrados son inmutables.** Ningún comando los modifica.
+8. **Los sprints cerrados son inmutables, salvo su `retrospectiva`.** Ningún comando toca
+   un desenlace, un responsable, una fecha, un item ni el nombre de un sprint cerrado.
+   La única excepción es `escribirRetrospectiva`, y es un comando aparte —no un campo de
+   `editarSprint`— justamente para que la puerta mida un campo de ancho: si la retro
+   viajara dentro de `editarSprint` habría que abrirle el comando entero a los cerrados.
+   *Por qué se admite:* la regla protege **lo que el sprint dice que pasó**, y una retro no
+   toca nada de eso — es una nota SOBRE el sprint. Se escribe después de cerrar porque así
+   ocurre: la retro es una reunión de uno o dos días más tarde, y obligar a escribirla al
+   pulsar «cerrar» es la forma de que se quede vacía siempre. Sobre un sprint abierto se
+   rechaza: una retro a mitad de sprint habla de algo que todavía está cambiando.
+   *Verificable:* la máquina de invariantes compara el sprint cerrado **excluyendo solo ese
+   campo**; cualquier otro cambio la pone en rojo igual que antes.
 9. **Las mutaciones van por comandos con nombre** (`moverAlSprint`, `cerrarSprint`,
    `bloquear`, `capturar`). *Verificable:* el renderer nunca envía el documento completo por
    IPC; grep de `enviar(` no debe mostrar payloads del documento entero.

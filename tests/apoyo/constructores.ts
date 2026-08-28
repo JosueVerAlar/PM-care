@@ -186,6 +186,8 @@ export function unSprint(over: Partial<Sprint> = {}): Sprint {
      */
     clave: null,
     items: [],
+    // Se escribe DESPUÉS de cerrar (regla 8, su única excepción): nace sin nada.
+    retrospectiva: null,
     ...over,
   };
 }

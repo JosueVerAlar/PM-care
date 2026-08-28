@@ -496,6 +496,26 @@ const EditarSprint = z.object({
   fin: EsquemaSprint.shape.fin.optional(),
 }).strict();
 
+/**
+ * La retrospectiva: el ÚNICO comando que toca un sprint cerrado.
+ *
+ * Va aparte de `editarSprint` a propósito, y no como un campo más suyo. `editarSprint`
+ * está prohibido sobre un sprint cerrado, y si la retro viajara dentro habría que abrirle
+ * la puerta al comando entero — con el nombre y las fechas colándose por ella. Un comando
+ * propio permite que la guarda sea la contraria a la de todos los demás: éste **exige**
+ * que el sprint esté cerrado.
+ *
+ * `null` borra la retro. Un texto vacío también, normalizado en el reductor: dos formas de
+ * decir «no hay» son dos formas de que una vista pinte una nota en blanco.
+ */
+const EscribirRetrospectiva = z
+  .object({
+    comando: z.literal('escribirRetrospectiva'),
+    sprintId: Id,
+    texto: z.string().nullable(),
+  })
+  .strict();
+
 const EliminarSprint = z.object({ comando: z.literal('eliminarSprint'), sprintId: Id }).strict();
 const DesactivarSprint = z.object({ comando: z.literal('desactivarSprint'), sprintId: Id }).strict();
 
@@ -570,6 +590,7 @@ export const EsquemaComando = z.discriminatedUnion('comando', [
   EditarSprint,
   EliminarSprint,
   DesactivarSprint,
+  EscribirRetrospectiva,
   Bloquear,
   Desbloquear,
   EditarEquipo,
