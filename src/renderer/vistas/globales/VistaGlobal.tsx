@@ -13,7 +13,6 @@ import type { IdVistaGlobal } from '../../estado/interfaz';
 import { VistaBacklog } from './VistaBacklog';
 import { VistaBloqueos } from './VistaBloqueos';
 import { VistaCarga } from './VistaCarga';
-import { VistaEquipos } from './VistaEquipos';
 import { VistaPanorama } from './VistaPanorama';
 import { VistaSprintGlobal } from './VistaSprintGlobal';
 import { VistaTerminadas } from './VistaTerminadas';
@@ -43,7 +42,5 @@ export function VistaGlobal({
       return <VistaCarga documento={documento} hoy={hoy} />;
     case 'tiempos':
       return <VistaTiempos documento={documento} />;
-    case 'equipos':
-      return <VistaEquipos documento={documento} />;
   }
 }

@@ -1,6 +1,16 @@
 /**
- * La barra lateral: las siete vistas globales, la lista de proyectos y las tres secciones
- * de Administración.
+ * La barra lateral: cuatro grupos nombrados por lo que se hace en cada uno.
+ *
+ *     HOY        lo que pide una decisión ahora
+ *     PROYECTOS  la lista, con su `＋` para dar de alta
+ *     REGISTRO   lo que ya pasó
+ *     GENTE      quién trae qué
+ *
+ * Antes eran «Vistas», «Proyectos» y «Administración». Las dos que se fueron nombraban la
+ * CATEGORÍA de lo que había dentro, no lo que había dentro — y «Administración» dejó
+ * además de ser cierta al fusionarse Equipos, que ahora se edita desde su propia pantalla.
+ * Una etiqueta vaga no cuesta un clic: cuesta abrir dos grupos para recordar en cuál
+ * estaba lo que se busca.
  *
  * Los contadores de bloqueadas se derivan del documento, nunca se guardan. Un contador
  * en cero no se pinta: una columna de ceros entrena a no mirar la columna.
@@ -19,7 +29,7 @@ import { ContadorBloqueos } from '../componentes/Chips';
 import { Icono } from '../componentes/iconos';
 import { useAccionesInterfaz, type Vista } from '../estado/interfaz';
 import { SECCIONES_ADMIN } from '../vistas/administracion/VistaAdministracion';
-import { EN_LATERAL } from '../vistas/globales/registro';
+import { GLOBALES, type EntradaGlobal, type GrupoLateral } from '../vistas/globales/registro';
 
 export function BarraLateral({
   documento,
@@ -39,6 +49,9 @@ export function BarraLateral({
 }) {
   const { verProyecto, verGlobal, verAdmin } = useAccionesInterfaz();
 
+  /** Las vistas de un grupo, en el orden en que están escritas en el registro. */
+  const porGrupo = (grupo: GrupoLateral) => GLOBALES.filter((entrada) => entrada.grupo === grupo);
+
   const bloqueosTotales = useMemo(() => paraVistaBloqueos(documento).length, [documento]);
   const activo = useMemo(() => sprintActivo(documento), [documento]);
 
@@ -57,36 +70,43 @@ export function BarraLateral({
   );
 
   return (
-    <nav className="lateral" aria-label="Vistas, proyectos y administración">
+    <nav className="lateral" aria-label="Hoy, proyectos, registro y gente">
       <div className="lat-grupo">
-        <h2 className="lat-titulo">Vistas</h2>
-        {EN_LATERAL.map((entrada) => (
-          <button
+        <h2 className="lat-titulo">Hoy</h2>
+        {porGrupo('hoy').map((entrada) => (
+          <ItemGlobal
             key={entrada.id}
-            type="button"
-            className="lat-item"
-            title={entrada.texto}
-            // El nombre accesible es explícito porque en rail el texto se oculta con
-            // CSS: sin esto, con la lateral colapsada el botón se anunciaría vacío.
-            aria-label={entrada.texto}
-            aria-current={vista?.tipo === 'global' && vista.id === entrada.id}
-            onClick={() => verGlobal(entrada.id)}
-          >
-            <span className="lat-item__icono">
-              <Icono nombre={entrada.icono} />
-            </span>
-            <span className="lat-item__texto">
-              {entrada.id === 'sprint' && activo ? activo.nombre : entrada.texto}
-            </span>
-            {entrada.id === 'bloqueos' && <ContadorBloqueos n={bloqueosTotales} />}
-          </button>
+            entrada={entrada}
+            activa={vista?.tipo === 'global' && vista.id === entrada.id}
+            alPulsar={() => verGlobal(entrada.id)}
+            // Solo las de HOY llevan datos vivos en la etiqueta: el sprint se llama por su
+            // nombre real y los bloqueos traen su contador. En REGISTRO y GENTE no hay
+            // nada que contar que no sea abrir la vista.
+            texto={entrada.id === 'sprint' && activo ? activo.nombre : entrada.texto}
+            contador={entrada.id === 'bloqueos' ? bloqueosTotales : undefined}
+          />
         ))}
       </div>
 
       <div className="lat-sep" />
 
       <div className="lat-grupo">
-        <h2 className="lat-titulo">Proyectos</h2>
+        <h2 className="lat-titulo">
+          Proyectos
+          <span className="crece" />
+          {/* Dar de alta un proyecto se hacía entrando a «Administración · Proyectos», que
+              es un sitio que hay que saber que existe. El `＋` está donde ya se mira la
+              lista, que es donde uno se da cuenta de que falta uno. */}
+          <button
+            type="button"
+            className="lat-mas"
+            title="Dar de alta un proyecto"
+            aria-label="Dar de alta un proyecto"
+            onClick={() => verAdmin('proyectos')}
+          >
+            +
+          </button>
+        </h2>
         {proyectos.length === 0 && <p className="lat-vacio">No hay proyectos capturados.</p>}
         {proyectos.map((p) => (
           <button
@@ -114,17 +134,40 @@ export function BarraLateral({
 
       <div className="lat-sep" />
 
-      {/* Administración va al final y en su propio grupo: no es una vista de consulta más,
-          es donde se edita el catálogo del que dependen todas las de arriba. */}
       <div className="lat-grupo">
-        <h2 className="lat-titulo">Administración</h2>
-        {SECCIONES_ADMIN.map((seccion) => (
+        <h2 className="lat-titulo">Registro</h2>
+        {porGrupo('registro').map((entrada) => (
+          <ItemGlobal
+            key={entrada.id}
+            entrada={entrada}
+            activa={vista?.tipo === 'global' && vista.id === entrada.id}
+            alPulsar={() => verGlobal(entrada.id)}
+          />
+        ))}
+      </div>
+
+      <div className="lat-sep" />
+
+      {/* GENTE junta las dos vistas de personas con la edición de equipos. Antes estaban
+          repartidas entre «Vistas» y «Administración» con el mismo sustantivo en las dos,
+          que era la causa de que «Equipos» apareciera dos veces en la misma barra. */}
+      <div className="lat-grupo">
+        <h2 className="lat-titulo">Gente</h2>
+        {porGrupo('gente').map((entrada) => (
+          <ItemGlobal
+            key={entrada.id}
+            entrada={entrada}
+            activa={vista?.tipo === 'global' && vista.id === entrada.id}
+            alPulsar={() => verGlobal(entrada.id)}
+          />
+        ))}
+        {SECCIONES_ADMIN.filter((seccion) => seccion.id !== 'proyectos').map((seccion) => (
           <button
             key={seccion.id}
             type="button"
             className="lat-item"
-            title={`Administrar ${seccion.texto.toLowerCase()}`}
-            aria-label={`Administración · ${seccion.texto}`}
+            title={seccion.texto}
+            aria-label={seccion.texto}
             aria-current={vista?.tipo === 'admin' && vista.seccion === seccion.id}
             onClick={() => verAdmin(seccion.id)}
           >
@@ -136,5 +179,45 @@ export function BarraLateral({
         ))}
       </div>
     </nav>
+  );
+}
+
+/**
+ * Una entrada de vista global en la lateral.
+ *
+ * Existe porque el mismo botón se pinta en tres grupos, y tres copias del marcado son tres
+ * sitios donde el `aria-current` puede quedarse sin actualizar.
+ */
+function ItemGlobal({
+  entrada,
+  activa,
+  alPulsar,
+  texto,
+  contador,
+}: {
+  entrada: EntradaGlobal;
+  activa: boolean;
+  alPulsar: () => void;
+  /** Sustituye al del registro cuando la vista tiene un nombre vivo (el sprint activo). */
+  texto?: string;
+  contador?: number;
+}) {
+  return (
+    <button
+      type="button"
+      className="lat-item"
+      title={entrada.texto}
+      // El nombre accesible es explícito porque en rail el texto se oculta con CSS: sin
+      // esto, con la lateral colapsada el botón se anunciaría vacío.
+      aria-label={entrada.texto}
+      aria-current={activa}
+      onClick={alPulsar}
+    >
+      <span className="lat-item__icono">
+        <Icono nombre={entrada.icono} />
+      </span>
+      <span className="lat-item__texto">{texto ?? entrada.texto}</span>
+      {contador !== undefined && <ContadorBloqueos n={contador} />}
+    </button>
   );
 }

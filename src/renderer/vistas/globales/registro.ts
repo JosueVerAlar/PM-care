@@ -13,11 +13,24 @@
 import type { NombreIcono } from '../../componentes/iconos';
 import type { IdVistaGlobal } from '../../estado/interfaz';
 
+/**
+ * Los grupos de la barra lateral, nombrados por lo que se va a HACER en ellos.
+ *
+ * Antes eran «Vistas» y «Administración»: dos etiquetas que dicen de qué categoría es algo
+ * en vez de qué hay dentro. «Administración» además dejó de ser cierta al fusionarse
+ * Equipos — ya no es «donde se edita el catálogo», porque se edita desde su propia
+ * pantalla. Una etiqueta vaga no cuesta un clic más: cuesta abrir dos grupos para
+ * averiguar en cuál estaba lo que se buscaba.
+ */
+export type GrupoLateral = 'hoy' | 'registro' | 'gente';
+
 export interface EntradaGlobal {
   id: IdVistaGlobal;
   icono: NombreIcono;
   texto: string;
   pregunta: string;
+  /** Dónde vive en la lateral. Ver `GrupoLateral`. */
+  grupo: GrupoLateral;
 }
 
 export const GLOBALES: readonly EntradaGlobal[] = [
@@ -26,63 +39,51 @@ export const GLOBALES: readonly EntradaGlobal[] = [
     icono: 'panorama',
     texto: 'Panorama',
     pregunta: '¿A cuál de los proyectos le tengo que meter mano hoy?',
+    grupo: 'hoy',
   },
   {
     id: 'sprint',
     icono: 'sprint',
     texto: 'Sprint',
     pregunta: 'Todo lo comprometido esta quincena, cruzando los proyectos.',
+    grupo: 'hoy',
   },
   {
     id: 'bloqueos',
     icono: 'bloqueos',
     texto: 'Bloqueos',
     pregunta: '¿Qué está atorado, desde hace cuánto y qué lo destraba?',
+    grupo: 'hoy',
   },
   {
     id: 'terminadas',
     icono: 'terminadas',
     texto: 'Terminadas',
     pregunta: '¿Qué se cerró en cada sprint? Es el registro que se copia a fin de mes.',
+    grupo: 'registro',
   },
   {
     id: 'backlog',
     icono: 'backlog',
     texto: 'Backlog del área',
     pregunta: 'Todas las tareas capturadas, agrupables y filtrables.',
+    grupo: 'registro',
   },
   {
     id: 'carga',
     icono: 'carga',
     texto: 'Carga por persona',
     pregunta: 'Cuánto trae cada quien y entre cuántos proyectos está repartido.',
+    grupo: 'gente',
   },
   {
     id: 'tiempos',
     icono: 'tiempos',
     texto: 'Tiempos',
     pregunta: '¿Cuánto se tarda en cerrar una tarea, y quién arrastra las más lentas?',
-  },
-  {
-    id: 'equipos',
-    icono: 'equipos',
-    texto: 'Equipos',
-    pregunta: 'Quién está en cada proyecto y con qué rol.',
+    grupo: 'registro',
   },
 ];
-
-/**
- * Lo que la barra lateral lista, que NO es todo el registro.
- *
- * N7 · **la frecuencia de uso decide la jerarquía de navegación, no la importancia
- * organizacional.** «Equipos» se consulta una vez al mes; cada entrada que no es diaria
- * diluye a las que sí lo son, y esta además aparecía dos veces en la misma barra —una en
- * Vistas y otra en Administración—. La vista sigue existiendo y sigue siendo alcanzable:
- * lo que se quitó es su sitio en el mapa mental de la app.
- */
-export const EN_LATERAL: readonly EntradaGlobal[] = GLOBALES.filter(
-  (entrada) => entrada.id !== 'equipos',
-);
 
 const POR_ID = new Map(GLOBALES.map((entrada) => [entrada.id, entrada]));
 

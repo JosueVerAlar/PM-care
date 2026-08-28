@@ -33,7 +33,6 @@ export type IdVistaGlobal =
   | 'terminadas'
   | 'backlog'
   | 'carga'
-  | 'equipos'
   | 'tiempos';
 
 /**
@@ -183,6 +182,15 @@ export interface EstadoInterfaz {
    * misma persona, y escribirlo diez veces es lo que hace que se deje de escribir.
    */
   ultimaPersona: string | null;
+  /**
+   * Lo que se acaba de borrar y todavía se puede recuperar de un clic.
+   *
+   * Eliminar es la única mutación que no deja rastro en pantalla de lo que había: el resto
+   * se ven porque el dato cambia a la vista. Ofrecer «Deshacer» en el momento es lo que
+   * permite que la app no pregunte «¿seguro?» en cada borrado — la confirmación se reserva
+   * para lo que se lleva hijos por delante, y para todo lo demás basta con poder volver.
+   */
+  revertible: string | null;
 }
 
 /*
@@ -217,7 +225,8 @@ type AccionInterfaz =
   | { tipo: 'arrastrar'; arrastre: Arrastre | null }
   | { tipo: 'confirmar'; confirmacion: Confirmacion | null }
   | { tipo: 'avisar'; aviso: string | null }
-  | { tipo: 'recordarPersona'; personaId: string | null };
+  | { tipo: 'recordarPersona'; personaId: string | null }
+  | { tipo: 'ofrecerDeshacer'; que: string | null };
 
 
 const INICIAL: EstadoInterfaz = {
@@ -236,6 +245,7 @@ const INICIAL: EstadoInterfaz = {
   confirmacion: null,
   aviso: null,
   ultimaPersona: null,
+  revertible: null,
 };
 
 
@@ -363,6 +373,8 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
       return estado.aviso === accion.aviso ? estado : { ...estado, aviso: accion.aviso };
     case 'recordarPersona':
       return { ...estado, ultimaPersona: accion.personaId };
+    case 'ofrecerDeshacer':
+      return estado.revertible === accion.que ? estado : { ...estado, revertible: accion.que };
   }
 }
 
@@ -402,6 +414,8 @@ export interface AccionesInterfaz {
   confirmar(confirmacion: Confirmacion | null): void;
   avisar(aviso: string | null): void;
   recordarPersona(personaId: string | null): void;
+  /** Ofrece recuperar lo que se acaba de borrar. `null` retira la oferta. */
+  ofrecerDeshacer(que: string | null): void;
 }
 
 
@@ -436,6 +450,7 @@ export function ProveedorInterfaz({ children }: { children: ReactNode }) {
       confirmar: (confirmacion) => despachar({ tipo: 'confirmar', confirmacion }),
       avisar: (aviso) => despachar({ tipo: 'avisar', aviso }),
       recordarPersona: (personaId) => despachar({ tipo: 'recordarPersona', personaId }),
+      ofrecerDeshacer: (que) => despachar({ tipo: 'ofrecerDeshacer', que }),
     }),
     [],
   );

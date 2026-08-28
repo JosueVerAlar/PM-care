@@ -4,17 +4,19 @@
  * Existe porque los tres canales visuales solo funcionan si se sabe leerlos, y porque el
  * color de estado nunca viaja solo: aquí cada glifo aparece con su nombre.
  *
- * Lleva además la fila de atajos. No es adorno ni ayuda opcional: es lo único que dice
- * qué tecla hace qué, y el usuario pidió expresamente conservarlo. Se oculta en la
- * pestaña «Terminadas», donde ninguno de esos atajos aplica.
+ * ## Lo que se fue de aquí, y a dónde
  *
- * ## E13 — lo que se fue
+ * La fila de nueve atajos. Era lo ÚNICO que decía qué tecla hace qué, y por eso no se pudo
+ * quitar antes. Ahora cada tecla aparece dentro del menú `⋯` de la fila, al lado de la
+ * acción que ejecuta —que es donde se aprende sin buscarla— y la referencia completa vive
+ * en el panel `?`. Una lista de nueve teclas en un pie se lee una vez y nunca más.
  *
- * Los dos renglones de nota que explicaban el MODELO —que el bloqueo es bandera y no
- * estado, que las canceladas no cuentan, que se arrastra por el texto y por el asa—. Las
- * dos primeras son reglas del producto y no cambian por leerlas cada día; la tercera hacía
- * falta solo porque el asa estaba escondida, y ahora se ve. Un texto se queda si nombra un
- * control o una tecla; se va si explica una regla.
+ * Queda el glosario, que es otra cosa: los canales visuales solo funcionan si se sabe
+ * leerlos, y esto es lo único que traduce un glifo a una palabra sin abrir nada.
+ *
+ * Antes se fueron los dos renglones que explicaban el MODELO —que el bloqueo es bandera y
+ * no estado, que las canceladas no cuentan—. No desaparecieron: están en «Cómo se lee» del
+ * panel `?`, que es donde se consultan cuando hacen falta en vez de leerse cada día.
  */
 
 
@@ -29,22 +31,7 @@ const ESTADOS: { forma: FormaEstado; etiqueta: string }[] = [
   { forma: 'sindesglosar', etiqueta: 'Sin desglosar' },
 ];
 
-const ATAJOS: { tecla: string; que: string }[] = [
-  { tecla: 'S', que: 'al sprint' },
-  { tecla: 'Espacio', que: 'estado' },
-  { tecla: 'Enter', que: 'renombrar' },
-  { tecla: 'N', que: 'capturar' },
-  { tecla: 'B', que: 'bloqueo' },
-  { tecla: 'C', que: 'cancelar' },
-  { tecla: '⌫', que: 'eliminar' },
-  // El equivalente por teclado del arrastre por el asa. Va en la leyenda por lo mismo que
-  // `S`: el asa solo se ve al pasar por encima, y en ventana angosta arrastrar no es una
-  // opción cómoda. Quien no descubra el asa tiene que poder reordenar igual.
-  { tecla: '⌥↑↓', que: 'reordenar' },
-  { tecla: '⌘Z', que: 'deshacer' },
-];
-
-export function Leyenda({ editable }: { editable: boolean }) {
+export function Leyenda({ editable, abrirAyuda }: { editable: boolean; abrirAyuda: () => void }) {
   return (
     <footer className="leyenda" aria-label="Leyenda">
       {ESTADOS.map(({ forma, etiqueta }) => (
@@ -68,13 +55,20 @@ export function Leyenda({ editable }: { editable: boolean }) {
       </span>
 
       {editable && (
-        <p className="leyenda__atajos" aria-label="Atajos de teclado sobre la fila enfocada">
-          {ATAJOS.map(({ tecla, que }) => (
-            <span className="leyenda__atajo" key={tecla}>
-              <kbd>{tecla}</kbd> {que}
-            </span>
-          ))}
-        </p>
+        <>
+          <span className="crece" />
+          {/* La puerta a la ayuda se ve siempre: un panel que solo se abre con una tecla
+              que nada menciona no es ayuda, es otro requisito de memoria. */}
+          <button
+            type="button"
+            className="leyenda__ayuda"
+            title="Teclas y cómo se lee el árbol (?)"
+            onClick={abrirAyuda}
+          >
+            <span aria-hidden="true">?</span>
+            <span className="solo-lectores">Teclas y cómo se lee el árbol</span>
+          </button>
+        </>
       )}
 
     </footer>

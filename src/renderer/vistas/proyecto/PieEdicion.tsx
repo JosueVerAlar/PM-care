@@ -206,7 +206,13 @@ function FormularioCaptura({
       </div>
       {/* E13 · solo la CONFIRMACIÓN de lo que acaba de pasar. La explicación de que Enter
           encadena y Esc cierra se fue: el primer Enter lo enseña mejor que la frase. */}
-      {ultimo !== null && <p className="pie-edicion__pista">Capturada «{ultimo}».</p>}
+      {/* Región viva: capturar deja el campo vacío y el árbol crecido más abajo, así que
+          sin esto quien no ve la pantalla no tiene forma de saber si la tecla hizo algo.
+          `role="status"` es cortés — anuncia cuando el lector termine lo que está leyendo,
+          no lo interrumpe a media palabra. */}
+      <p className="pie-edicion__pista" role="status" aria-live="polite">
+        {ultimo !== null && `Capturada «${ultimo}».`}
+      </p>
 
     </div>
   );

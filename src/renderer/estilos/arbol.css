@@ -163,3 +163,87 @@
   font-size: 11px; font-weight: 600; color: var(--tinta-3);
   padding: 0 3px; border-radius: 3px; background: var(--chip-fondo);
 }
+
+/* ── EL MENÚ ⋯ DE LA FILA ─────────────────────────────────────────
+   Un `<select>` nativo disfrazado de botón. Se ve SIEMPRE: un menú puede estar cerrado,
+   su puerta no — esconderlo tras el hover es exactamente lo que hacía invisible la acción
+   más frecuente de la app.
+
+   `appearance: none` le quita el chevron y la caja de formulario. Lo que NO se le quita es
+   el comportamiento: teclado, Escape, flechas y el posicionamiento que nunca se sale de la
+   pantalla siguen siendo del sistema, que es la razón entera de haberlo elegido. */
+.fila__menu {
+  flex: 0 0 auto; width: 24px; height: 24px;
+  appearance: none; -webkit-appearance: none;
+  border: 0; border-radius: 5px; background: none;
+  color: var(--tinta-3); font-size: 13px; line-height: 1;
+  text-align: center; text-align-last: center;
+  cursor: pointer; padding: 0;
+}
+.fila__menu:hover { background: var(--seleccion); color: var(--tinta-1); }
+.fila__menu:focus-visible { outline: 2px solid var(--foco); outline-offset: -1px; }
+
+/* El desplegable abierto SÍ es una lista del sistema y hereda su tipografía: no se estiliza
+   por dentro —no se puede de forma fiable en macOS— y ese es el trato que se aceptó. */
+.fila__menu option { font-size: 13px; }
+
+/* ── LA PUERTA A LA AYUDA ─────────────────────────────────────────
+   Se ve siempre. Un panel que solo se abre con una tecla que nada menciona no es ayuda:
+   es otro requisito de memoria, que es justo lo que la leyenda de atajos venía a tapar. */
+.leyenda__ayuda {
+  flex: 0 0 auto; width: 24px; height: 24px;
+  border: 1px solid var(--hairline); border-radius: 50%;
+  background: var(--fondo-panel); color: var(--tinta-2);
+  font-size: 12px; font-weight: 600; cursor: pointer; line-height: 1;
+}
+.leyenda__ayuda:hover { background: var(--hover); color: var(--tinta-1); }
+.leyenda__ayuda:focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; }
+
+/* ── EL PANEL ? ───────────────────────────────────────────────────
+   Cubre la ventana porque lo que explica vale para los dos paneles, no solo para el árbol.
+   El velo es tenue: esto es consulta, no una decisión que haya que tomar antes de seguir. */
+.capa-ayuda {
+  position: fixed; inset: 0; z-index: 40;
+  background: color-mix(in srgb, var(--tinta-1) 22%, transparent);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+
+.ayuda {
+  background: var(--fondo-elevado); color: var(--tinta-1);
+  border: 1px solid var(--hairline); border-radius: 10px;
+  width: min(760px, 100%); max-height: 100%; overflow: auto;
+  box-shadow: 0 12px 40px color-mix(in srgb, var(--tinta-1) 20%, transparent);
+}
+.ayuda:focus { outline: none; }
+
+.ayuda__cab {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-bottom: 1px solid var(--hairline);
+  position: sticky; top: 0; background: var(--fondo-elevado);
+}
+.ayuda__titulo { font-size: 14px; font-weight: 600; flex: 1; }
+
+/* Dos columnas mientras quepan: las dos listas de teclas son cortas y ponerlas una debajo
+   de otra obligaría a desplazarse para comparar. «Cómo se lee» ocupa el ancho entero
+   porque son frases, no pares. */
+.ayuda__cuerpo {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 4px 28px; padding: 14px 16px 18px;
+}
+.ayuda__seccion--ancha { grid-column: 1 / -1; }
+.ayuda__sub {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--tinta-3); margin: 10px 0 6px;
+}
+.ayuda__lista { display: flex; flex-direction: column; gap: 5px; }
+.ayuda__par { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: baseline; }
+.ayuda__par dd { font-size: 12.5px; color: var(--tinta-2); line-height: 17px; }
+.ayuda__que { font-size: 12.5px; font-weight: 600; }
+.ayuda__nota { font-size: 11.5px; color: var(--tinta-3); margin-top: 8px; line-height: 16px; }
+
+.ayuda kbd {
+  display: inline-block; padding: 1px 6px; min-width: 22px; text-align: center;
+  border: 1px solid var(--hairline); border-bottom-width: 2px; border-radius: 4px;
+  background: var(--fondo-panel); font-family: var(--fuente-tec); font-size: 11px;
+  color: var(--tinta-2);
+}

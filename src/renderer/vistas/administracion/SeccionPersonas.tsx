@@ -3,7 +3,7 @@
  *
  * ## Alta sin ceremonia
  *
- * El nombre y a qué equipos pertenece. Nada más. **El identificador se deriva solo** del
+ * El nombre y un proyecto inicial opcional. Nada más. **El identificador se deriva solo** del
  * nombre (`Ana García` → `ana-garcia`) y lo emite el reductor: no se le pregunta al
  * usuario por un dato que no le importa y que además no va a poder cambiar nunca —el id
  * está copiado en cada `tarea.responsable` y en cada item de sprint, incluidos los
@@ -20,12 +20,10 @@
  * lugar. Se muestra tal cual en la franja de aviso; aquí solo se ANTICIPA con qué está
  * atada, para que el usuario no llegue al rechazo sin saber por qué.
  *
- * ## Los equipos se editan desde las dos direcciones
+ * ## Los equipos se editan desde un solo lugar
  *
- * Aquí, marcando en qué proyectos está una persona; y en la sección Equipos, armando el
- * equipo de un proyecto. Es la misma relación (`proyecto.equipo`) leída al derecho y al
- * revés, no dos datos que puedan discrepar. Desde aquí no se pone rol: el rol es del
- * equipo, y se pone donde se ve el equipo entero.
+ * La ficha solo lee en qué proyectos está una persona. La conformación y el rol se cambian
+ * en Equipos, donde la relación se ve completa y no puede quedar a medio editar.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -41,8 +39,6 @@ import { useMutar, useSoloLectura } from '../../estado/mutaciones';
 import { cuenta, nombreSinClave, tareas as cuentaTareas } from '../../util/presentacion';
 import { Lienzo } from '../globales/piezas';
 
-import { Marca } from './piezas-admin';
-
 export function SeccionPersonas({ documento }: { documento: Documento }) {
   const mutar = useMutar();
   const soloLectura = useSoloLectura();
@@ -50,7 +46,6 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
   const personas = useMemo(() => personasParaAdmin(documento), [documento]);
   const activas = personas.filter((persona) => persona.activa);
   const inactivas = personas.filter((persona) => !persona.activa);
-  const enVarios = activas.filter((persona) => persona.equipos.length > 1);
 
   /** Los proyectos a los que se puede adscribir a alguien: los que están en marcha. */
   const proyectos = useMemo(
@@ -65,7 +60,7 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
   );
 
   const [nombre, setNombre] = useState('');
-  const [equipos, setEquipos] = useState<string[]>([]);
+  const [proyectoInicial, setProyectoInicial] = useState('');
   const [editando, setEditando] = useState<string | null>(null);
   const [borrando, setBorrando] = useState<string | null>(null);
 
@@ -79,12 +74,16 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
   const crear = async () => {
     if (!puedeCrear) return;
     const ok = await mutar(
-      { comando: 'crearPersona', nombre: nombre.trim(), equipos },
+      {
+        comando: 'crearPersona',
+        nombre: nombre.trim(),
+        equipos: proyectoInicial === '' ? [] : [proyectoInicial],
+      },
       `Dar de alta a ${nombre.trim()}`,
     );
     if (!ok) return;
     setNombre('');
-    setEquipos([]);
+    setProyectoInicial('');
   };
 
   return (
@@ -123,45 +122,31 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
                 </button>
               </div>
 
-              <div className="campo campo--chips">
-                <span className="campo__etq" id="alta-pers-equipos">
-                  ¿A qué equipos?
-                </span>
+              <label className="campo">
+                <span className="campo__etq">Proyecto inicial (opcional)</span>
                 {proyectos.length === 0 ? (
                   <p className="bloque__nota">
                     No hay proyectos activos a los que adscribirla. Se puede dar de alta igual y
                     meterla a un equipo después.
                   </p>
                 ) : (
-                  <div className="chips-sel" role="group" aria-labelledby="alta-pers-equipos">
-                    {proyectos.map((proyecto) => {
-                      const dentro = equipos.includes(proyecto.clave);
-                      return (
-                        <button
-                          type="button"
-                          key={proyecto.clave}
-                          className="chip-sel"
-                          aria-pressed={dentro}
-                          onClick={() =>
-                            setEquipos((previos) =>
-                              dentro
-                                ? previos.filter((clave) => clave !== proyecto.clave)
-                                : [...previos, proyecto.clave],
-                            )
-                          }
-                        >
-                          <Marca marcado={dentro} />
-                          {proyecto.clave} · {proyecto.nombre}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <select
+                    value={proyectoInicial}
+                    onChange={(evento) => setProyectoInicial(evento.target.value)}
+                  >
+                    <option value="">Sin proyecto inicial</option>
+                    {proyectos.map((proyecto) => (
+                      <option key={proyecto.clave} value={proyecto.clave}>
+                        {proyecto.clave} · {proyecto.nombre}
+                      </option>
+                    ))}
+                  </select>
                 )}
-              </div>
+              </label>
 
               <p className="alta__pie">
-                Dos cosas y ya. El rol dentro de cada equipo se pone después, desde Equipos; se
-                puede dejar en blanco todo el tiempo que haga falta.
+                El proyecto inicial es opcional. El rol dentro del equipo se pone después,
+                desde Equipos; se puede dejar en blanco todo el tiempo que haga falta.
                 {idPropuesto !== '' && (
                   <>
                     {' '}
@@ -195,7 +180,6 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
                   <FilaPersona
                     key={persona.id}
                     persona={persona}
-                    proyectos={proyectos}
                     soloLectura={soloLectura}
                     editando={editando === persona.id}
                     alEditar={() => setEditando(editando === persona.id ? null : persona.id)}
@@ -207,12 +191,6 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
                         `Renombrar a ${persona.nombre}`,
                       );
                     }}
-                    alCambiarEquipos={(claves) =>
-                      void mutar(
-                        { comando: 'editarPersona', id: persona.id, equipos: claves },
-                        `Cambiar los equipos de ${persona.nombre}`,
-                      )
-                    }
                     alDesactivar={() =>
                       void mutar(
                         { comando: 'desactivarPersona', id: persona.id },
@@ -335,21 +313,17 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
 
 function FilaPersona({
   persona,
-  proyectos,
   soloLectura,
   editando,
   alEditar,
   alRenombrar,
-  alCambiarEquipos,
   alDesactivar,
 }: {
   persona: FilaPersonaAdmin;
-  proyectos: readonly { clave: string; nombre: string }[];
   soloLectura: boolean;
   editando: boolean;
   alEditar: () => void;
   alRenombrar: (nombre: string) => void;
-  alCambiarEquipos: (claves: string[]) => void;
   alDesactivar: () => void;
 }) {
   const [borrador, setBorrador] = useState(persona.nombre);
@@ -398,48 +372,14 @@ function FilaPersona({
       </span>
 
       <span className="fila-persona__equipos">
-        {soloLectura ? (
-          claves.length === 0 ? (
-            <span className="etiqueta etiqueta--vacio">Sin equipo</span>
-          ) : (
-            persona.equipos.map((equipo) => (
-              <span className="etiqueta" key={equipo.clave} title={equipo.nombre}>
-                {equipo.clave}
-              </span>
-            ))
-          )
+        {claves.length === 0 ? (
+          <span className="etiqueta etiqueta--vacio">Sin equipo</span>
         ) : (
-          <span
-            className="chips-sel chips-sel--fila"
-            role="group"
-            aria-label={`Equipos de ${persona.nombre}`}
-          >
-            {/* Los equipos a los que pertenece van PRIMERO: con once proyectos, una fila de
-                once chips en orden fijo obliga a leerlos todos para saber en cuáles está.
-                Ordenados, la pertenencia se lee de un golpe y el resto queda de fondo. */}
-            {ordenarPorPertenencia(proyectos, claves).map((proyecto) => {
-              const dentro = claves.includes(proyecto.clave);
-              return (
-                <button
-                  type="button"
-                  key={proyecto.clave}
-                  className={`chip-sel chip-sel--mini${dentro ? '' : ' chip-sel--fuera'}`}
-                  aria-pressed={dentro}
-                  title={`${dentro ? 'Quitar de' : 'Meter a'} ${proyecto.nombre}`}
-                  onClick={() =>
-                    alCambiarEquipos(
-                      dentro
-                        ? claves.filter((clave) => clave !== proyecto.clave)
-                        : [...claves, proyecto.clave],
-                    )
-                  }
-                >
-                  <Marca marcado={dentro} />
-                  {proyecto.clave}
-                </button>
-              );
-            })}
-          </span>
+          persona.equipos.map((equipo) => (
+            <span className="etiqueta" key={equipo.clave} title={equipo.nombre}>
+              {equipo.clave}
+            </span>
+          ))
         )}
         {claves.length > 1 && <span className="multi">en {claves.length} equipos</span>}
       </span>
@@ -467,17 +407,6 @@ function FilaPersona({
       </span>
     </div>
   );
-}
-
-/** Los proyectos a los que pertenece, primero; los demás después. Estable dentro de cada
- *  mitad para que los chips no salten de sitio al marcar y desmarcar. */
-function ordenarPorPertenencia<T extends { clave: string }>(
-  proyectos: readonly T[],
-  claves: readonly string[],
-): T[] {
-  const dentro = proyectos.filter((proyecto) => claves.includes(proyecto.clave));
-  const fuera = proyectos.filter((proyecto) => !claves.includes(proyecto.clave));
-  return [...dentro, ...fuera];
 }
 
 /** Con qué está atada. Es lo que explica por qué eliminar se va a rechazar. */

@@ -235,7 +235,12 @@
 .pie-edicion__que { font-size: 11.5px; color: var(--tinta-2); margin-bottom: 7px; }
 .pie-edicion__que .clave { display: inline; flex: none; }
 .pie-edicion__fila { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
-.pie-edicion__pista { margin-top: 6px; font-size: 11px; color: var(--tinta-3); }
+/* La región viva existe SIEMPRE aunque esté vacía: un `aria-live` que se monta al mismo
+   tiempo que su contenido no se anuncia, porque el lector no tenía nada que vigilar. Por
+   eso reserva su renglón en vez de aparecer y desaparecer. */
+.pie-edicion__pista {
+  margin-top: 6px; font-size: 11px; color: var(--tinta-3); min-height: 14px;
+}
 
 /* ── formulario de compromiso ─────────────────────────────────── */
 
@@ -292,21 +297,9 @@
 .dialogo__detalle { font-size: 12.5px; line-height: 18px; color: var(--tinta-2); }
 .dialogo__pie { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
 
-/* ── atajos en la leyenda ─────────────────────────────────────── */
-
-.leyenda__atajos {
-  flex-basis: 100%;
-  display: flex; flex-wrap: wrap; gap: 4px 12px;
-  color: var(--tinta-3);
-}
-.leyenda__atajo { display: inline-flex; align-items: center; gap: 4px; }
-.leyenda__atajos kbd {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 16px; height: 16px; padding: 0 4px;
-  border: 1px solid var(--hairline); border-radius: 3px;
-  background: var(--fondo-panel); color: var(--tinta-2);
-  font-family: inherit; font-size: 10px; font-weight: 600;
-}
+/* Aquí vivían los estilos de la fila de atajos de la leyenda. Se fueron con ella: las
+   teclas están ahora en el menú `⋯` de cada fila y en el panel `?`, pegadas a la acción
+   que ejecutan en vez de en una lista que hay que leer entera. */
 
 /* ── ESCALA DE ESFUERZO ───────────────────────────────────────────
    «Sin estimar» es el primer botón y no un hueco: es una respuesta válida, y la más
@@ -325,3 +318,18 @@
   border-color: var(--solido-fondo);
 }
 .escala button:focus-visible { outline: 2px solid var(--foco); outline-offset: 1px; }
+
+/* ── LA FRANJA DE «DESHACER» ──────────────────────────────────────
+   Misma métrica que la franja de aviso para que ocupen el mismo hueco, pero tinta NEUTRA:
+   un borrado que se revierte de un clic no es un error, y pintarlo de rojo enseñaría a
+   temer una acción que la app quiere que se use sin miedo — es lo que permite no preguntar
+   «¿seguro?» en cada borrado. */
+.franja-revertir {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 14px;
+  background: var(--chip-fondo);
+  border-bottom: 1px solid var(--hairline);
+  color: var(--tinta-2); font-size: 12.5px;
+}
+.franja-revertir__texto { min-width: 0; }

@@ -14,7 +14,10 @@
 .lat-grupo { padding: 0 8px; }
 
 .lat-titulo {
-  padding: 14px 8px 5px;
+  /* Flex porque el encabezado puede llevar una acción a la derecha; hoy solo la de
+     PROYECTOS, que da de alta donde uno se da cuenta de que falta un proyecto. */
+  display: flex; align-items: center;
+  padding: 9px 8px 5px 8px;
   font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
   text-transform: uppercase; color: var(--tinta-3);
 }
@@ -79,3 +82,15 @@
   }
   .lat-item .contador svg { display: none; }
 }
+
+.lat-mas {
+  flex: 0 0 auto; width: 24px; height: 24px;
+  border: 0; border-radius: 5px; background: none;
+  color: var(--tinta-3); font-size: 15px; line-height: 1; cursor: pointer;
+}
+.lat-mas:hover { background: var(--seleccion); color: var(--tinta-1); }
+.lat-mas:focus-visible { outline: 2px solid var(--foco); outline-offset: -1px; }
+
+/* En rail de 48 px el título del grupo se oculta, y con él su acción: ahí no cabe y el
+   `＋` quedaría flotando sin contexto. Se recupera al desplegar la lateral. */
+.app--rail .lat-mas { display: none; }

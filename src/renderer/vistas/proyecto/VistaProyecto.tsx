@@ -18,7 +18,7 @@
  *   ni se suelta ni se ilumina.
  */
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { avanceDeProyecto, sprintActivo, tareasDe } from '../../../compartido/dominio/derivar';
 import { estaHecha } from '../../../compartido/dominio/clasificar';
@@ -33,6 +33,7 @@ import { esArrastreDeTarea, TIPO_TAREA } from '../../util/arrastre';
 import { useDosPaneles } from '../../util/medios';
 import { Arbol } from './Arbol';
 import { Leyenda } from './Leyenda';
+import { PanelAyuda } from './PanelAyuda';
 import { PanelSprint } from './PanelSprint';
 import { PieEdicion } from './PieEdicion';
 
@@ -78,6 +79,25 @@ export function VistaProyecto({
 
   // --- zona de soltar: devolver una tarea del sprint al árbol ---------------
   const [sobre, setSobre] = useState(false);
+  /** El panel `?`. No se recuerda entre visitas: una ayuda que se queda abierta estorba. */
+  const [ayuda, setAyuda] = useState(false);
+
+  // `?` abre la ayuda. Se escucha en la ventana y no en el árbol porque también sirve
+  // desde el panel del sprint, y se calla dentro de un campo de texto: ahí `?` es texto.
+  useEffect(() => {
+    const escucha = (evento: KeyboardEvent) => {
+      if (evento.key !== '?' || evento.metaKey || evento.ctrlKey) return;
+      const destino = evento.target;
+      if (destino instanceof HTMLElement) {
+        const etiqueta = destino.tagName;
+        if (etiqueta === 'INPUT' || etiqueta === 'TEXTAREA' || destino.isContentEditable) return;
+      }
+      evento.preventDefault();
+      setAyuda(true);
+    };
+    window.addEventListener('keydown', escucha);
+    return () => window.removeEventListener('keydown', escucha);
+  }, []);
   const profundidad = useRef(0);
   const aceptaSoltar = editable && arrastre?.origen === 'sprint';
 
@@ -192,7 +212,8 @@ export function VistaProyecto({
           dosPaneles={dosPaneles}
         />
 
-        <Leyenda editable={editable} />
+        <Leyenda editable={editable} abrirAyuda={() => setAyuda(true)} />
+        {ayuda && <PanelAyuda cerrar={() => setAyuda(false)} />}
       </section>
 
       <PanelSprint

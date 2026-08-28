@@ -165,6 +165,157 @@ function bordeDe(evento: React.DragEvent): Borde {
 }
 
 /**
+ * Lo que el menú `⋯` de una fila puede hacer. Ocho como techo, y es un techo duro.
+ *
+ * Un `⋯` es, por definición, un nombre que no dice nada — el «cajón de sastre» del que
+ * avisa la literatura de menús. Se compensa con dos cosas y ninguna es opcional: su nombre
+ * accesible es específico («Acciones de SICOE-104», nunca «Más»), y **en cuanto haga falta
+ * un noveno ítem el problema no es el menú: es que se añadió una función que nadie pidió**.
+ */
+type AccionFila =
+  | 'estado'
+  | 'sprint'
+  | 'renombrar'
+  | 'bloquear'
+  | 'cancelar'
+  | 'subir'
+  | 'bajar'
+  | 'eliminar';
+
+/** Un ítem del menú: qué dice, qué tecla hace lo mismo, y en qué grupo cae. */
+interface ItemMenu {
+  accion: AccionFila;
+  texto: string;
+  tecla: string;
+  /** Los grupos separan lo benigno de lo destructivo. Ver `MenuFila`. */
+  grupo: 'hacer' | 'mover' | 'quitar';
+}
+
+/**
+ * Los ítems que tienen sentido para ESTA fila, ya redactados.
+ *
+ * Los verbos nombran lo que va a pasar —«Marcar en curso», no «Cambiar estado»— porque un
+ * ítem que no deja predecir su efecto obliga a probarlo para saber qué hace. De paso
+ * resuelve algo que la pantalla no decía por ningún lado: que el glifo de 14 px se puede
+ * pulsar.
+ */
+function itemsDeFila(fila: Fila, admiteSprint: boolean): ItemMenu[] {
+  const items: ItemMenu[] = [];
+
+  if (fila.tipo === 'tarea') {
+    items.push({
+      accion: 'estado',
+      texto: `Marcar ${etiquetaDeTarea(CICLO[fila.tarea.estado]).toLowerCase()}`,
+      tecla: 'Espacio',
+      grupo: 'hacer',
+    });
+    if (admiteSprint) {
+      items.push({ accion: 'sprint', texto: 'Al sprint', tecla: 'S', grupo: 'hacer' });
+    }
+  } else if (fila.tipo === 'historia') {
+    items.push({ accion: 'sprint', texto: 'Mandar sus tareas al sprint', tecla: 'S', grupo: 'hacer' });
+  }
+
+  items.push({ accion: 'renombrar', texto: 'Renombrar', tecla: 'F2', grupo: 'hacer' });
+
+  if (fila.tipo === 'tarea') {
+    const bloqueada = bloqueoAbierto(fila.tarea) !== null;
+    items.push({
+      accion: 'bloquear',
+      texto: bloqueada ? 'Quitar la bandera de bloqueo' : 'Bloquear…',
+      tecla: 'B',
+      grupo: 'hacer',
+    });
+    items.push({
+      accion: 'cancelar',
+      texto: fila.tarea.estado === 'cancelada' ? 'Revivir' : 'Cancelar',
+      tecla: 'C',
+      grupo: 'hacer',
+    });
+  }
+
+  // Reordenar solo se ofrece si hay entre quiénes: con una sola hermana no hay nada que
+  // mover, y un ítem que no puede hacer nada enseña que el menú miente.
+  if (reordenable(fila.orden)) {
+    items.push({ accion: 'subir', texto: 'Subir', tecla: '⌥↑', grupo: 'mover' });
+    items.push({ accion: 'bajar', texto: 'Bajar', tecla: '⌥↓', grupo: 'mover' });
+  }
+
+  items.push({ accion: 'eliminar', texto: 'Eliminar', tecla: '⌫', grupo: 'quitar' });
+  return items;
+}
+
+const GRUPOS: readonly { id: ItemMenu['grupo']; etiqueta: string }[] = [
+  { id: 'hacer', etiqueta: 'Sobre esta fila' },
+  { id: 'mover', etiqueta: 'Orden' },
+  { id: 'quitar', etiqueta: 'Cuidado' },
+];
+
+/**
+ * El menú `⋯` de la fila. Es un `<select>` nativo, y es una decisión, no una rendija.
+ *
+ * Con ocho ítems, sin submenús y sin íconos por acción, un desplegable nativo trae gratis
+ * lo que un menú a mano cuesta doscientas líneas de hacer bien: foco atrapado, `Escape`,
+ * flechas, y un posicionamiento que nunca se sale de la pantalla. Además lo anuncia
+ * cualquier lector de pantalla sin que nadie escriba una sola propiedad ARIA.
+ *
+ * **El día que este menú necesite lo primero que un `<select>` no hace** —un ícono por
+ * acción, un ítem que se quede abierto, un submenú— se migra a un menú propio, y ese día
+ * se escribe aquí cuál fue.
+ *
+ * Los `<optgroup>` son el separador: «Eliminar» vive solo, al fondo y en su propio grupo,
+ * porque juntar lo destructivo con lo benigno es de los errores más caros de una interfaz
+ * y aquí cuesta un recorrido más largo a propósito.
+ */
+function MenuFila({
+  fila,
+  items,
+  ejecutar,
+}: {
+  fila: Fila;
+  items: readonly ItemMenu[];
+  ejecutar: (fila: Fila, accion: AccionFila) => void;
+}) {
+  return (
+    <select
+      className="fila__menu"
+      // El árbol tiene UNA parada de tabulador; este control no puede abrir trescientas.
+      tabIndex={-1}
+      value=""
+      // Específico a propósito: «Más» sería el nombre que no dice nada del que avisa la
+      // literatura de menús contextuales.
+      aria-label={`Acciones de ${fila.id}`}
+      title={`Acciones de ${fila.id}`}
+      onClick={(evento) => evento.stopPropagation()}
+      onChange={(evento) => {
+        const accion = evento.target.value as AccionFila | '';
+        // Se devuelve al placeholder SIEMPRE: esto dispara acciones, no guarda un valor, y
+        // dejarlo mostrando la última haría creer que la fila está «en» ese estado.
+        evento.target.value = '';
+        if (accion !== '') ejecutar(fila, accion);
+      }}
+    >
+      <option value="">⋯</option>
+      {GRUPOS.map((grupo) => {
+        const suyos = items.filter((item) => item.grupo === grupo.id);
+        if (suyos.length === 0) return null;
+        return (
+          <optgroup key={grupo.id} label={grupo.etiqueta}>
+            {suyos.map((item) => (
+              // La tecla va al lado del texto, que es lo que permite borrar la leyenda de
+              // atajos del pie: pegada a la acción que ejecuta, no en una lista aparte.
+              <option key={item.accion} value={item.accion}>
+                {item.texto} · {item.tecla}
+              </option>
+            ))}
+          </optgroup>
+        );
+      })}
+    </select>
+  );
+}
+
+/**
  * La clave (`SICOE-104`), que se COPIA y no se lee.
  *
  * N6 · nadie se orienta escaneando «SICOE-104, SICOE-105, SICOE-106»: se orienta por el
@@ -271,6 +422,7 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
     redactar,
     confirmar,
     avisar,
+    ofrecerDeshacer,
   } = useAccionesInterfaz();
 
   const mutar = useMutar();
@@ -425,8 +577,12 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
   const eliminar = useCallback(
     (fila: Fila) => {
       if (fila.tipo === 'tarea') {
-        // Sin hijos que llevarse por delante no hay pregunta: deshacer es más barato.
-        void mutar({ comando: 'eliminarTarea', id: fila.id }, `Eliminar ${fila.id}`);
+        // Sin hijos que llevarse por delante no hay pregunta: deshacer es más barato. Pero
+        // «más barato» solo es cierto si se OFRECE: una tarea borrada no deja rastro en
+        // pantalla de lo que había, y ⌘Z no sirve si no se te ocurre pulsarlo.
+        void mutar({ comando: 'eliminarTarea', id: fila.id }, `Eliminar ${fila.id}`).then((ok) => {
+          if (ok) ofrecerDeshacer(`${fila.id} eliminada`);
+        });
         return;
       }
       const tareas =
@@ -437,7 +593,9 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
             ? { comando: 'eliminarEpica', id: fila.id }
             : { comando: 'eliminarHistoria', id: fila.id },
           `Eliminar ${fila.id}`,
-        );
+        ).then((ok) => {
+          if (ok) ofrecerDeshacer(`${fila.id} eliminada`);
+        });
         return;
       }
       confirmar({
@@ -447,7 +605,7 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
         tareas,
       });
     },
-    [confirmar, mutar],
+    [confirmar, mutar, ofrecerDeshacer],
   );
 
   const capturarEn = useCallback(
@@ -502,12 +660,55 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
     [mutar, redactar],
   );
 
+  /**
+   * Lo que hace cada ítem del menú `⋯`, reusando EXACTAMENTE las funciones del teclado.
+   *
+   * No hay una segunda implementación de nada: si mañana `S` deja de mandar al sprint, el
+   * menú deja de hacerlo también. Dos caminos que hacen «lo mismo» por dos rutas distintas
+   * es la forma en que las interfaces se desincronizan sin que ninguna prueba lo note.
+   */
+
   const cambiarEstado = useCallback(
     (tarea: Tarea, estado: EstadoTarea) => {
       if (estado === tarea.estado) return;
       void mutar({ comando: 'cambiarEstado', id: tarea.id, estado }, `Cambiar estado de ${tarea.id}`);
     },
     [mutar],
+  );
+
+  const ejecutarAccion = useCallback(
+    (fila: Fila, accion: AccionFila) => {
+      switch (accion) {
+        case 'estado':
+          if (fila.tipo === 'tarea') cambiarEstado(fila.tarea, CICLO[fila.tarea.estado]);
+          return;
+        case 'sprint':
+          if (fila.tipo === 'tarea') void acciones.mover(fila.tarea);
+          else if (fila.tipo === 'historia') void acciones.moverLote(fila.historia);
+          return;
+        case 'renombrar':
+          redactar({ tipo: 'titulo', id: fila.id, clase: fila.tipo });
+          return;
+        case 'bloquear':
+          if (fila.tipo === 'tarea') alternarBloqueo(fila.tarea);
+          return;
+        case 'cancelar':
+          if (fila.tipo === 'tarea') {
+            cambiarEstado(fila.tarea, fila.tarea.estado === 'cancelada' ? 'pendiente' : 'cancelada');
+          }
+          return;
+        case 'subir':
+          void reordenar(fila, fila.orden.indice - 1);
+          return;
+        case 'bajar':
+          void reordenar(fila, fila.orden.indice + 1);
+          return;
+        case 'eliminar':
+          eliminar(fila);
+          return;
+      }
+    },
+    [acciones, alternarBloqueo, cambiarEstado, eliminar, redactar, reordenar],
   );
 
   const alTeclado = useCallback(
@@ -728,6 +929,7 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
             enfocar={enfocarNodo}
             capturar={capturarConBoton}
             cambiarEstado={cambiarEstado}
+            ejecutar={ejecutarAccion}
 
             registrar={(nodo) => {
               if (nodo === null) nodos.current.delete(fila.id);
@@ -765,6 +967,8 @@ interface PropsFila {
   /** Abre la captura dentro de esta fila. Solo lo usan las que pueden tener hijos. */
   capturar: (fila: Fila) => void;
   cambiarEstado: (tarea: Tarea, estado: EstadoTarea) => void;
+  /** Lo que hace el menú `⋯`. Comparte implementación con el teclado, no la duplica. */
+  ejecutar: (fila: Fila, accion: AccionFila) => void;
   registrar: (nodo: HTMLDivElement | null) => void;
 }
 
@@ -784,6 +988,7 @@ function FilaArbol({
   enfocar,
   capturar,
   cambiarEstado,
+  ejecutar,
   registrar,
 }: PropsFila) {
 
@@ -921,20 +1126,11 @@ function FilaArbol({
           </span>
         )}
         {fila.enSprint && <ChipNeutro texto="en el sprint" titulo="Comprometida en el sprint activo" />}
-        {arrastrable && (
-          <button
-            type="button"
-            className="fila__accion"
-            tabIndex={-1}
-            title={`Mandar ${tarea.id} al sprint (S)`}
-            onClick={(evento) => {
-              evento.stopPropagation();
-              void acciones.mover(tarea);
-            }}
-          >
-            Al sprint
-          </button>
-        )}
+        {/* «Al sprint» era un botón que solo aparecía al pasar el ratón: la acción más
+            frecuente de la app, escondida. Ahora es el primer ítem del `⋯`, que se ve
+            siempre. La tecla `S` no cambia y pasa a ser lo que debía: la vía rápida de
+            quien ya se la sabe. */}
+        {editable && <MenuFila fila={fila} items={itemsDeFila(fila, arrastrable)} ejecutar={ejecutar} />}
         <Clave id={tarea.id} />
       </div>
     );
@@ -1031,6 +1227,7 @@ function FilaArbol({
       </button>
       <Medidor avance={fila.avance} conBarra={esEpica} />
 
+      {editable && <MenuFila fila={fila} items={itemsDeFila(fila, false)} ejecutar={ejecutar} />}
       <Clave id={fila.id} />
     </div>
   );

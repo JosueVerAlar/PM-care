@@ -18,6 +18,8 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { Arbol } from '../../src/renderer/vistas/proyecto/Arbol';
+import { Leyenda } from '../../src/renderer/vistas/proyecto/Leyenda';
+import { PanelAyuda } from '../../src/renderer/vistas/proyecto/PanelAyuda';
 import { ProveedorAlmacen } from '../../src/renderer/estado/almacen';
 import { ProveedorInterfaz } from '../../src/renderer/estado/interfaz';
 import { unProyecto, unaEpica, unaHistoria, unaTarea } from '../apoyo/constructores';
@@ -281,5 +283,144 @@ describe('la clave se copia, no se lee (N6)', () => {
   it('ocupa su sitio aunque esté invisible', () => {
     const { container } = montar(conTarea());
     expect(container.querySelector('.clave')).not.toBeNull();
+  });
+});
+
+describe('el menú ⋯ de la fila', () => {
+  const conTarea = () =>
+    unProyecto({
+      clave: CLAVE,
+      epicas: [],
+      tareas: [unaTarea({ clave: CLAVE, id: 'PM-T1', titulo: 'Una tarea' })],
+    });
+
+  function montarEditable(proyecto: ReturnType<typeof unProyecto>) {
+    return render(
+      <ProveedorAlmacen>
+        <ProveedorInterfaz>
+          <Arbol proyecto={proyecto} sprint={undefined} hoy={HOY} etiqueta="Backlog" editable />
+        </ProveedorInterfaz>
+      </ProveedorAlmacen>,
+    );
+  }
+
+  /**
+   * El nombre accesible es específico a propósito: un `⋯` no dice nada por sí mismo, y
+   * «Más» lo dejaría igual de mudo para quien no ve el icono.
+   */
+  it('se nombra por la fila a la que pertenece, no «Más»', () => {
+    montarEditable(conTarea());
+    expect(screen.getByRole('combobox', { name: 'Acciones de PM-T1' })).toBeTruthy();
+  });
+
+  /** El techo de ocho es duro: el noveno ítem significa una función que nadie pidió. */
+  it('nunca ofrece más de ocho acciones', () => {
+    montarEditable(conTarea());
+    const menu = screen.getByRole('combobox', { name: 'Acciones de PM-T1' });
+    const acciones = menu.querySelectorAll('option[value]:not([value=""])');
+    expect(acciones.length).toBeLessThanOrEqual(8);
+    expect(acciones.length).toBeGreaterThan(0);
+  });
+
+  /** Cada acción trae su tecla al lado: es lo que permitió borrar la leyenda de atajos. */
+  it('cada acción dice con qué tecla se hace', () => {
+    montarEditable(conTarea());
+    const menu = screen.getByRole('combobox', { name: 'Acciones de PM-T1' });
+    for (const opcion of menu.querySelectorAll('option[value]:not([value=""])')) {
+      expect(opcion.textContent, opcion.textContent ?? '').toMatch(/ · .+$/);
+    }
+  });
+
+  /** «Marcar en curso» nombra lo que va a pasar, no «Cambiar estado». */
+  it('el estado se nombra por su destino', () => {
+    montarEditable(conTarea());
+    expect(screen.getByRole('option', { name: /Marcar en curso/ })).toBeTruthy();
+  });
+
+  /** Eliminar vive solo, al fondo, en su propio grupo. */
+  it('lo destructivo va aparte de lo benigno', () => {
+    const { container } = montarEditable(conTarea());
+    const grupos = [...container.querySelectorAll('optgroup')].map((g) => g.label);
+    expect(grupos[grupos.length - 1]).toBe('Cuidado');
+    const ultimo = container.querySelector('optgroup:last-of-type option');
+    expect(ultimo?.textContent).toMatch(/^Eliminar/);
+  });
+
+  /** En «Terminadas» y en solo lectura no se opera: el menú no existe. */
+  it('sin permiso de escritura no hay menú', () => {
+    montar(conTarea());
+    expect(screen.queryByRole('combobox', { name: /Acciones/ })).toBeNull();
+  });
+
+  /**
+   * Con una sola hermana no hay entre quiénes reordenar. Ofrecerlo enseñaría que el menú
+   * miente sobre lo que puede hacer.
+   */
+  it('no ofrece subir ni bajar cuando la fila es hija única', () => {
+    montarEditable(conTarea());
+    expect(screen.queryByRole('option', { name: /Subir/ })).toBeNull();
+  });
+
+  it('con hermanas sí las ofrece', () => {
+    montarEditable(
+      unProyecto({
+        clave: CLAVE,
+        epicas: [],
+        tareas: [
+          unaTarea({ clave: CLAVE, id: 'PM-T1' }),
+          unaTarea({ clave: CLAVE, id: 'PM-T2' }),
+        ],
+      }),
+    );
+    expect(screen.getAllByRole('option', { name: /Subir/ }).length).toBe(2);
+  });
+});
+
+describe('el panel de ayuda', () => {
+  /**
+   * La puerta se ve siempre. Un panel que solo se abre con una tecla que nada menciona no
+   * es ayuda: es otro requisito de memoria, que es lo que la leyenda de atajos tapaba.
+   */
+  it('la leyenda ofrece un botón visible, no solo la tecla', () => {
+    render(
+      <ProveedorAlmacen>
+        <ProveedorInterfaz>
+          <Leyenda editable abrirAyuda={() => undefined} />
+        </ProveedorInterfaz>
+      </ProveedorAlmacen>,
+    );
+    expect(screen.getByRole('button', { name: /Teclas y cómo se lee/ })).toBeTruthy();
+  });
+
+  it('en solo lectura no ofrece la puerta: ahí no hay teclas que usar', () => {
+    render(
+      <ProveedorAlmacen>
+        <ProveedorInterfaz>
+          <Leyenda editable={false} abrirAyuda={() => undefined} />
+        </ProveedorInterfaz>
+      </ProveedorAlmacen>,
+    );
+    expect(screen.queryByRole('button', { name: /Teclas y cómo se lee/ })).toBeNull();
+  });
+
+  it('el panel es un diálogo con nombre y trae las dos secciones', () => {
+    render(<PanelAyuda cerrar={() => undefined} />);
+    expect(screen.getByRole('dialog', { name: /Cómo se usa y cómo se lee/ })).toBeTruthy();
+    expect(screen.getByText('Sobre la fila con el foco')).toBeTruthy();
+    expect(screen.getByText('Cómo se lee')).toBeTruthy();
+  });
+
+  /** Las reglas duras que el color no puede decir solo tienen que estar escritas aquí. */
+  it('explica «sin desglosar» sin llamarlo 0 %', () => {
+    const { container } = render(<PanelAyuda cerrar={() => undefined} />);
+    expect(screen.getByText('Sin desglosar')).toBeTruthy();
+    expect(container.textContent).toMatch(/No es 0 %/);
+  });
+
+  it('Escape cierra', () => {
+    let cerrado = false;
+    render(<PanelAyuda cerrar={() => { cerrado = true; }} />);
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    expect(cerrado).toBe(true);
   });
 });

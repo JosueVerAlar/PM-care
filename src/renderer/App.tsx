@@ -34,7 +34,7 @@
  * cálculo desapareció en vez de mudarse.
  */
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { Documento, Proyecto } from '../compartido/modelo/tipos';
 import { BarraHerramientas } from './armazon/BarraHerramientas';
@@ -146,14 +146,16 @@ function Aplicacion({
   /** No nulo solo en conflicto externo: el documento vale, pero no se escribe. */
   diagnostico: Diagnostico | null;
 }) {
-  const { vista, lateralColapsada, aviso, confirmacion } = useInterfaz();
-  const { alternarLateral, avisar, confirmar } = useAccionesInterfaz();
+  const { vista, lateralColapsada, aviso, confirmacion, revertible } = useInterfaz();
+  const { alternarLateral, avisar, confirmar, ofrecerDeshacer } = useAccionesInterfaz();
   const { deshacer } = useAccionesAlmacen();
   const soloLectura = useSoloLectura();
   // Con el archivo en conflicto no se escribe nada, tampoco al revés: el ítem del menú va
   // en gris igual que iba el botón que ocupaba la barra hasta E13.
   const puedeDeshacer = usePuedeDeshacer() && !soloLectura;
   const etiquetaViva = useEtiquetaDeshacer();
+  /** Lo último que se deshizo, para anunciarlo. Se limpia solo. */
+  const [deshecho, setDeshecho] = useState<string | null>(null);
   const mutar = useMutar();
 
 
@@ -191,7 +193,19 @@ function Aplicacion({
           : nombreSinClave(proyecto.clave, proyecto.nombre);
 
   // --- ⌘Z y el menú Edición ------------------------------------------------
+  /**
+   * Qué dice el ítem del menú y si está vivo. Las dos cosas salen de la misma instantánea,
+   * que es lo que impide que se separen: [HIG] pide «Deshacer capturar SICOE-T14» y no
+   * «Deshacer» a secas, pero un nombre que no corresponde al paso que se va a revertir es
+   * peor que no dar nombre. Con el archivo en conflicto no se escribe, así que tampoco se
+   * revierte: el ítem va en gris y sin nombre.
+   */
+  const etiqueta = puedeDeshacer ? etiquetaViva : null;
+
   const alDeshacer = useCallback(() => {
+    // Se captura ANTES de deshacer: en cuanto la instantánea vuelve, `etiquetaViva` ya
+    // nombra el paso de abajo y el que se acaba de revertir ya no tiene quien lo nombre.
+    const revertido = etiqueta;
     void (async () => {
       const respuesta = await deshacer();
       if (!respuesta.ok) {
@@ -199,10 +213,17 @@ function Aplicacion({
         return;
       }
       avisar(null);
+      // Deshacer sin decir qué se deshizo obliga a buscar el cambio por la pantalla para
+      // saber si la tecla hizo algo. Se anuncia el objeto, no la acción: «Deshecho:
+      // capturar SICOE-T14» deja comprobar el resultado sin mirar.
+      setDeshecho(revertido === null ? 'Deshecho.' : `Deshecho: ${revertido}.`);
+      // La oferta ya se usó: dejarla en pantalla invitaría a deshacer un segundo paso que
+      // el usuario no pidió, con el mismo texto de la primera vez.
+      ofrecerDeshacer(null);
       // La instantánea que vuelve ya trae la etiqueta del paso de ABAJO: no hay nada que
       // desapilar de este lado.
     })();
-  }, [avisar, deshacer]);
+  }, [avisar, deshacer, etiqueta, ofrecerDeshacer]);
 
 
   useEffect(() => {
@@ -230,14 +251,7 @@ function Aplicacion({
    */
   useEffect(() => puente()?.alPedirDeshacer(alDeshacer), [alDeshacer]);
 
-  /**
-   * Qué dice el ítem del menú y si está vivo. Las dos cosas salen de la misma instantánea,
-   * que es lo que impide que se separen: [HIG] pide «Deshacer capturar SICOE-T14» y no
-   * «Deshacer» a secas, pero un nombre que no corresponde al paso que se va a revertir es
-   * peor que no dar nombre. Con el archivo en conflicto no se escribe, así que tampoco se
-   * revierte: el ítem va en gris y sin nombre.
-   */
-  const etiqueta = puedeDeshacer ? etiquetaViva : null;
+
   useEffect(() => {
     puente()?.publicarDeshacer({ puede: puedeDeshacer, etiqueta });
   }, [etiqueta, puedeDeshacer]);
@@ -257,6 +271,33 @@ function Aplicacion({
       {/* Conflicto externo: el documento sigue siendo válido, así que se puede seguir
           mirando. La franja dice que no se está escribiendo y ofrece las salidas. */}
       {diagnostico !== null && <SoloLectura diagnostico={diagnostico} ruta={ruta} compacta />}
+
+      {/* Lo que acaba de deshacerse, para quien no ve la pantalla cambiar. Fuera de la
+          franja de aviso a propósito: deshacer no es un error y no puede pintarse como
+          uno. `role="status"` es cortés — no interrumpe lo que el lector esté leyendo. */}
+      <p className="solo-lectores" role="status" aria-live="polite">
+        {deshecho}
+      </p>
+
+      {/* La oferta de recuperar lo recién borrado. Va aquí y no dentro del árbol porque
+          borrar también pasa desde otras vistas, y porque una franja que se mueve de sitio
+          según desde dónde borraste es una franja que hay que buscar cada vez.
+
+          No es una alerta: `role="status"` y tinta neutra. Un borrado que se puede revertir
+          de un clic no es un error, y pintarlo de rojo enseñaría a temer una acción que la
+          app quiere que se use sin miedo. */}
+      {revertible !== null && (
+        <div className="franja-revertir" role="status">
+          <span className="franja-revertir__texto">{revertible}.</span>
+          <span className="crece" />
+          <button type="button" className="boton-texto" onClick={alDeshacer} disabled={!puedeDeshacer}>
+            Deshacer
+          </button>
+          <button type="button" className="boton-texto" onClick={() => ofrecerDeshacer(null)}>
+            Cerrar
+          </button>
+        </div>
+      )}
 
       {/* Un comando que falló NO revierte nada (regla 5): el documento en memoria es el
           que devolvió el proceso principal, y lo que el usuario tecleó sigue en su

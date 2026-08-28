@@ -36,18 +36,19 @@ import {
   iniciales,
   type MiembroEditable,
 } from '../../../compartido/dominio/administracion';
-import { conformacionDeEquipos } from '../../../compartido/dominio/carga';
+import {
+  conformacionDeEquipos,
+  personasEnEquipos,
+} from '../../../compartido/dominio/carga';
 import type { Documento } from '../../../compartido/modelo/tipos';
 import { Equis, Mas } from '../../componentes/iconos';
-import { useAccionesInterfaz } from '../../estado/interfaz';
 import { useMutar, useSoloLectura } from '../../estado/mutaciones';
-import { cuenta, nombreSinClave } from '../../util/presentacion';
+import { cuenta, nombreSinClave, tareas as cuentaTareas } from '../../util/presentacion';
 import { Lienzo } from '../globales/piezas';
 
 
 export function SeccionEquipos({ documento }: { documento: Documento }) {
   const soloLectura = useSoloLectura();
-  const { verGlobal } = useAccionesInterfaz();
 
   const activos = useMemo(
     () =>
@@ -57,6 +58,7 @@ export function SeccionEquipos({ documento }: { documento: Documento }) {
     [documento.proyectos],
   );
   const conformacion = useMemo(() => conformacionDeEquipos(documento), [documento]);
+  const personas = useMemo(() => personasEnEquipos(documento), [documento]);
   /** La misma relación leída desde la persona: en cuántos equipos está cada quien. */
   const equiposPorPersona = useMemo(() => {
     const mapa = new Map<string, string[]>();
@@ -69,6 +71,19 @@ export function SeccionEquipos({ documento }: { documento: Documento }) {
   }, [activos]);
 
   const conEquipo = activos.filter((proyecto) => proyecto.equipo.length > 0);
+  const enVarios = personas.filter((persona) => persona.equipos.length > 1);
+  const cargaPorMiembro = useMemo(
+    () =>
+      new Map(
+        conformacion.flatMap((equipo) =>
+          equipo.miembros.map((miembro) => [
+            `${equipo.clave}:${miembro.personaId}`,
+            miembro.abiertas,
+          ] as const),
+        ),
+      ),
+    [conformacion],
+  );
 
   if (documento.personas.length === 0) {
     return (
@@ -96,18 +111,44 @@ export function SeccionEquipos({ documento }: { documento: Documento }) {
           Equipos · {cuenta(conEquipo.length, 'proyecto con equipo', 'proyectos con equipo')} de{' '}
           {activos.length}
         </h2>
-        <span className="crece" />
-        {/* La vista transversal salió de la lateral (N7) porque se abre una vez al mes.
-            Sigue existiendo y se llega desde aquí, que es donde uno ya está pensando en
-            equipos: quitarle su sitio en el mapa no es esconderla. */}
-        <button type="button" className="cab__accion" onClick={() => verGlobal('equipos')}>
-          Ver los once de un vistazo
-        </button>
       </header>
 
       <Lienzo>
         <div className="adm">
           <div className="bloque bloque--ancho">
+            {enVarios.length > 0 && (
+              <section className="seccion">
+                <h3 className="seccion__titulo">
+                  Personas en más de un equipo
+                  <span className="seccion__n tabular">
+                    {enVarios.length} de {personas.length}
+                  </span>
+                </h3>
+                <ul className="cruce">
+                  {enVarios.map((persona) => (
+                    <li className="cruce__fila" key={persona.personaId}>
+                      <span className="cruce__nombre">{persona.nombre}</span>
+                      <span className="cruce__equipos">
+                        {persona.equipos.map((equipo) => (
+                          <span
+                            className="chip chip--neutro"
+                            key={equipo.clave}
+                            title={equipo.nombre}
+                          >
+                            {equipo.clave}
+                            {equipo.rol !== null && ` · ${equipo.rol}`}
+                          </span>
+                        ))}
+                      </span>
+                      <span className="crece" />
+                      <span className="cruce__carga tabular">
+                        {cuentaTareas(persona.abiertas)} abiertas en total
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             {activos.length === 0 ? (
               <p className="bloque__nota">
@@ -115,22 +156,35 @@ export function SeccionEquipos({ documento }: { documento: Documento }) {
                 de los cerrados.
               </p>
             ) : (
-              <div className="rejilla rejilla--equipos">
-                {activos.map((proyecto) => (
-                  <TarjetaEquipo
-                    key={proyecto.clave}
-                    documento={documento}
-                    clave={proyecto.clave}
-                    nombre={nombreSinClave(proyecto.clave, proyecto.nombre) ?? proyecto.nombre}
-                    soloLectura={soloLectura}
-                    equiposPorPersona={equiposPorPersona}
-                    sinRegistrar={
-                      conformacion.find((equipo) => equipo.clave === proyecto.clave)
-                        ?.sinRegistrar ?? []
-                    }
-                  />
-                ))}
-              </div>
+              <section className="seccion">
+                <h3 className="seccion__titulo">
+                  Equipos por proyecto
+                  <span className="seccion__n tabular">{conEquipo.length}</span>
+                </h3>
+                {conEquipo.length === 0 && (
+                  <p className="seccion__aclaracion">
+                    Ningún proyecto tiene equipo capturado. Añade personas del catálogo desde
+                    las tarjetas para que quede claro quién está en cada proyecto.
+                  </p>
+                )}
+                <div className="rejilla rejilla--equipos">
+                  {activos.map((proyecto) => (
+                    <TarjetaEquipo
+                      key={proyecto.clave}
+                      documento={documento}
+                      clave={proyecto.clave}
+                      nombre={nombreSinClave(proyecto.clave, proyecto.nombre) ?? proyecto.nombre}
+                      soloLectura={soloLectura}
+                      equiposPorPersona={equiposPorPersona}
+                      cargaPorPersona={cargaPorMiembro}
+                      sinRegistrar={
+                        conformacion.find((equipo) => equipo.clave === proyecto.clave)
+                          ?.sinRegistrar ?? []
+                      }
+                    />
+                  ))}
+                </div>
+              </section>
             )}
           </div>
         </div>
@@ -147,6 +201,7 @@ function TarjetaEquipo({
   nombre,
   soloLectura,
   equiposPorPersona,
+  cargaPorPersona,
   sinRegistrar,
 }: {
   documento: Documento;
@@ -154,6 +209,7 @@ function TarjetaEquipo({
   nombre: string;
   soloLectura: boolean;
   equiposPorPersona: ReadonlyMap<string, string[]>;
+  cargaPorPersona: ReadonlyMap<string, number>;
   sinRegistrar: readonly { personaId: string; nombre: string; abiertas: number }[];
 }) {
   const mutar = useMutar();
@@ -254,6 +310,12 @@ function TarjetaEquipo({
                     </span>
                   )}
                 </span>
+              </span>
+              <span
+                className="miembro__carga tabular"
+                title={`${cuentaTareas(cargaPorPersona.get(`${clave}:${miembro.persona_id}`) ?? 0)} abiertas en ${clave}`}
+              >
+                {cargaPorPersona.get(`${clave}:${miembro.persona_id}`) ?? 0} ab.
               </span>
               {!soloLectura && (
                 <button

@@ -1,11 +1,9 @@
 /**
  * E12b — Administración: el enrutador de sus tres secciones.
  *
- * Es UNA vista con tres secciones y no tres vistas globales más. La diferencia importa:
- * las de arriba de la barra lateral son de **consulta** —contestan una pregunta sobre el
- * trabajo— y estas tres **editan el catálogo** del que todas las demás dependen. Mezclarlas
- * en la misma lista habría hecho que «Equipos (consulta)» y «Equipos (edición)» fueran dos
- * entradas vecinas indistinguibles.
+ * Es UNA vista con tres secciones y no tres vistas globales más. Proyectos y Personas
+ * editan el catálogo, mientras Equipos reúne la consulta y la edición de la relación entre
+ * ambos. Mantenerla aquí evita dos destinos indistinguibles para el mismo dato.
  *
  * El panel ocupa el ancho de los dos paneles de proyecto, igual que las vistas globales:
  * ninguna de las tres secciones tiene panel hermano.
