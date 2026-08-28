@@ -375,6 +375,29 @@ puntos u horas · adjuntos y comentarios en las tareas.
 
 ## Bitácora
 
+**2026-08-27 · Lista para usarse. Empaquetada, corrida y revisada.**
+
+- **Tres commits del trabajo del día** más este. La app se corrió por primera vez con
+  todo lo nuevo: `npm run dev` arranca sin un solo error en el log y crea su almacén.
+- **`.app` reconstruida**, 298 MB, arranca desde el binario sin salida de error. La CSP
+  estricta está en el paquete (`default-src 'none'` · `connect-src 'none'`) y la de
+  desarrollo sigue tras `!app.isPackaged`.
+- **El documento REAL del usuario abre con el esquema nuevo**, comprobado validándolo:
+  cuatro proyectos capturados a mano, cero problemas. Los cambios de N9 y del reloj eran
+  aditivos y ahora está medido sobre sus datos, no solo sobre el fixture.
+- **N6 y N7 implementados**: la clave sale del renglón y se copia con un clic; Equipos sale
+  de la lateral y se llega desde Administración.
+
+**Revisión externa (codex) sobre el código del día.** Reportó cinco cosas; cuatro eran
+reales y están corregidas, una la rechacé con razón escrita en el commit. La grave:
+`sprintDelCierre` atribuía a un sprint cualquier cierre posterior a su arranque, aunque
+ocurriera semanas después de que terminara — veintitantos días de una tarea que nadie
+estaba trabajando. Es exactamente el modo de fallo que el módulo dice evitar, y se me
+había escapado.
+
+**Lo que queda, y solo se responde usándola:** si el `＋` visible bastó o hace falta la
+captura en la fila (N5), y el ícono propio, que el usuario bajó al último lugar.
+
 **2026-08-27 · Esfuerzo por tarea y tiempo de resolución.**
 
 Dos decisiones del usuario, implementadas tal cual: **esfuerzo en Fibonacci `1·2·3·5·8`** y
