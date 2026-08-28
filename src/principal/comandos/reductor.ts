@@ -135,7 +135,7 @@ function aplicar(
         tareas: [],
         // Arranca en cero y de ahí solo sube (regla 15). Nunca se recalcula.
         contadores: { epicas: 0, historias: 0, tareas: 0 },
-        equipo: [],
+        equipos: [],
         epicas: [],
         clave_externa: null,
       };
@@ -197,7 +197,7 @@ function aplicar(
       proyecto.cerrado_en = fechaDe(ahora);
       // Cerrar implica archivar. Al revés no: un proyecto pausado se archiva sin cerrarse.
       proyecto.archivado = true;
-      const abiertas = contarTareas(proyecto, (t) => t.estado !== 'hecha' && t.estado !== 'cancelada');
+      const abiertas = contarTareas(proyecto, (t) => t.estado !== 'done' && t.estado !== 'cancelada');
 
       return {
         ok: true,
@@ -611,7 +611,7 @@ function aplicar(
      *   `sprint.items` son cosas distintas.
      * - **No escribe ninguna marca de tiempo en el documento.** Eso es lo que garantiza
      *   —estructuralmente, no por costumbre— que reordenar no cuente como movimiento:
-     *   `diasSinMovimiento` mira `creada_en`, `hecha_en` y los bloqueos de las tareas, y
+     *   `diasSinMovimiento` mira `creada_en`, `aceptada_en` y los bloqueos de las tareas, y
      *   ninguno cambia aquí. Un proyecto reordenado diez veces sigue igual de quieto.
      * - **No se rechaza en un proyecto cerrado o archivado.** Reordenar no afirma ningún
      *   hecho histórico, solo cómo se lee la lista; y prohibirlo aquí sería más estricto
@@ -794,6 +794,9 @@ function aplicar(
         titulo: comando.titulo,
         descripcion: comando.descripcion ?? null,
         estado: 'pendiente',
+        tipo: 'trabajo',
+        equipo_id: null,
+        criterios: null,
         // Procedencia, no estado (regla 17): lo capturado después de cerrar la
         // planeación nace «no planeado» sin que el usuario marque nada (D4).
         //
@@ -810,7 +813,8 @@ function aplicar(
         esfuerzo: comando.esfuerzo ?? null,
         creada_en: ahora,
         comprometida_en: null,
-        hecha_en: null,
+        aceptada_en: null,
+        trabajo: [],
         bloqueos: [],
         clave_externa: null,
       };
@@ -935,10 +939,10 @@ function aplicar(
       }
 
       tarea.estado = comando.estado;
-      // `hecha_en` es la marca de CUÁNDO se terminó, no una copia del estado. Reabrir una
+      // `aceptada_en` es la marca de CUÁNDO se terminó, no una copia del estado. Reabrir una
       // tarea la borra: dejarla puesta haría que las vistas de Terminadas mostraran algo
       // que volvió a estar en curso.
-      tarea.hecha_en = comando.estado === 'hecha' ? ahora : null;
+      tarea.aceptada_en = comando.estado === 'done' ? ahora : null;
       // El estado y el bloqueo son ortogonales: terminar una tarea bloqueada no cierra el
       // bloqueo solo. Lo cierra `desbloquear`, y así queda su registro histórico.
 
@@ -1072,7 +1076,7 @@ function aplicar(
         // Se rechaza en vez de ignorarse: una decisión sobre algo ya terminado solo puede
         // venir de una pantalla que se desincronizó, y aplicarla a medias sería mentir.
         const estado = porTarea.get(decision.tareaId)?.estado;
-        if (estado === 'hecha' || estado === 'cancelada') {
+        if (estado === 'done' || estado === 'cancelada') {
           return invalido(
             `${decision.tareaId} ya está "${estado}"; su desenlace no se decide al cerrar ${sprint.id}`,
           );
@@ -1094,7 +1098,7 @@ function aplicar(
         const compromiso = compromisoEfectivo(item, tarea);
         let desenlace: DesenlaceDeCierre;
 
-        if (tarea?.estado === 'hecha') {
+        if (tarea?.estado === 'done') {
           // Lo terminado no se toca ni se decide: se constata.
           desenlace = 'completada';
         } else if (tarea?.estado === 'cancelada') {
@@ -1283,10 +1287,18 @@ function aplicar(
         }
         vistos.add(miembro.persona_id);
       }
-      const antes = proyecto.equipo.map((m) => m.persona_id);
+      const antes = proyecto.equipos.flatMap((equipo) => equipo.miembros).map((m) => m.persona_id);
       // El equipo NO restringe quién puede ser responsable: una tarea vieja puede apuntar
       // a alguien que ya salió, y eso es correcto. Por eso sacar a alguien no toca tareas.
-      proyecto.equipo = comando.miembros.map((m) => ({ ...m }));
+      const general = proyecto.equipos[0] ?? {
+        id: `${proyecto.clave.toLowerCase()}-general`, nombre: 'General', miembros: [],
+      };
+      general.miembros = comando.miembros.map((m) => ({
+        ...m,
+        responsabilidades: m.responsabilidades,
+        capacidad: m.capacidad,
+      }));
+      if (proyecto.equipos.length === 0) proyecto.equipos.push(general);
 
       return {
         ok: true,
@@ -1526,7 +1538,7 @@ function soltarUsuario(doc: Documento, personaId: string): boolean {
 /** Claves de los proyectos en cuyo equipo aparece la persona. */
 function equiposDe(doc: Documento, personaId: string): string[] {
   return doc.proyectos
-    .filter((proyecto) => proyecto.equipo.some((m) => m.persona_id === personaId))
+    .filter((proyecto) => proyecto.equipos.flatMap((equipo) => equipo.miembros).some((m) => m.persona_id === personaId))
     .map((proyecto) => proyecto.clave);
 }
 
@@ -1539,7 +1551,7 @@ type ResultadoEquipos =
  *
  * Es la relación equipo↔persona escrita desde el lado de la persona; `editarEquipo` la
  * escribe desde el lado del proyecto. Las dos tocan el mismo array porque un equipo no
- * es una entidad aparte: ES `proyecto.equipo`. Duplicar la pertenencia en un segundo
+ * es una entidad aparte: ES `proyecto.equipos.flatMap((equipo) => equipo.miembros)`. Duplicar la pertenencia en un segundo
  * lugar para que cada vista tuviera "su" copia es justo lo que haría que un día no
  * coincidieran.
  *
@@ -1556,10 +1568,14 @@ function fijarEquiposDe(doc: Documento, personaId: string, claves: readonly stri
   }
 
   for (const proyecto of doc.proyectos) {
-    const indice = proyecto.equipo.findIndex((m) => m.persona_id === personaId);
+    const general = proyecto.equipos[0] ?? {
+      id: `${proyecto.clave.toLowerCase()}-general`, nombre: 'General', miembros: [],
+    };
+    if (proyecto.equipos.length === 0) proyecto.equipos.push(general);
+    const indice = general.miembros.findIndex((m) => m.persona_id === personaId);
     const debeEstar = deseadas.includes(proyecto.clave);
-    if (debeEstar && indice < 0) proyecto.equipo.push({ persona_id: personaId, rol: null });
-    else if (!debeEstar && indice >= 0) proyecto.equipo.splice(indice, 1);
+    if (debeEstar && indice < 0) general.miembros.push({ persona_id: personaId, responsabilidades: [], capacidad: null });
+    else if (!debeEstar && indice >= 0) general.miembros.splice(indice, 1);
   }
   return { ok: true, despues: deseadas };
 }
@@ -1768,6 +1784,7 @@ function crearSprintSiguiente(doc: Documento, anterior: Sprint, id: string): Spr
     // semanas «porque sí».
     fin: sumarDias(inicio, Math.max(diasEntre(anterior.inicio, anterior.fin), 0)),
     estado: 'planeado',
+    clave: anterior.clave,
     items: [],
   };
   doc.sprints.push(nuevo);

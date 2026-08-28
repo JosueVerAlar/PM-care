@@ -1,0 +1,210 @@
+{
+  "esquema_version": 1,
+  "usuario": null,
+  "personas": [
+    {
+      "id": "roberto-carlos",
+      "nombre": "Roberto Carlos",
+      "activa": true,
+      "clave_externa": null
+    },
+    {
+      "id": "jesus-alberto",
+      "nombre": "Jesus Alberto",
+      "activa": true,
+      "clave_externa": null
+    },
+    {
+      "id": "miguel-angel",
+      "nombre": "Miguel Angel",
+      "activa": true,
+      "clave_externa": null
+    },
+    {
+      "id": "jose-praxedes",
+      "nombre": "Jose Praxedes",
+      "activa": true,
+      "clave_externa": null
+    }
+  ],
+  "proyectos": [
+    {
+      "clave": "SICOE",
+      "nombre": "SICOE",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 3,
+        "historias": 2,
+        "tareas": 2
+      },
+      "equipo": [
+        {
+          "persona_id": "jesus-alberto",
+          "rol": null
+        },
+        {
+          "persona_id": "jose-praxedes",
+          "rol": null
+        }
+      ],
+      "epicas": [
+        {
+          "id": "SICOE-E1",
+          "titulo": "Portabilidad",
+          "descripcion": null,
+          "planeada": true,
+          "clave_externa": null,
+          "historias": [
+            {
+              "id": "SICOE-H1",
+              "titulo": "Tarea 1",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "SICOE-T1",
+                  "titulo": "Sub tarea para la historia",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": null,
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "esfuerzo": null,
+                  "creada_en": "2026-08-27T21:20:22-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": null
+                }
+              ]
+            },
+            {
+              "id": "SICOE-H2",
+              "titulo": "Tarea 2",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "SICOE-T2",
+                  "titulo": "historia 2",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "planeada": true,
+                  "responsable": null,
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "esfuerzo": null,
+                  "creada_en": "2026-08-27T21:21:03-06:00",
+                  "hecha_en": null,
+                  "bloqueos": [],
+                  "clave_externa": null
+                }
+              ]
+            }
+          ],
+          "tareas": []
+        },
+        {
+          "id": "SICOE-E2",
+          "titulo": "Manejo de usuarios",
+          "descripcion": null,
+          "planeada": true,
+          "clave_externa": null,
+          "historias": [],
+          "tareas": []
+        },
+        {
+          "id": "SICOE-E3",
+          "titulo": "Manejo de grupos",
+          "descripcion": null,
+          "planeada": true,
+          "clave_externa": null,
+          "historias": [],
+          "tareas": []
+        }
+      ],
+      "tareas": [],
+      "clave_externa": null
+    },
+    {
+      "clave": "EVENTOS",
+      "nombre": "Eventos",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 0,
+        "historias": 0,
+        "tareas": 0
+      },
+      "equipo": [
+        {
+          "persona_id": "miguel-angel",
+          "rol": null
+        }
+      ],
+      "epicas": [],
+      "tareas": [],
+      "clave_externa": null
+    },
+    {
+      "clave": "INFRA",
+      "nombre": "Infraestructura",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 0,
+        "historias": 0,
+        "tareas": 0
+      },
+      "equipo": [
+        {
+          "persona_id": "jesus-alberto",
+          "rol": null
+        },
+        {
+          "persona_id": "miguel-angel",
+          "rol": null
+        }
+      ],
+      "epicas": [],
+      "tareas": [],
+      "clave_externa": null
+    },
+    {
+      "clave": "ENCUESTA",
+      "nombre": "Encuestas",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 0,
+        "historias": 0,
+        "tareas": 0
+      },
+      "equipo": [
+        {
+          "persona_id": "jose-praxedes",
+          "rol": null
+        }
+      ],
+      "epicas": [],
+      "tareas": [],
+      "clave_externa": null
+    }
+  ],
+  "sprints": []
+}

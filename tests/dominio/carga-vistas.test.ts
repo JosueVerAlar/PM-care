@@ -65,8 +65,8 @@ function proyectoCon(clave: string, nombre: string, tareas: Tarea[], equipo: str
 function documentoCarga(): Documento {
   const alfa: Tarea[] = [
     unaTarea({ id: 'ALFA-T1', clave: 'ALFA', estado: 'pendiente', responsable: 'ana' }),
-    unaTarea({ id: 'ALFA-T2', clave: 'ALFA', estado: 'en_curso', responsable: 'ana' }),
-    unaTarea({ id: 'ALFA-T3', clave: 'ALFA', estado: 'hecha', responsable: 'ana' }),
+    unaTarea({ id: 'ALFA-T2', clave: 'ALFA', estado: 'iniciado', responsable: 'ana' }),
+    unaTarea({ id: 'ALFA-T3', clave: 'ALFA', estado: 'done', responsable: 'ana' }),
     unaTarea({ id: 'ALFA-T4', clave: 'ALFA', estado: 'pendiente', responsable: null }),
     unaTarea({ id: 'ALFA-T5', clave: 'ALFA', estado: 'cancelada', responsable: 'ana' }),
   ];
@@ -76,7 +76,7 @@ function documentoCarga(): Documento {
     unaTarea({ id: 'BETA-T3', clave: 'BETA', estado: 'pendiente', responsable: null }),
   ];
   const gama: Tarea[] = [
-    unaTarea({ id: 'GAMA-T1', clave: 'GAMA', estado: 'en_curso', responsable: 'caro' }),
+    unaTarea({ id: 'GAMA-T1', clave: 'GAMA', estado: 'iniciado', responsable: 'caro' }),
     ...[2, 3, 4, 5, 6].map((n) =>
       unaTarea({ id: `GAMA-T${n}`, clave: 'GAMA', estado: 'pendiente', responsable: 'beto' }),
     ),
@@ -377,8 +377,8 @@ describe('personasEnEquipos: la misma relación leída desde la persona', () => 
       ],
     });
     expect(personasEnEquipos(doc)[0]?.equipos).toEqual([
-      { clave: 'ALFA', nombre: 'Alfa', rol: 'backend' },
-      { clave: 'BETA', nombre: 'Beta', rol: null },
+      { clave: 'ALFA', nombre: 'Alfa', responsabilidades: ['backend'], capacidad: null },
+      { clave: 'BETA', nombre: 'Beta', responsabilidades: [], capacidad: null },
     ]);
   });
 

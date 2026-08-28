@@ -88,7 +88,8 @@ export interface HistorialPersona {
 export interface PertenenciaEquipo {
   clave: string;
   nombre: string;
-  rol: string | null;
+  responsabilidades: string[];
+  capacidad: number | null;
 }
 
 export interface CargaPersona {
@@ -146,9 +147,14 @@ export function nombreDePersona(
 export function equiposDe(doc: Documento, personaId: PersonaId): PertenenciaEquipo[] {
   const equipos: PertenenciaEquipo[] = [];
   for (const proyecto of doc.proyectos) {
-    const miembro = proyecto.equipo.find((m) => m.persona_id === personaId);
+    const miembro = proyecto.equipos.flatMap((equipo) => equipo.miembros).find((m) => m.persona_id === personaId);
     if (miembro) {
-      equipos.push({ clave: proyecto.clave, nombre: proyecto.nombre, rol: miembro.rol });
+      equipos.push({
+        clave: proyecto.clave,
+        nombre: proyecto.nombre,
+        responsabilidades: miembro.responsabilidades,
+        capacidad: miembro.capacidad,
+      });
     }
   }
   return equipos;
@@ -222,7 +228,7 @@ function cargaEnSprintDe(
       const { tarea, proyecto } = ubicacion;
       carga.total += 1;
       if (estaAbierta(tarea)) carga.abiertas += 1;
-      if (tarea.estado === 'hecha') carga.hechas += 1;
+      if (tarea.estado === 'done') carga.hechas += 1;
       if (estaBloqueada(tarea)) carga.bloqueadas += 1;
       // La fecha sale del MISMO compromiso que el responsable: si el item la fija, una
       // tarea sin fecha propia sí puede estar vencida dentro de este sprint.
@@ -403,7 +409,7 @@ export function dispersionDelSprint(doc: Documento, sprint: Sprint | undefined):
 export interface ConformacionEquipo {
   clave: string;
   nombre: string;
-  miembros: { personaId: PersonaId; nombre: string; rol: string | null; abiertas: number }[];
+  miembros: { personaId: PersonaId; nombre: string; responsabilidades: string[]; capacidad: number | null; abiertas: number }[];
   sinRegistrar: { personaId: PersonaId; nombre: string; abiertas: number }[];
 }
 
@@ -417,11 +423,12 @@ export function conformacionDeEquipos(doc: Documento): ConformacionEquipo[] {
       abiertasPor.set(tarea.responsable, (abiertasPor.get(tarea.responsable) ?? 0) + 1);
     }
 
-    const enEquipo = new Set(proyecto.equipo.map((m) => m.persona_id));
-    const miembros = proyecto.equipo.map((m) => ({
+    const enEquipo = new Set(proyecto.equipos.flatMap((equipo) => equipo.miembros).map((m) => m.persona_id));
+    const miembros = proyecto.equipos.flatMap((equipo) => equipo.miembros).map((m) => ({
       personaId: m.persona_id,
       nombre: nombres.get(m.persona_id) ?? m.persona_id,
-      rol: m.rol,
+      responsabilidades: m.responsabilidades,
+      capacidad: m.capacidad,
       abiertas: abiertasPor.get(m.persona_id) ?? 0,
     }));
 
@@ -446,7 +453,7 @@ export function conformacionDeEquipos(doc: Documento): ConformacionEquipo[] {
  * disuelto en tres sitios y no se ve nunca; y es justo el dato que decide si a esa persona
  * se le puede pedir algo más.
  *
- * No se duplica ningún dato: se recorre `proyecto.equipo`, que sigue siendo la única
+ * No se duplica ningún dato: se recorre `proyecto.equipos.flatMap((equipo) => equipo.miembros)`, que sigue siendo la única
  * fuente. El orden es por número de proyectos descendente — quien está en más equipos es
  * el hallazgo.
  */

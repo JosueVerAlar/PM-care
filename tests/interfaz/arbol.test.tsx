@@ -331,10 +331,10 @@ describe('el menú ⋯ de la fila', () => {
     }
   });
 
-  /** «Marcar en curso» nombra lo que va a pasar, no «Cambiar estado». */
+  /** «Marcar iniciado» nombra lo que va a pasar, no «Cambiar estado». */
   it('el estado se nombra por su destino', () => {
     montarEditable(conTarea());
-    expect(screen.getByRole('option', { name: /Marcar en curso/ })).toBeTruthy();
+    expect(screen.getByRole('option', { name: /Marcar iniciado/ })).toBeTruthy();
   });
 
   /** Eliminar vive solo, al fondo, en su propio grupo. */

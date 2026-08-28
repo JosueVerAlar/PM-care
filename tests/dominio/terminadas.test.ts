@@ -51,43 +51,43 @@ function documentoTerminadas(): Documento {
     id: 'ALFA-T1',
     clave: 'ALFA',
     titulo: 'Migrar el padrón',
-    estado: 'hecha',
-    hecha_en: '2026-07-08T18:00:00-06:00',
+    estado: 'done',
+    aceptada_en: '2026-07-08T18:00:00-06:00',
   });
   const reabierta = unaTarea({
     id: 'ALFA-T2',
     clave: 'ALFA',
     titulo: 'Regularización de grupos',
     estado: 'pendiente',
-    hecha_en: null,
+    aceptada_en: null,
   });
   const deJulio = unaTarea({
     id: 'ALFA-T3',
     clave: 'ALFA',
     titulo: 'Actas de evaluación',
-    estado: 'hecha',
-    hecha_en: '2026-07-20T18:00:00-06:00',
+    estado: 'done',
+    aceptada_en: '2026-07-20T18:00:00-06:00',
   });
   const nuncaEnSprint = unaTarea({
     id: 'ALFA-T4',
     clave: 'ALFA',
     titulo: 'Capturada ya hecha',
-    estado: 'hecha',
-    hecha_en: '2026-08-01T18:00:00-06:00',
+    estado: 'done',
+    aceptada_en: '2026-08-01T18:00:00-06:00',
   });
   const enElActivo = unaTarea({
     id: 'ALFA-T5',
     clave: 'ALFA',
     titulo: 'Cerrada en el sprint que corre',
-    estado: 'hecha',
-    hecha_en: '2026-08-25T18:00:00-06:00',
+    estado: 'done',
+    aceptada_en: '2026-08-25T18:00:00-06:00',
   });
   const beta1 = unaTarea({
     id: 'BETA-T1',
     clave: 'BETA',
     titulo: 'Tablero de indicadores',
-    estado: 'hecha',
-    hecha_en: '2026-07-10T18:00:00-06:00',
+    estado: 'done',
+    aceptada_en: '2026-07-10T18:00:00-06:00',
   });
   const beta2 = unaTarea({
     id: 'BETA-T2',
@@ -163,7 +163,7 @@ describe('registroDeTerminadas', () => {
   });
 
   it('una tarea completada en un sprint cerrado y REABIERTA después sigue contando en ese sprint', () => {
-    // El caso que da sentido a la vista: si se leyera `tarea.estado === "hecha"`, reabrir
+    // El caso que da sentido a la vista: si se leyera `tarea.estado === "done"`, reabrir
     // hoy ALFA-T2 borraría una de las tres que se cerraron en julio.
     const s1 = registroDeTerminadas(documentoTerminadas()).find((r) => r.sprint.id === 'S-1');
     const ids = s1?.porProyecto.flatMap((p) => p.tareas.map((t) => t.ubicacion.tarea.id));

@@ -39,7 +39,7 @@ export function elegir<T>(rng: Aleatorio, opciones: readonly T[]): T {
   return elegido;
 }
 
-const ESTADOS: readonly EstadoTarea[] = ['pendiente', 'en_curso', 'hecha', 'cancelada'];
+const ESTADOS: readonly EstadoTarea[] = ['pendiente', 'iniciado', 'en_pruebas', 'terminado', 'done', 'cancelada'];
 
 export interface OpcionesArbol {
   clave?: string;
@@ -77,6 +77,9 @@ export function unProyectoAleatorio(rng: Aleatorio, opciones: OpcionesArbol = {}
         titulo: `Tarea ${nT}`,
         descripcion: null,
         estado,
+        tipo: rng() < 0.2 ? ('error' as const) : ('trabajo' as const),
+        equipo_id: null,
+        criterios: rng() < 0.3 ? 'Cumple el criterio generado' : null,
         planeada: rng() < 0.75,
         responsable: null,
         fecha_limite: null,
@@ -86,12 +89,18 @@ export function unProyectoAleatorio(rng: Aleatorio, opciones: OpcionesArbol = {}
         esfuerzo: rng() < 0.33 ? elegir(rng, [1, 2, 3, 5, 8] as const) : null,
         creada_en: null,
         comprometida_en: null,
-        // Solo lo hecho tiene fecha de cierre. Una hecha sin `hecha_en` también se genera
+        // Solo lo hecho tiene fecha de cierre. Una hecha sin `aceptada_en` también se genera
         // —pasa con las editadas a mano— y ahí la duración tiene que salir `null`.
-        hecha_en:
-          estado === 'hecha' && rng() < 0.85
+        aceptada_en:
+          estado === 'done' && rng() < 0.85
             ? `2026-06-${String(entero(rng, 1, 28)).padStart(2, '0')}T12:00:00-06:00`
             : null,
+        trabajo:
+          estado === 'iniciado' || estado === 'en_pruebas'
+            ? [{ desde: '2026-08-20T09:00:00-06:00', hasta: rng() < 0.5 ? null : '2026-08-20T12:00:00-06:00', estado }]
+            : rng() < 0.35
+              ? [{ desde: '2026-08-18T09:00:00-06:00', hasta: '2026-08-18T12:00:00-06:00', estado: 'iniciado' as const }]
+              : [],
         bloqueos: rng() < 0.15
           ? [
               {
@@ -142,7 +151,7 @@ export function unProyectoAleatorio(rng: Aleatorio, opciones: OpcionesArbol = {}
     cerrado_en: null,
     planeacion_cerrada_en: null,
     contadores: { epicas: nE, historias: nH, tareas: nT },
-    equipo: [],
+    equipos: [],
     epicas,
     tareas: sueltas,
     clave_externa: null,
@@ -169,9 +178,15 @@ export function unDocumentoAleatorio(rng: Aleatorio, semilla: number): Documento
   );
 
   for (const proyecto of proyectos) {
-    proyecto.equipo = personas
-      .filter(() => rng() < 0.5)
-      .map((persona) => ({ persona_id: persona.id, rol: null }));
+    proyecto.equipos = rng() < 0.8
+      ? [{
+          id: `${proyecto.clave.toLowerCase()}-general`,
+          nombre: 'General',
+          miembros: personas
+            .filter(() => rng() < 0.5)
+            .map((persona) => ({ persona_id: persona.id, responsabilidades: rng() < 0.5 ? ['desarrollo'] : [], capacidad: rng() < 0.5 ? entero(rng, 1, 8) : null })),
+        }]
+      : [];
     for (const epica of proyecto.epicas) {
       for (const historia of epica.historias) {
         for (const tarea of historia.tareas) {
@@ -203,6 +218,7 @@ export function unDocumentoAleatorio(rng: Aleatorio, semilla: number): Documento
       inicio: `2026-06-${dia}`,
       fin: `2026-06-${fin}`,
       estado: cerrado ? ('cerrado' as const) : ('activo' as const),
+      clave: proyectos.length === 0 ? null : elegir(rng, proyectos).clave,
       items: disponibles.map((tareaId) => ({
         tarea_id: tareaId,
         responsable: null,

@@ -41,12 +41,12 @@ const caro = unaPersona({ id: 'caro', nombre: 'Caro Díaz', activa: false });
 
 /** Documento base. Cada prueba lo ajusta con `conSprints` o construyendo el suyo. */
 function documentoBase(): Documento {
-  const t1 = unaTarea({ id: 'PRUEBA-T1', estado: 'en_curso', responsable: 'ana', fecha_limite: '2026-08-25' });
+  const t1 = unaTarea({ id: 'PRUEBA-T1', estado: 'iniciado', responsable: 'ana', fecha_limite: '2026-08-25' });
   const t2 = unaTarea({ id: 'PRUEBA-T2', estado: 'pendiente', responsable: 'ana', bloqueos: [unBloqueo()] });
-  const t3 = unaTarea({ id: 'PRUEBA-T3', estado: 'hecha', responsable: 'ana' });
+  const t3 = unaTarea({ id: 'PRUEBA-T3', estado: 'done', responsable: 'ana' });
   const t4 = unaTarea({ id: 'PRUEBA-T4', estado: 'pendiente', responsable: 'ana' });
   const t5 = unaTarea({ id: 'PRUEBA-T5', estado: 'cancelada', responsable: 'ana' });
-  const t6 = unaTarea({ id: 'PRUEBA-T6', estado: 'hecha', responsable: 'ana' });
+  const t6 = unaTarea({ id: 'PRUEBA-T6', estado: 'done', responsable: 'ana' });
   const o1 = unaTarea({ id: 'OTRO-T1', clave: 'OTRO', estado: 'pendiente', responsable: 'ana' });
   const o2 = unaTarea({ id: 'OTRO-T2', clave: 'OTRO', estado: 'pendiente', responsable: 'beto' });
 
@@ -95,14 +95,14 @@ describe('el documento de prueba es válido: si no, las pruebas medirían un doc
 describe('equiposDe', () => {
   it('devuelve todos los proyectos en los que está, con su rol', () => {
     expect(equiposDe(documentoBase(), 'ana')).toEqual([
-      { clave: 'PRUEBA', nombre: 'Proyecto de prueba', rol: 'backend' },
-      { clave: 'OTRO', nombre: 'Otro proyecto', rol: 'vistas' },
+      { clave: 'PRUEBA', nombre: 'Proyecto de prueba', responsabilidades: ['backend'], capacidad: null },
+      { clave: 'OTRO', nombre: 'Otro proyecto', responsabilidades: ['vistas'], capacidad: null },
     ]);
   });
 
   it('conserva el rol nulo en vez de inventarle uno', () => {
     expect(equiposDe(documentoBase(), 'beto')).toEqual([
-      { clave: 'PRUEBA', nombre: 'Proyecto de prueba', rol: null },
+      { clave: 'PRUEBA', nombre: 'Proyecto de prueba', responsabilidades: [], capacidad: null },
     ]);
   });
 
@@ -211,7 +211,7 @@ describe('cargaDe: qué se le comprometió en el sprint activo', () => {
                   historias: [
                     unaHistoria({
                       id: 'OTRO-H1',
-                      tareas: [unaTarea({ id: 'OTRO-T1', clave: 'OTRO', estado: 'hecha', responsable: 'ana' })],
+                      tareas: [unaTarea({ id: 'OTRO-T1', clave: 'OTRO', estado: 'done', responsable: 'ana' })],
                     }),
                   ],
                 }),
@@ -251,7 +251,7 @@ describe('cargaDe: qué se le comprometió en el sprint activo', () => {
               historias: [
                 unaHistoria({
                   tareas: [
-                    unaTarea({ id: 'PRUEBA-T1', estado: 'en_curso', responsable: 'ana', fecha_limite: null }),
+                    unaTarea({ id: 'PRUEBA-T1', estado: 'iniciado', responsable: 'ana', fecha_limite: null }),
                   ],
                 }),
               ],
@@ -296,7 +296,7 @@ describe('cargaPorPersona', () => {
 
 /** Sprints cerrados a la medida para el historial. */
 function conCerrados(...definiciones: { id: string; inicio: string; items: [string, string | null, string | null][] }[]) {
-  const t = (id: string) => unaTarea({ id, estado: 'hecha', responsable: 'ana' });
+  const t = (id: string) => unaTarea({ id, estado: 'done', responsable: 'ana' });
   const ids = new Set<string>();
   for (const d of definiciones) for (const [id] of d.items) ids.add(id);
 
@@ -367,7 +367,7 @@ describe('historialDe', () => {
           epicas: [
             unaEpica({
               historias: [
-                unaHistoria({ tareas: [unaTarea({ id: 'PRUEBA-T1', estado: 'en_curso', responsable: 'ana' })] }),
+                unaHistoria({ tareas: [unaTarea({ id: 'PRUEBA-T1', estado: 'iniciado', responsable: 'ana' })] }),
               ],
             }),
           ],
@@ -465,8 +465,8 @@ describe('conformacionDeEquipos', () => {
   it('resuelve el nombre de cada miembro y cuenta sus tareas abiertas en ese proyecto', () => {
     const equipos = conformacionDeEquipos(documentoBase());
     expect(equipos[0]?.miembros).toEqual([
-      { personaId: 'ana', nombre: 'Ana García', rol: 'backend', abiertas: 3 },
-      { personaId: 'beto', nombre: 'Beto Ruiz', rol: null, abiertas: 0 },
+      { personaId: 'ana', nombre: 'Ana García', responsabilidades: ['backend'], capacidad: null, abiertas: 3 },
+      { personaId: 'beto', nombre: 'Beto Ruiz', responsabilidades: [], capacidad: null, abiertas: 0 },
     ]);
   });
 

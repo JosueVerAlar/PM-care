@@ -44,11 +44,11 @@ export function diasEntre(desde: Fecha, hasta: Fecha): number {
 
 /** Está abierta: cuenta para la carga de alguien. Cancelada no cuenta para nada. */
 export function estaAbierta(tarea: Tarea): boolean {
-  return tarea.estado === 'pendiente' || tarea.estado === 'en_curso';
+  return tarea.estado === 'pendiente' || tarea.estado === 'iniciado';
 }
 
 export function estaHecha(tarea: Tarea): boolean {
-  return tarea.estado === 'hecha';
+  return tarea.estado === 'done';
 }
 
 /** El bloqueo vigente, o `null`. El esquema garantiza que no hay dos abiertos a la vez. */
@@ -57,7 +57,7 @@ export function bloqueoAbierto(tarea: Tarea): Bloqueo | null {
 }
 
 /**
- * Bloqueada es ortogonal al estado: la tarea sigue siendo `en_curso` o `pendiente` y
+ * Bloqueada es ortogonal al estado: la tarea sigue siendo `iniciado` o `pendiente` y
  * conserva su avance. Por eso esto es un predicado y no un valor del enum.
  *
  * Pero una tarea CERRADA ya no está bloqueada, aunque su bloqueo nunca se cerrara

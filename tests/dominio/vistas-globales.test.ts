@@ -315,7 +315,7 @@ describe('Terminadas sobre 300 documentos', () => {
         expect(registradas.has(id), `semilla ${semilla} · ${id}`).toBe(false);
       }
       for (const ubicacion of todasLasTareas(doc)) {
-        if (ubicacion.tarea.estado !== 'hecha') continue;
+        if (ubicacion.tarea.estado !== 'done') continue;
         const id = ubicacion.tarea.id;
         expect(registradas.has(id) || sueltas.has(id), `semilla ${semilla} · ${id}`).toBe(true);
       }

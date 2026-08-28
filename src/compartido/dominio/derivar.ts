@@ -96,10 +96,10 @@ export function contarTareas(
 
   for (const tarea of tareas) {
     switch (tarea.estado) {
-      case 'hecha':
+      case 'done':
         hechas += 1;
         break;
-      case 'en_curso':
+      case 'iniciado':
         enCurso += 1;
         break;
       case 'pendiente':

@@ -50,7 +50,7 @@ describe('crearProyecto', () => {
       cerrado_en: null,
       planeacion_cerrada_en: null,
       contadores: { epicas: 0, historias: 0, tareas: 0 },
-      equipo: [],
+      equipos: [],
       epicas: [],
     });
   });
@@ -151,8 +151,8 @@ describe('cerrarProyecto', () => {
   it('marca la fecha y archiva, y NADA más: el resto del documento queda idéntico', () => {
     // Se compara el documento ENTERO, no solo el proyecto: la tentación al cerrar es dar
     // por canceladas las tareas que quedaron abiertas, y eso es inventarse un desenlace.
-    const tareaHecha = unaTarea({ clave: 'PM', estado: 'hecha', responsable: 'ana' });
-    const tareaAbierta = unaTarea({ clave: 'PM', estado: 'en_curso', responsable: 'ana' });
+    const tareaHecha = unaTarea({ clave: 'PM', estado: 'done', responsable: 'ana' });
+    const tareaAbierta = unaTarea({ clave: 'PM', estado: 'iniciado', responsable: 'ana' });
     const proyecto = unProyecto({
       clave: 'PM',
       epicas: [
@@ -161,7 +161,7 @@ describe('cerrarProyecto', () => {
           historias: [unaHistoria({ clave: 'PM', tareas: [tareaHecha, tareaAbierta] })],
         }),
       ],
-      equipo: [{ persona_id: 'ana', rol: 'todo' }],
+      equipo: [{ persona_id: 'ana', responsabilidades: ['todo'], capacidad: null }],
     });
     const doc = unDocumento({
       personas: [{ id: 'ana', nombre: 'Ana', activa: true, clave_externa: null }],

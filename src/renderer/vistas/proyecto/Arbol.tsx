@@ -137,9 +137,11 @@ import {
  * pulsando Espacio de más sería sacar la tarea de todos los denominadores sin querer.
  */
 const CICLO: Record<EstadoTarea, EstadoTarea> = {
-  pendiente: 'en_curso',
-  en_curso: 'hecha',
-  hecha: 'pendiente',
+  pendiente: 'iniciado',
+  iniciado: 'en_pruebas',
+  en_pruebas: 'terminado',
+  terminado: 'done',
+  done: 'pendiente',
   cancelada: 'pendiente',
 };
 

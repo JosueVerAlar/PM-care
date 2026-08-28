@@ -270,6 +270,9 @@ describe('crearTarea', () => {
       titulo: 'Nueva',
       descripcion: null,
       estado: 'pendiente',
+      tipo: 'trabajo',
+      equipo_id: null,
+      criterios: null,
       planeada: true,
       responsable: null,
       fecha_limite: null,
@@ -280,7 +283,8 @@ describe('crearTarea', () => {
       // El anclaje del reloj vive en la TAREA desde MA, no en el item del sprint: si
       // viviera en el item, sacarla para redefinirla y volver a meterla lo reiniciaría.
       comprometida_en: null,
-      hecha_en: null,
+      aceptada_en: null,
+      trabajo: [],
       bloqueos: [],
       clave_externa: null,
     });
@@ -376,12 +380,12 @@ describe('editarTarea', () => {
     const enCurso = aplicar(doc, {
       comando: 'cambiarEstado',
       id: `${clave}-T1`,
-      estado: 'en_curso',
+      estado: 'iniciado',
     });
     const { documento } = exigirOk(
       reducirSinMutar(enCurso, { comando: 'editarTarea', id: `${clave}-T1`, titulo: 'Otro' }),
     );
-    expect(documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.estado).toBe('en_curso');
+    expect(documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.estado).toBe('iniciado');
   });
 
   it('el evento lleva la lista de campos tocados y el antes/después', () => {
@@ -438,44 +442,44 @@ describe('eliminarTarea', () => {
 
   it('el evento conserva en qué estado murió', () => {
     const { doc, clave } = arbolConTareas(1);
-    const enCurso = aplicar(doc, { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'en_curso' });
+    const enCurso = aplicar(doc, { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'iniciado' });
     const { evento } = exigirOk(
       reducirSinMutar(enCurso, { comando: 'eliminarTarea', id: `${clave}-T1` }),
     );
-    expect(evento.detalle).toEqual({ estado: 'en_curso' });
+    expect(evento.detalle).toEqual({ estado: 'iniciado' });
   });
 });
 
 // --- cambiarEstado ----------------------------------------------------------
 
 describe('cambiarEstado', () => {
-  it('pasar a hecha sella hecha_en con el instante recibido', () => {
+  it('pasar a hecha sella aceptada_en con el instante recibido', () => {
     const { doc, clave } = arbolConTareas(1);
     const { documento } = exigirOk(
-      reducirSinMutar(doc, { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'hecha' }),
+      reducirSinMutar(doc, { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'done' }),
     );
     const tarea = documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0];
-    expect(tarea?.estado).toBe('hecha');
-    expect(tarea?.hecha_en).toBe(AHORA);
+    expect(tarea?.estado).toBe('done');
+    expect(tarea?.aceptada_en).toBe(AHORA);
   });
 
-  it('reabrir una tarea BORRA hecha_en: si no, Terminadas mostraría algo que volvió a estar en curso', () => {
+  it('reabrir una tarea BORRA aceptada_en: si no, Terminadas mostraría algo que volvió a estar en curso', () => {
     const { doc, clave } = arbolConTareas(1);
     const ciclo = aplicarTodos(doc, [
-      { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'hecha' },
-      { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'en_curso' },
+      { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'done' },
+      { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'iniciado' },
     ]);
     const tarea = ciclo.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0];
-    expect(tarea?.hecha_en).toBeNull();
+    expect(tarea?.aceptada_en).toBeNull();
   });
 
-  it('cancelar tampoco deja hecha_en puesta', () => {
+  it('cancelar tampoco deja aceptada_en puesta', () => {
     const { doc, clave } = arbolConTareas(1);
     const ciclo = aplicarTodos(doc, [
-      { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'hecha' },
+      { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'done' },
       { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'cancelada' },
     ]);
-    expect(ciclo.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.hecha_en).toBeNull();
+    expect(ciclo.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.aceptada_en).toBeNull();
   });
 
   it('cambiar al estado que ya tenía se rechaza: no hay nada que contar en la bitácora', () => {
@@ -495,16 +499,16 @@ describe('cambiarEstado', () => {
   it('el evento dice de dónde a dónde, que es lo que la bitácora necesita sin comparar objetos', () => {
     const { doc, clave } = arbolConTareas(1);
     const { evento } = exigirOk(
-      reducirSinMutar(doc, { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'en_curso' }),
+      reducirSinMutar(doc, { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'iniciado' }),
     );
-    expect(evento.resumen).toBe(`${clave}-T1: pendiente → en_curso`);
-    expect(evento.detalle).toEqual({ antes: 'pendiente', despues: 'en_curso' });
+    expect(evento.resumen).toBe(`${clave}-T1: pendiente → iniciado`);
+    expect(evento.detalle).toEqual({ antes: 'pendiente', despues: 'iniciado' });
   });
 
   it('el evento congela dónde vivía la tarea (regla 7): proyecto, ruta legible y contenedores', () => {
     const { doc, clave, epicaId, historiaId } = arbolConTareas(1);
     const { evento } = exigirOk(
-      reducirSinMutar(doc, { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'hecha' }),
+      reducirSinMutar(doc, { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'done' }),
     );
     expect(evento).toMatchObject({
       proyecto_id: clave,
@@ -523,7 +527,7 @@ describe('cambiarEstado', () => {
 describe('bloquear y desbloquear — bandera, no estado', () => {
   it('bloquear NO cambia el estado: la tarea conserva su avance para saber a qué vuelve', () => {
     const { doc, clave } = arbolConTareas(1);
-    const enCurso = aplicar(doc, { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'en_curso' });
+    const enCurso = aplicar(doc, { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'iniciado' });
     const { documento } = exigirOk(
       reducirSinMutar(enCurso, {
         comando: 'bloquear',
@@ -533,7 +537,7 @@ describe('bloquear y desbloquear — bandera, no estado', () => {
       }),
     );
     const tarea = documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0];
-    expect(tarea?.estado).toBe('en_curso');
+    expect(tarea?.estado).toBe('iniciado');
     expect(tarea?.bloqueos).toEqual([
       {
         tipo: 'dependencia',
@@ -607,10 +611,10 @@ describe('bloquear y desbloquear — bandera, no estado', () => {
       motivo: 'x',
     });
     const { documento } = exigirOk(
-      reducirSinMutar(bloqueada, { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'hecha' }),
+      reducirSinMutar(bloqueada, { comando: 'cambiarEstado', id: `${clave}-T1`, estado: 'done' }),
     );
     const tarea = documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0];
-    expect(tarea?.estado).toBe('hecha');
+    expect(tarea?.estado).toBe('done');
     expect(tarea?.bloqueos[0]?.desbloqueada_en).toBeNull();
   });
 

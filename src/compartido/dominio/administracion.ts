@@ -105,7 +105,7 @@ export function proyectosParaAdmin(doc: Documento): ProyectosAdmin {
     cerradoEn: proyecto.cerrado_en,
     archivado: proyecto.archivado,
     contenido: contenidoDeProyecto(doc, proyecto),
-    equipo: proyecto.equipo.map((m) => nombres.get(m.persona_id) ?? m.persona_id),
+    equipo: proyecto.equipos.flatMap((equipo) => equipo.miembros).map((m) => nombres.get(m.persona_id) ?? m.persona_id),
   }));
 
   return {
@@ -250,7 +250,7 @@ export function disponiblesParaEquipo(
   clave: string,
 ): { id: PersonaId; nombre: string }[] {
   const proyecto = doc.proyectos.find((p) => p.clave === clave);
-  const dentro = new Set(proyecto?.equipo.map((m) => m.persona_id) ?? []);
+  const dentro = new Set(proyecto?.equipos.flatMap((equipo) => equipo.miembros).map((m) => m.persona_id) ?? []);
   return doc.personas
     .filter((persona) => persona.activa && !dentro.has(persona.id))
     .map((persona) => ({ id: persona.id, nombre: persona.nombre }))
@@ -269,7 +269,7 @@ export type MiembroEditable = MiembroEquipo;
 
 export function equipoDe(doc: Documento, clave: string): MiembroEditable[] {
   const proyecto = doc.proyectos.find((p) => p.clave === clave);
-  return (proyecto?.equipo ?? []).map((miembro) => ({ ...miembro }));
+  return (proyecto?.equipos.flatMap((equipo) => equipo.miembros) ?? []).map((miembro) => ({ ...miembro }));
 }
 
 /** Dos iniciales. Decorativo: nunca sustituye al nombre. */

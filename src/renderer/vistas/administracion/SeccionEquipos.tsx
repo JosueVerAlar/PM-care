@@ -5,7 +5,7 @@
  *
  * **Las personas son un catálogo global; los equipos se arman por proyecto tomando de
  * ahí.** No hay entidad «equipo» con identidad propia: un equipo ES la lista de miembros
- * de un proyecto (`proyecto.equipo`). Por eso:
+ * de un proyecto (`proyecto.equipos.flatMap((equipo) => equipo.miembros)`). Por eso:
  *
  * - Añadir a alguien a un proyecto es **elegirlo del catálogo**, nunca volver a darlo de
  *   alta. El desplegable de «Agregar» solo ofrece a quien ya existe y está activo.
@@ -63,14 +63,14 @@ export function SeccionEquipos({ documento }: { documento: Documento }) {
   const equiposPorPersona = useMemo(() => {
     const mapa = new Map<string, string[]>();
     for (const proyecto of activos) {
-      for (const miembro of proyecto.equipo) {
+      for (const miembro of proyecto.equipos.flatMap((equipo) => equipo.miembros)) {
         mapa.set(miembro.persona_id, [...(mapa.get(miembro.persona_id) ?? []), proyecto.clave]);
       }
     }
     return mapa;
   }, [activos]);
 
-  const conEquipo = activos.filter((proyecto) => proyecto.equipo.length > 0);
+  const conEquipo = activos.filter((proyecto) => proyecto.equipos.flatMap((equipo) => equipo.miembros).length > 0);
   const enVarios = personas.filter((persona) => persona.equipos.length > 1);
   const cargaPorMiembro = useMemo(
     () =>
@@ -136,7 +136,7 @@ export function SeccionEquipos({ documento }: { documento: Documento }) {
                             title={equipo.nombre}
                           >
                             {equipo.clave}
-                            {equipo.rol !== null && ` · ${equipo.rol}`}
+                            {equipo.responsabilidades.length > 0 && ` · ${equipo.responsabilidades.join(', ')}`}
                           </span>
                         ))}
                       </span>
@@ -260,12 +260,12 @@ function TarjetaEquipo({
                 <span className="miembro__nombre">{nombrePersona}</span>
                 <span className="miembro__rol">
                   {soloLectura ? (
-                    (miembro.rol ?? 'sin rol')
+                    (miembro.responsabilidades.join(', ') || 'sin responsabilidades')
                   ) : (
                     <input
                       className="miembro__campo"
                       type="text"
-                      value={editandoRol ? rolBorrador.texto : (miembro.rol ?? '')}
+                      value={editandoRol ? rolBorrador.texto : miembro.responsabilidades.join(', ')}
                       placeholder="sin rol"
                       aria-label={`Rol de ${nombrePersona} en ${clave}`}
                       onChange={(evento) =>
@@ -289,13 +289,13 @@ function TarjetaEquipo({
                         setRolBorrador(null);
                         // Texto libre a propósito: «backend», «vistas», «QA». Vacío = sin
                         // rol, y se guarda como `null`, no como cadena vacía.
-                        if ((miembro.rol ?? '') === rol) return;
+                        if (miembro.responsabilidades.join(', ') === rol) return;
                         guardar(
                           // Se conserva el miembro entero y solo se cambia `rol`: los
                           // campos que el usuario haya escrito a mano siguen ahí (regla 14).
                           miembros.map((m) =>
                             m.persona_id === miembro.persona_id
-                              ? { ...m, rol: rol === '' ? null : rol }
+                              ? { ...m, responsabilidades: rol === '' ? [] : [rol] }
                               : m,
                           ),
                           `Cambiar el rol de ${nombrePersona} en ${clave}`,
@@ -358,7 +358,7 @@ function TarjetaEquipo({
                       if (id === '') return;
                       setAgregando(false);
                       guardar(
-                        [...miembros, { persona_id: id, rol: null }],
+                        [...miembros, { persona_id: id, responsabilidades: [], capacidad: null }],
                         `Meter a ${nombres.get(id) ?? id} en ${clave}`,
                       );
                     }}
@@ -404,7 +404,7 @@ function TarjetaEquipo({
                   className="mini"
                   onClick={() =>
                     guardar(
-                      [...miembros, { persona_id: persona.personaId, rol: null }],
+                      [...miembros, { persona_id: persona.personaId, responsabilidades: [], capacidad: null }],
                       `Meter a ${persona.nombre} en ${clave}`,
                     )
                   }

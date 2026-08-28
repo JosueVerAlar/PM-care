@@ -49,7 +49,7 @@ function documentoPanorama(): Documento {
   const atorada = unaTarea({
     id: 'TRAB-T1',
     clave: 'TRAB',
-    estado: 'en_curso',
+    estado: 'iniciado',
     creada_en: '2026-08-01T09:00:00-06:00',
     bloqueos: [unBloqueo({ bloqueada_en: '2026-08-06T09:00:00-06:00' })],
   });
@@ -70,9 +70,9 @@ function documentoPanorama(): Documento {
   const fresca = unaTarea({
     id: 'FRES-T1',
     clave: 'FRES',
-    estado: 'hecha',
+    estado: 'done',
     creada_en: '2026-08-01T09:00:00-06:00',
-    hecha_en: '2026-08-25T18:00:00-06:00',
+    aceptada_en: '2026-08-25T18:00:00-06:00',
   });
   const muda = unaTarea({ id: 'MUDO-T1', clave: 'MUDO', estado: 'pendiente' });
 
@@ -124,8 +124,8 @@ describe('ultimoMovimiento', () => {
     const casos: [string, Tarea, string][] = [
       ['creada', unaTarea({ ...base, creada_en: '2026-05-01T09:00:00-06:00' }), '2026-05-01T09:00:00-06:00'],
       [
-        'hecha',
-        unaTarea({ ...base, estado: 'hecha', creada_en: '2026-05-01T09:00:00-06:00', hecha_en: '2026-05-02T09:00:00-06:00' }),
+        'done',
+        unaTarea({ ...base, estado: 'done', creada_en: '2026-05-01T09:00:00-06:00', aceptada_en: '2026-05-02T09:00:00-06:00' }),
         '2026-05-02T09:00:00-06:00',
       ],
       [
@@ -207,7 +207,7 @@ describe('tarjetaDeProyecto', () => {
   it('las canceladas no cuentan como abiertas', () => {
     const proyecto = proyectoCon('UNO', 'Uno', [
       unaTarea({ clave: 'UNO', estado: 'cancelada' }),
-      unaTarea({ clave: 'UNO', estado: 'hecha' }),
+      unaTarea({ clave: 'UNO', estado: 'done' }),
     ]);
     const doc = unDocumento({ proyectos: [proyecto] });
     expect(tarjetaDeProyecto(doc, proyecto, HOY).abiertas).toBe(0);
@@ -323,8 +323,8 @@ describe('lo que este módulo NO defiende', () => {
     const proyecto = proyectoCon('FIN', 'Terminado', [
       unaTarea({
         clave: 'FIN',
-        estado: 'hecha',
-        hecha_en: '2026-08-25T18:00:00-06:00',
+        estado: 'done',
+        aceptada_en: '2026-08-25T18:00:00-06:00',
         bloqueos: [unBloqueo({ bloqueada_en: '2026-05-01T09:00:00-06:00' })],
       }),
     ]);
@@ -385,7 +385,7 @@ describe('los tres órdenes son estables: dos proyectos empatados no se intercam
   it('dos proyectos con el mismo bloqueo más viejo se desempatan por quieto y luego por clave', () => {
     const bloqueo = unBloqueo({ bloqueada_en: '2026-08-10T09:00:00-06:00' });
     const gemelo = (clave: string) =>
-      proyectoCon(clave, 'Igual', [unaTarea({ clave, estado: 'en_curso', bloqueos: [bloqueo] })]);
+      proyectoCon(clave, 'Igual', [unaTarea({ clave, estado: 'iniciado', bloqueos: [bloqueo] })]);
     const doc = unDocumento({ proyectos: [gemelo('ZZZ'), gemelo('AAA')] });
     expect(panorama(doc, HOY, 'atencion').conBloqueos.map((t) => t.clave)).toEqual(['AAA', 'ZZZ']);
   });

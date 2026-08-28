@@ -201,7 +201,7 @@ function FilaPersona({
           {carga.equipos.length > 1 && (
             <span
               className="persona__equipos"
-              title={carga.equipos.map((e) => `${e.clave}${e.rol === null ? '' : ` — ${e.rol}`}`).join(' · ')}
+              title={carga.equipos.map((e) => `${e.clave}${e.responsabilidades.length === 0 ? '' : ` — ${e.responsabilidades.join(', ')}`}`).join(' · ')}
             >
               en {carga.equipos.length} equipos
             </span>

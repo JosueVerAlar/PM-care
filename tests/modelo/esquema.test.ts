@@ -152,7 +152,7 @@ describe('regla 14: los campos desconocidos se conservan, nunca se borran ni tum
     // Consecuencia directa de la regla 14: `passthrough` y `strict` no caben juntos. La
     // regla 1 se protege con la prueba estructural de abajo, no con el validador.
     const doc = unDocumento({
-      proyectos: [unProyecto({ clave: 'PRUEBA', epicas: [unaEpica({ estado: 'hecha', porcentaje: 100 })] })],
+      proyectos: [unProyecto({ clave: 'PRUEBA', epicas: [unaEpica({ estado: 'done', porcentaje: 100 })] })],
     });
     expect(problemas(doc)).toEqual([]);
   });
@@ -395,11 +395,12 @@ describe('sprints', () => {
     expect(problemas(doc)).toEqual([]);
   });
 
-  it('dos sprints activos se rechazan: "el sprint activo" es singular en toda la interfaz', () => {
+  it('dos sprints activos del mismo proyecto se rechazan', () => {
     const doc = unDocumento({
-      sprints: [unSprint({ id: 'S-1', estado: 'activo' }), unSprint({ id: 'S-2', estado: 'activo' })],
+      proyectos: [unProyecto({ clave: 'PRUEBA' })],
+      sprints: [unSprint({ id: 'S-1', estado: 'activo', clave: 'PRUEBA' }), unSprint({ id: 'S-2', estado: 'activo', clave: 'PRUEBA' })],
     });
-    expect(problemas(doc)).toContainEqual(expect.stringContaining('hay 2 sprints con estado "activo"'));
+    expect(problemas(doc)).toContainEqual(expect.stringContaining('hay 2 sprints activos para PRUEBA'));
   });
 
   it('dos sprints con el mismo id se rechazan', () => {
@@ -522,7 +523,8 @@ describe('la raíz', () => {
 
   it('la ruta de un problema en la raíz se lee "(raíz)", no una cadena vacía', () => {
     const doc = unDocumento({
-      sprints: [unSprint({ id: 'S-1', estado: 'activo' }), unSprint({ id: 'S-2', estado: 'activo' })],
+      proyectos: [unProyecto({ clave: 'PRUEBA' })],
+      sprints: [unSprint({ id: 'S-1', estado: 'activo', clave: 'PRUEBA' }), unSprint({ id: 'S-2', estado: 'activo', clave: 'PRUEBA' })],
     });
     expect(rutas(doc)).toContain('sprints');
     expect(validarDocumento(42).ok).toBe(false);
@@ -533,7 +535,7 @@ describe('la raíz', () => {
     const doc = unDocumento({
       personas: [unaPersona({ id: 'ana' }), unaPersona({ id: 'ana' })],
       proyectos: [unProyecto({ clave: 'PRUEBA' }), unProyecto({ clave: 'PRUEBA' })],
-      sprints: [unSprint({ id: 'S-1', estado: 'activo' }), unSprint({ id: 'S-2', estado: 'activo' })],
+      sprints: [unSprint({ id: 'S-1', estado: 'activo', clave: 'PRUEBA' }), unSprint({ id: 'S-2', estado: 'activo', clave: 'PRUEBA' })],
     });
     expect(problemas(doc).length).toBeGreaterThanOrEqual(3);
   });
@@ -582,8 +584,8 @@ describe('lo que el esquema NO puede ver porque pasa en JSON.parse (tarea de E3)
   });
 
   it('una clave duplicada dentro de una tarea también se pierde en silencio', () => {
-    const crudo = '{"id":"PRUEBA-T1","estado":"pendiente","estado":"hecha"}';
-    expect((JSON.parse(crudo) as { estado: string }).estado).toBe('hecha');
+    const crudo = '{"id":"PRUEBA-T1","estado":"pendiente","estado":"done"}';
+    expect((JSON.parse(crudo) as { estado: string }).estado).toBe('done');
   });
 
   it('un JSON truncado revienta en JSON.parse: es el caso de "se cortó la escritura"', () => {

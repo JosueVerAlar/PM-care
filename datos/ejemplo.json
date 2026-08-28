@@ -1,5 +1,5 @@
 {
-  "esquema_version": 1,
+  "esquema_version": 2,
   "personas": [
     {
       "id": "roberto-cortes",
@@ -45,24 +45,6 @@
         "historias": 10,
         "tareas": 28
       },
-      "equipo": [
-        {
-          "persona_id": "roberto-cortes",
-          "rol": "líder técnico"
-        },
-        {
-          "persona_id": "jesus-castillo",
-          "rol": "backend"
-        },
-        {
-          "persona_id": "josue-vergara",
-          "rol": "backend y QA"
-        },
-        {
-          "persona_id": "jose-dominguez",
-          "rol": "vistas"
-        }
-      ],
       "epicas": [
         {
           "id": "SICOE-E1",
@@ -90,7 +72,12 @@
                   "creada_en": "2026-07-14T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-104"
+                  "clave_externa": "SICOE-104",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T2",
@@ -104,7 +91,12 @@
                   "creada_en": "2026-07-14T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-105"
+                  "clave_externa": "SICOE-105",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T3",
@@ -118,7 +110,12 @@
                   "creada_en": "2026-07-14T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-106"
+                  "clave_externa": "SICOE-106",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T4",
@@ -132,7 +129,12 @@
                   "creada_en": "2026-07-14T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-108"
+                  "clave_externa": "SICOE-108",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 }
               ]
             },
@@ -155,7 +157,12 @@
                   "creada_en": "2026-07-14T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-107"
+                  "clave_externa": "SICOE-107",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 }
               ]
             },
@@ -167,7 +174,8 @@
               "clave_externa": null,
               "tareas": []
             }
-          ]
+          ],
+          "tareas": []
         },
         {
           "id": "SICOE-E2",
@@ -187,7 +195,7 @@
                   "id": "SICOE-T6",
                   "titulo": "Sembrar catálogo de motivos y alinear enums de estatus del alumno",
                   "descripcion": null,
-                  "estado": "en_curso",
+                  "estado": "iniciado",
                   "planeada": true,
                   "responsable": "jesus-castillo",
                   "fecha_limite": null,
@@ -202,7 +210,12 @@
                       "desbloqueada_en": "2026-08-06T16:40:00-06:00"
                     }
                   ],
-                  "clave_externa": "SICOE-100"
+                  "clave_externa": "SICOE-100",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T7",
@@ -216,7 +229,12 @@
                   "creada_en": "2026-07-14T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-101"
+                  "clave_externa": "SICOE-101",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T8",
@@ -230,7 +248,12 @@
                   "creada_en": "2026-07-14T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-102"
+                  "clave_externa": "SICOE-102",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 }
               ]
             },
@@ -253,11 +276,17 @@
                   "creada_en": "2026-07-14T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-103"
+                  "clave_externa": "SICOE-103",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 }
               ]
             }
-          ]
+          ],
+          "tareas": []
         },
         {
           "id": "SICOE-E3",
@@ -277,7 +306,7 @@
                   "id": "SICOE-T10",
                   "titulo": "Endpoint consulta y filtrado de usuarios",
                   "descripcion": null,
-                  "estado": "hecha",
+                  "estado": "done",
                   "planeada": true,
                   "responsable": "jesus-castillo",
                   "fecha_limite": null,
@@ -285,13 +314,18 @@
                   "creada_en": "2026-06-02T09:00:00-06:00",
                   "hecha_en": "2026-08-05T18:20:00-06:00",
                   "bloqueos": [],
-                  "clave_externa": "SICOE-53"
+                  "clave_externa": "SICOE-53",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T11",
                   "titulo": "Endpoints Creación de usuarios con contraseña y validación",
                   "descripcion": null,
-                  "estado": "hecha",
+                  "estado": "done",
                   "planeada": true,
                   "responsable": "roberto-cortes",
                   "fecha_limite": null,
@@ -299,13 +333,18 @@
                   "creada_en": "2026-06-02T09:00:00-06:00",
                   "hecha_en": "2026-07-22T17:05:00-06:00",
                   "bloqueos": [],
-                  "clave_externa": "SICOE-54"
+                  "clave_externa": "SICOE-54",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T12",
                   "titulo": "Vista Creación Usuarios",
                   "descripcion": null,
-                  "estado": "hecha",
+                  "estado": "done",
                   "planeada": true,
                   "responsable": "jose-dominguez",
                   "fecha_limite": null,
@@ -313,7 +352,12 @@
                   "creada_en": "2026-06-02T09:00:00-06:00",
                   "hecha_en": "2026-07-23T13:15:00-06:00",
                   "bloqueos": [],
-                  "clave_externa": "SICOE-55"
+                  "clave_externa": "SICOE-55",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 }
               ]
             },
@@ -336,13 +380,18 @@
                   "creada_en": "2026-06-02T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-44"
+                  "clave_externa": "SICOE-44",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T14",
                   "titulo": "Endpoint Restablecimiento de contraseñas",
                   "descripcion": null,
-                  "estado": "en_curso",
+                  "estado": "iniciado",
                   "planeada": true,
                   "responsable": "jesus-castillo",
                   "fecha_limite": null,
@@ -357,7 +406,12 @@
                       "desbloqueada_en": null
                     }
                   ],
-                  "clave_externa": "SICOE-56"
+                  "clave_externa": "SICOE-56",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T15",
@@ -371,11 +425,17 @@
                   "creada_en": "2026-07-09T10:45:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-85"
+                  "clave_externa": "SICOE-85",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 }
               ]
             }
-          ]
+          ],
+          "tareas": []
         },
         {
           "id": "SICOE-E4",
@@ -395,7 +455,7 @@
                   "id": "SICOE-T16",
                   "titulo": "GET alumnos por curp",
                   "descripcion": null,
-                  "estado": "hecha",
+                  "estado": "done",
                   "planeada": true,
                   "responsable": "jesus-castillo",
                   "fecha_limite": null,
@@ -403,13 +463,18 @@
                   "creada_en": "2026-06-02T09:00:00-06:00",
                   "hecha_en": "2026-07-29T12:00:00-06:00",
                   "bloqueos": [],
-                  "clave_externa": "SICOE-72"
+                  "clave_externa": "SICOE-72",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T17",
                   "titulo": "GET carreras",
                   "descripcion": null,
-                  "estado": "hecha",
+                  "estado": "done",
                   "planeada": true,
                   "responsable": "jesus-castillo",
                   "fecha_limite": null,
@@ -417,13 +482,18 @@
                   "creada_en": "2026-06-02T09:00:00-06:00",
                   "hecha_en": "2026-07-29T12:30:00-06:00",
                   "bloqueos": [],
-                  "clave_externa": "SICOE-73"
+                  "clave_externa": "SICOE-73",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T18",
                   "titulo": "GET materias/carrera/{carrera_id}/semestre",
                   "descripcion": null,
-                  "estado": "hecha",
+                  "estado": "done",
                   "planeada": true,
                   "responsable": "jesus-castillo",
                   "fecha_limite": null,
@@ -431,13 +501,18 @@
                   "creada_en": "2026-06-02T09:00:00-06:00",
                   "hecha_en": "2026-08-04T11:10:00-06:00",
                   "bloqueos": [],
-                  "clave_externa": "SICOE-74"
+                  "clave_externa": "SICOE-74",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T19",
                   "titulo": "GET calificaciones del alumno",
                   "descripcion": null,
-                  "estado": "hecha",
+                  "estado": "done",
                   "planeada": true,
                   "responsable": "josue-vergara",
                   "fecha_limite": null,
@@ -445,7 +520,12 @@
                   "creada_en": "2026-06-02T09:00:00-06:00",
                   "hecha_en": "2026-08-19T15:45:00-06:00",
                   "bloqueos": [],
-                  "clave_externa": "SICOE-75"
+                  "clave_externa": "SICOE-75",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 }
               ]
             },
@@ -460,7 +540,7 @@
                   "id": "SICOE-T20",
                   "titulo": "POST Crear solicitud con captura",
                   "descripcion": null,
-                  "estado": "hecha",
+                  "estado": "done",
                   "planeada": true,
                   "responsable": "jesus-castillo",
                   "fecha_limite": null,
@@ -468,13 +548,18 @@
                   "creada_en": "2026-06-02T09:00:00-06:00",
                   "hecha_en": "2026-08-13T19:00:00-06:00",
                   "bloqueos": [],
-                  "clave_externa": "SICOE-69"
+                  "clave_externa": "SICOE-69",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T21",
                   "titulo": "POST Crear solicitud de alumno previamente registrado",
                   "descripcion": null,
-                  "estado": "hecha",
+                  "estado": "done",
                   "planeada": true,
                   "responsable": "jesus-castillo",
                   "fecha_limite": null,
@@ -482,13 +567,18 @@
                   "creada_en": "2026-06-02T09:00:00-06:00",
                   "hecha_en": "2026-08-14T12:20:00-06:00",
                   "bloqueos": [],
-                  "clave_externa": "SICOE-70"
+                  "clave_externa": "SICOE-70",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T22",
                   "titulo": "POST aceptar solicitud (3 casos de uso)",
                   "descripcion": "Los tres casos: con captura, alumno registrado y con equivalencias.",
-                  "estado": "en_curso",
+                  "estado": "iniciado",
                   "planeada": true,
                   "responsable": "jesus-castillo",
                   "fecha_limite": null,
@@ -496,7 +586,12 @@
                   "creada_en": "2026-06-02T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-76"
+                  "clave_externa": "SICOE-76",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T23",
@@ -510,7 +605,12 @@
                   "creada_en": "2026-08-11T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-92"
+                  "clave_externa": "SICOE-92",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T24",
@@ -524,7 +624,12 @@
                   "creada_en": "2026-08-11T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-93"
+                  "clave_externa": "SICOE-93",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 }
               ]
             },
@@ -539,7 +644,7 @@
                   "id": "SICOE-T25",
                   "titulo": "POST rechazar y cancelar solicitud",
                   "descripcion": null,
-                  "estado": "hecha",
+                  "estado": "done",
                   "planeada": true,
                   "responsable": "jesus-castillo",
                   "fecha_limite": null,
@@ -547,7 +652,12 @@
                   "creada_en": "2026-06-02T09:00:00-06:00",
                   "hecha_en": "2026-08-20T17:30:00-06:00",
                   "bloqueos": [],
-                  "clave_externa": "SICOE-77"
+                  "clave_externa": "SICOE-77",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T26",
@@ -561,7 +671,12 @@
                   "creada_en": "2026-06-02T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-78"
+                  "clave_externa": "SICOE-78",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T27",
@@ -575,7 +690,12 @@
                   "creada_en": "2026-08-11T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-94"
+                  "clave_externa": "SICOE-94",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "SICOE-T28",
@@ -589,11 +709,17 @@
                   "creada_en": "2026-06-02T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": "SICOE-81"
+                  "clave_externa": "SICOE-81",
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 }
               ]
             }
-          ]
+          ],
+          "tareas": []
         },
         {
           "id": "SICOE-E5",
@@ -601,10 +727,48 @@
           "descripcion": "Declarada en Jira, sin desglosar todavía.",
           "planeada": true,
           "clave_externa": "SICOE-20",
-          "historias": []
+          "historias": [],
+          "tareas": []
         }
       ],
-      "clave_externa": "SICOE"
+      "clave_externa": "SICOE",
+      "equipos": [
+        {
+          "id": "sicoe-general",
+          "nombre": "General",
+          "miembros": [
+            {
+              "persona_id": "roberto-cortes",
+              "responsabilidades": [
+                "líder técnico"
+              ],
+              "capacidad": null
+            },
+            {
+              "persona_id": "jesus-castillo",
+              "responsabilidades": [
+                "backend"
+              ],
+              "capacidad": null
+            },
+            {
+              "persona_id": "josue-vergara",
+              "responsabilidades": [
+                "backend y QA"
+              ],
+              "capacidad": null
+            },
+            {
+              "persona_id": "jose-dominguez",
+              "responsabilidades": [
+                "vistas"
+              ],
+              "capacidad": null
+            }
+          ]
+        }
+      ],
+      "tareas": []
     },
     {
       "clave": "INFRA",
@@ -618,20 +782,6 @@
         "historias": 3,
         "tareas": 5
       },
-      "equipo": [
-        {
-          "persona_id": "roberto-cortes",
-          "rol": "líder técnico"
-        },
-        {
-          "persona_id": "miguel-medina",
-          "rol": "servidores"
-        },
-        {
-          "persona_id": "jesus-castillo",
-          "rol": "backend"
-        }
-      ],
       "epicas": [
         {
           "id": "INFRA-E1",
@@ -651,7 +801,7 @@
                   "id": "INFRA-T1",
                   "titulo": "Respaldos automáticos de la base de SICOE con verificación de restauración",
                   "descripcion": null,
-                  "estado": "en_curso",
+                  "estado": "iniciado",
                   "planeada": true,
                   "responsable": "miguel-medina",
                   "fecha_limite": null,
@@ -659,7 +809,12 @@
                   "creada_en": "2026-08-11T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": null
+                  "clave_externa": null,
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "INFRA-T2",
@@ -673,7 +828,12 @@
                   "creada_en": "2026-08-11T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": null
+                  "clave_externa": null,
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 }
               ]
             },
@@ -696,7 +856,12 @@
                   "creada_en": "2026-08-24T09:12:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": null
+                  "clave_externa": null,
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "INFRA-T4",
@@ -710,11 +875,17 @@
                   "creada_en": "2026-08-11T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": null
+                  "clave_externa": null,
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 }
               ]
             }
-          ]
+          ],
+          "tareas": []
         },
         {
           "id": "INFRA-E2",
@@ -734,7 +905,7 @@
                   "id": "INFRA-T5",
                   "titulo": "Inventario de servicios y dependencias por servidor",
                   "descripcion": null,
-                  "estado": "hecha",
+                  "estado": "done",
                   "planeada": true,
                   "responsable": "roberto-cortes",
                   "fecha_limite": null,
@@ -742,14 +913,50 @@
                   "creada_en": "2026-07-14T09:00:00-06:00",
                   "hecha_en": "2026-08-18T20:00:00-06:00",
                   "bloqueos": [],
-                  "clave_externa": null
+                  "clave_externa": null,
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 }
               ]
+            }
+          ],
+          "tareas": []
+        }
+      ],
+      "clave_externa": null,
+      "equipos": [
+        {
+          "id": "infra-general",
+          "nombre": "General",
+          "miembros": [
+            {
+              "persona_id": "roberto-cortes",
+              "responsabilidades": [
+                "líder técnico"
+              ],
+              "capacidad": null
+            },
+            {
+              "persona_id": "miguel-medina",
+              "responsabilidades": [
+                "servidores"
+              ],
+              "capacidad": null
+            },
+            {
+              "persona_id": "jesus-castillo",
+              "responsabilidades": [
+                "backend"
+              ],
+              "capacidad": null
             }
           ]
         }
       ],
-      "clave_externa": null
+      "tareas": []
     },
     {
       "clave": "PED",
@@ -763,16 +970,6 @@
         "historias": 1,
         "tareas": 2
       },
-      "equipo": [
-        {
-          "persona_id": "roberto-cortes",
-          "rol": "líder técnico"
-        },
-        {
-          "persona_id": "miguel-medina",
-          "rol": "integraciones"
-        }
-      ],
       "epicas": [
         {
           "id": "PED-E1",
@@ -792,7 +989,7 @@
                   "id": "PED-T1",
                   "titulo": "Sincronizar padrón de alumnos con la plataforma",
                   "descripcion": null,
-                  "estado": "en_curso",
+                  "estado": "iniciado",
                   "planeada": true,
                   "responsable": "miguel-medina",
                   "fecha_limite": null,
@@ -800,7 +997,12 @@
                   "creada_en": "2026-07-14T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": null
+                  "clave_externa": null,
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 },
                 {
                   "id": "PED-T2",
@@ -814,14 +1016,43 @@
                   "creada_en": "2026-07-14T09:00:00-06:00",
                   "hecha_en": null,
                   "bloqueos": [],
-                  "clave_externa": null
+                  "clave_externa": null,
+                  "trabajo": [],
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "aceptada_en": null
                 }
               ]
+            }
+          ],
+          "tareas": []
+        }
+      ],
+      "clave_externa": null,
+      "equipos": [
+        {
+          "id": "ped-general",
+          "nombre": "General",
+          "miembros": [
+            {
+              "persona_id": "roberto-cortes",
+              "responsabilidades": [
+                "líder técnico"
+              ],
+              "capacidad": null
+            },
+            {
+              "persona_id": "miguel-medina",
+              "responsabilidades": [
+                "integraciones"
+              ],
+              "capacidad": null
             }
           ]
         }
       ],
-      "clave_externa": null
+      "tareas": []
     }
   ],
   "sprints": [
@@ -853,7 +1084,8 @@
           "prioridad": "baja",
           "desenlace": "no_terminada"
         }
-      ]
+      ],
+      "clave": "SICOE"
     },
     {
       "id": "S-2026-32",
@@ -890,7 +1122,8 @@
           "prioridad": "media",
           "desenlace": "completada"
         }
-      ]
+      ],
+      "clave": "SICOE"
     },
     {
       "id": "S-2026-33",
@@ -941,7 +1174,8 @@
           "prioridad": "baja",
           "desenlace": "completada"
         }
-      ]
+      ],
+      "clave": null
     },
     {
       "id": "S-2026-34",
@@ -1020,7 +1254,8 @@
           "prioridad": "media",
           "desenlace": null
         }
-      ]
+      ],
+      "clave": null
     }
   ]
 }

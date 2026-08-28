@@ -74,7 +74,7 @@ describe('cerrarPlaneacion', () => {
     const conTareas = aplicarTodos(doc, [
       { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Uno' },
       { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Dos', planeada: false },
-      { comando: 'cambiarEstado', id: 'PM-T1', estado: 'hecha' },
+      { comando: 'cambiarEstado', id: 'PM-T1', estado: 'done' },
     ]);
 
     const { documento } = exigirOk(
@@ -217,7 +217,7 @@ describe('reabrirPlaneacion', () => {
       [
         { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Coló una' },
         { comando: 'crearTarea', contenedorId: HISTORIA, titulo: 'Coló otra' },
-        { comando: 'cambiarEstado', id: 'PM-T1', estado: 'en_curso' },
+        { comando: 'cambiarEstado', id: 'PM-T1', estado: 'iniciado' },
       ],
       alMediodia('2026-09-01'),
     );

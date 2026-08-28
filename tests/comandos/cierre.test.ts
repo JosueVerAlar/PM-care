@@ -96,8 +96,8 @@ describe('cerrarSprint — los tres destinos', () => {
   function conCincoTareas(): Documento {
     return docCon(
       [
-        unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'hecha' }),
-        unaTarea({ id: 'PM-T2', clave: CLAVE, estado: 'en_curso' }),
+        unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'done' }),
+        unaTarea({ id: 'PM-T2', clave: CLAVE, estado: 'iniciado' }),
         unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'pendiente' }),
         unaTarea({ id: 'PM-T4', clave: CLAVE, estado: 'pendiente' }),
         unaTarea({ id: 'PM-T5', clave: CLAVE, estado: 'cancelada' }),
@@ -144,9 +144,9 @@ describe('cerrarSprint — los tres destinos', () => {
     const tareas = tareasDe(documento);
     expect(tareas.get('PM-T4')?.estado).toBe('cancelada');
     // Y solo esa: las otras dos decisiones no tocan el estado de nadie.
-    expect(tareas.get('PM-T2')?.estado).toBe('en_curso');
+    expect(tareas.get('PM-T2')?.estado).toBe('iniciado');
     expect(tareas.get('PM-T3')?.estado).toBe('pendiente');
-    expect(tareas.get('PM-T1')?.estado).toBe('hecha');
+    expect(tareas.get('PM-T1')?.estado).toBe('done');
   });
 
   it('backlog saca del ciclo sin cancelar y sin pasar a ningún otro sprint', () => {
@@ -161,7 +161,7 @@ describe('cerrarSprint — los tres destinos', () => {
         ],
       }),
     );
-    expect(tareasDe(documento).get('PM-T2')?.estado).toBe('en_curso');
+    expect(tareasDe(documento).get('PM-T2')?.estado).toBe('iniciado');
     // Sin nada que arrastrar no se crea sprint siguiente: cerrar no deja sprints de recuerdo.
     expect(documento.sprints).toHaveLength(1);
   });
@@ -224,7 +224,7 @@ describe('cerrarSprint — los tres destinos', () => {
   it('un sprint SIN pendientes se cierra sin decisiones y no crea sprint siguiente', () => {
     const doc = docCon(
       [
-        unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'hecha' }),
+        unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'done' }),
         unaTarea({ id: 'PM-T2', clave: CLAVE, estado: 'cancelada' }),
       ],
       [sprintCon(['PM-T1', 'PM-T2'])],
@@ -376,7 +376,7 @@ describe('cerrarSprint — una decisión inválida rechaza el comando ENTERO', (
   function conMezcla(): Documento {
     return docCon(
       [
-        unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'hecha' }),
+        unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'done' }),
         unaTarea({ id: 'PM-T2', clave: CLAVE, estado: 'pendiente' }),
         unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'cancelada' }),
         // Existe en el proyecto pero NO está comprometida en el sprint.
@@ -396,7 +396,7 @@ describe('cerrarSprint — una decisión inválida rechaza el comando ENTERO', (
     );
     expect(error.codigo).toBe('invalido');
     expect(error.mensaje).toContain('PM-T1');
-    expect(error.mensaje).toContain('hecha');
+    expect(error.mensaje).toContain('done');
   });
 
   it('una decisión sobre una tarea CANCELADA se rechaza', () => {
@@ -516,8 +516,8 @@ describe('cerrarSprint — atomicidad: o entero o nada', () => {
       [
         unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'pendiente' }),
         unaTarea({ id: 'PM-T2', clave: CLAVE, estado: 'pendiente' }),
-        unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'en_curso' }),
-        unaTarea({ id: 'PM-T4', clave: CLAVE, estado: 'hecha' }),
+        unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'iniciado' }),
+        unaTarea({ id: 'PM-T4', clave: CLAVE, estado: 'done' }),
       ],
       [sprintCon(['PM-T1', 'PM-T2', 'PM-T3', 'PM-T4'])],
     );
@@ -879,8 +879,8 @@ describe('cerrarSprint — no toca lo que no está en el sprint', () => {
             // Mismos estados y mismo perfil que las del sprint: si el cierre se guiara por
             // el estado de la tarea en vez de por los items, estas caerían también.
             unaTarea({ id: 'OTRO-T1', clave: 'OTRO', estado: 'pendiente', responsable: 'ana' }),
-            unaTarea({ id: 'OTRO-T2', clave: 'OTRO', estado: 'en_curso' }),
-            unaTarea({ id: 'OTRO-T3', clave: 'OTRO', estado: 'hecha' }),
+            unaTarea({ id: 'OTRO-T2', clave: 'OTRO', estado: 'iniciado' }),
+            unaTarea({ id: 'OTRO-T3', clave: 'OTRO', estado: 'done' }),
           ],
           'OTRO',
         ),

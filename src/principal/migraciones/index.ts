@@ -15,9 +15,9 @@
  * 3. Antes de escribir el resultado, el almacén guarda `pre-migracion-*`, exento de
  *    rotación. Una migración que sale mal tiene que ser reversible a mano.
  *
- * Hoy la cadena está vacía porque `ESQUEMA_VERSION === 1` y no hay nada anterior. El
- * andamio existe igual: el día que haya v2 no se improvisa el mecanismo, se añade una
- * entrada al arreglo.
+ * La entrada 1→2 es la primera que ejercita este andamio. Se mantiene como un solo salto
+ * porque separar cambios que nacen juntos multiplicaría estados intermedios que nunca
+ * existieron como formato escrito por la aplicación.
  */
 
 import { ESQUEMA_VERSION, VERSION_MINIMA_SOPORTADA } from '../../compartido/modelo/version';
@@ -31,7 +31,96 @@ export interface Migracion {
 }
 
 /** Ordenadas por `desde`. Un hueco en la cadena hace fallar `planDeMigracion`. */
-export const MIGRACIONES: readonly Migracion[] = [];
+export const MIGRACIONES: readonly Migracion[] = [
+  {
+    desde: 1,
+    hasta: 2,
+    descripcion: 'Añade sprints por proyecto, reloj por tramos, equipos y el flujo de seis estados',
+    migrar(crudo) {
+      const proyectos: Record<string, unknown>[] = arreglo(crudo['proyectos']).map((valor) => {
+        const proyecto = objeto(valor);
+        const clave = typeof proyecto['clave'] === 'string' ? proyecto['clave'] : '';
+        const miembros = arreglo(proyecto['equipo']).map((valorMiembro) => {
+          const miembro = objeto(valorMiembro);
+          const rol = miembro['rol'];
+          const { rol: _rol, ...resto } = miembro;
+          return {
+            ...resto,
+            responsabilidades: typeof rol === 'string' ? [rol] : [],
+            capacidad: null,
+          };
+        });
+        const { equipo: _equipo, ...resto } = proyecto;
+        const equiposExistentes = arreglo(proyecto['equipos']);
+        return {
+          ...resto,
+          equipos: equiposExistentes.length > 0
+            ? equiposExistentes
+            : [{ id: `${clave.toLowerCase()}-general`, nombre: 'General', miembros }],
+          tareas: migrarTareas(arreglo(proyecto['tareas'])),
+          epicas: arreglo(proyecto['epicas']).map(migrarEpica),
+        };
+      });
+
+      const claves = new Set(proyectos.map((p) => p['clave']).filter((v): v is string => typeof v === 'string'));
+      const sprints = arreglo(crudo['sprints']).map((valor) => {
+        const sprint = objeto(valor);
+        const tocadas = new Set(
+          arreglo(sprint['items'])
+            .map((item) => objeto(item)['tarea_id'])
+            .filter((id): id is string => typeof id === 'string')
+            .map((id) => [...claves].find((clave) => id.startsWith(`${clave}-`)))
+            .filter((clave): clave is string => clave !== undefined),
+        );
+        const claveExistente = sprint['clave'];
+        const clave = Object.hasOwn(sprint, 'clave') && (typeof claveExistente === 'string' || claveExistente === null)
+          ? claveExistente
+          : tocadas.size === 1 ? [...tocadas][0] : null;
+        return { ...sprint, clave };
+      });
+      return { ...crudo, proyectos, sprints };
+    },
+  },
+];
+
+function objeto(valor: unknown): Record<string, unknown> {
+  return valor !== null && typeof valor === 'object' && !Array.isArray(valor)
+    ? (valor as Record<string, unknown>)
+    : {};
+}
+
+function arreglo(valor: unknown): unknown[] {
+  return Array.isArray(valor) ? valor : [];
+}
+
+function migrarTareas(valores: unknown[]): Record<string, unknown>[] {
+  return valores.map((valor) => {
+    const tarea = objeto(valor);
+    const estado = tarea['estado'] === 'en_curso' ? 'iniciado' : tarea['estado'] === 'hecha' ? 'done' : tarea['estado'];
+    const { aceptada_en: hechaEn, ...resto } = tarea;
+    return {
+      ...resto,
+      estado,
+      trabajo: [],
+      aceptada_en: hechaEn ?? tarea['aceptada_en'] ?? null,
+      tipo: 'trabajo',
+      equipo_id: null,
+      criterios: null,
+    };
+  });
+}
+
+function migrarEpica(valor: unknown): Record<string, unknown> {
+  const epica = objeto(valor);
+  return {
+    ...epica,
+    tareas: migrarTareas(arreglo(epica['tareas'])),
+    historias: arreglo(epica['historias']).map((valorHistoria) => {
+      const historia = objeto(valorHistoria);
+      return { ...historia, tareas: migrarTareas(arreglo(historia['tareas'])) };
+    }),
+  };
+}
 
 export type PlanMigracion =
   | { ok: true; pasos: readonly Migracion[] }

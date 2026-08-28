@@ -130,7 +130,7 @@ describe('crearPersona — alta', () => {
     const { documento } = exigirOk(
       reducirSinMutar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['PM'] }),
     );
-    expect(documento.proyectos[0]?.equipo).toEqual([{ persona_id: 'ana', rol: null }]);
+    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([{ persona_id: 'ana', responsabilidades: [], capacidad: null }]);
   });
 
   it('si uno de los equipos no existe, no se da de alta a nadie', () => {
@@ -191,8 +191,8 @@ describe('editarPersona', () => {
     const { documento } = exigirOk(
       reducirSinMutar(enAmbos, { comando: 'editarPersona', id: 'ana', equipos: ['DOS'] }),
     );
-    expect(documento.proyectos[0]?.equipo).toEqual([]);
-    expect(documento.proyectos[1]?.equipo).toEqual([{ persona_id: 'ana', rol: null }]);
+    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([]);
+    expect(documento.proyectos[1]?.equipos[0]?.miembros).toEqual([{ persona_id: 'ana', responsabilidades: [], capacidad: null }]);
   });
 
   it('equipos: [] la saca de todos', () => {
@@ -201,7 +201,7 @@ describe('editarPersona', () => {
     const { documento } = exigirOk(
       reducirSinMutar(dentro, { comando: 'editarPersona', id: 'ana', equipos: [] }),
     );
-    expect(documento.proyectos[0]?.equipo).toEqual([]);
+    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([]);
   });
 
   it('donde ya era miembro no se le borra el rol: esta lista no conoce ese dato', () => {
@@ -210,12 +210,12 @@ describe('editarPersona', () => {
     const conRol = aplicar(conPersona, {
       comando: 'editarEquipo',
       proyecto: 'PM',
-      miembros: [{ persona_id: 'ana', rol: 'backend' }],
+      miembros: [{ persona_id: 'ana', responsabilidades: ['backend'], capacidad: null }],
     });
     const { documento } = exigirOk(
       reducirSinMutar(conRol, { comando: 'editarPersona', id: 'ana', equipos: ['PM'] }),
     );
-    expect(documento.proyectos[0]?.equipo).toEqual([{ persona_id: 'ana', rol: 'backend' }]);
+    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([{ persona_id: 'ana', responsabilidades: ['backend'], capacidad: null }]);
   });
 
   it('un comando sin nombre ni equipos se rechaza', () => {
@@ -244,7 +244,7 @@ describe('desactivarPersona', () => {
       reducirSinMutar(dentro, { comando: 'desactivarPersona', id: 'ana' }),
     );
     expect(documento.personas[0]?.activa).toBe(false);
-    expect(documento.proyectos[0]?.equipo).toEqual([]);
+    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([]);
   });
 
   it('NO toca ni una de sus tareas: su historia es suya y sigue diciendo su nombre', () => {
@@ -315,7 +315,7 @@ describe('reactivarPersona', () => {
       { comando: 'desactivarPersona', id: 'ana' },
     ]);
     const { documento } = exigirOk(reducirSinMutar(ciclo, { comando: 'reactivarPersona', id: 'ana' }));
-    expect(documento.proyectos[0]?.equipo).toEqual([]);
+    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([]);
   });
 
   it('reactivar a quien ya está activa se rechaza', () => {
@@ -400,7 +400,7 @@ describe('a una persona desactivada no se le asigna trabajo nuevo por NINGUNA ru
       reducirSinMutar(doc, {
         comando: 'editarEquipo',
         proyecto: 'PM',
-        miembros: [{ persona_id: 'ana', rol: null }],
+        miembros: [{ persona_id: 'ana', responsabilidades: [], capacidad: null }],
       }),
     );
     expect(error.codigo).toBe('invalido');
@@ -414,12 +414,12 @@ describe('a una persona desactivada no se le asigna trabajo nuevo por NINGUNA ru
         comando: 'editarEquipo',
         proyecto: 'PM',
         miembros: [
-          { persona_id: 'beto', rol: null },
-          { persona_id: 'ana', rol: null },
+          { persona_id: 'beto', responsabilidades: [], capacidad: null },
+          { persona_id: 'ana', responsabilidades: [], capacidad: null },
         ],
       }),
     );
-    expect(doc.proyectos[0]?.equipo).toEqual([]);
+    expect(doc.proyectos[0]?.equipos[0]?.miembros).toEqual([]);
   });
 
   it('ruta 4 — editarPersona con equipos no vacíos sobre una desactivada se rechaza', () => {
@@ -439,7 +439,7 @@ describe('a una persona desactivada no se le asigna trabajo nuevo por NINGUNA ru
       reducirSinMutar(doc, {
         comando: 'editarEquipo',
         proyecto: 'PM',
-        miembros: [{ persona_id: 'beto', rol: null }],
+        miembros: [{ persona_id: 'beto', responsabilidades: [], capacidad: null }],
       }),
     );
   });
@@ -504,7 +504,7 @@ describe('eliminarPersona — se bloquea si tiene historia, y remite a desactiva
       reducirSinMutar(dentro, { comando: 'eliminarPersona', id: 'ana' }),
     );
     expect(documento.personas).toEqual([]);
-    expect(documento.proyectos[0]?.equipo).toEqual([]);
+    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([]);
     expect(evento.detalle).toEqual({ equipos: ['PM'] });
   });
 
@@ -639,14 +639,14 @@ describe('editarEquipo', () => {
         comando: 'editarEquipo',
         proyecto: 'PM',
         miembros: [
-          { persona_id: 'ana', rol: 'backend' },
-          { persona_id: 'beto', rol: null },
+          { persona_id: 'ana', responsabilidades: ['backend'], capacidad: null },
+          { persona_id: 'beto', responsabilidades: [], capacidad: null },
         ],
       }),
     );
-    expect(documento.proyectos[0]?.equipo).toEqual([
-      { persona_id: 'ana', rol: 'backend' },
-      { persona_id: 'beto', rol: null },
+    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([
+      { persona_id: 'ana', responsabilidades: ['backend'], capacidad: null },
+      { persona_id: 'beto', responsabilidades: [], capacidad: null },
     ]);
   });
 
@@ -656,7 +656,7 @@ describe('editarEquipo', () => {
     const { documento } = exigirOk(
       reducirSinMutar(conEquipo, { comando: 'editarEquipo', proyecto: 'PM', miembros: [] }),
     );
-    expect(documento.proyectos[0]?.equipo).toEqual([]);
+    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([]);
   });
 
   it('sacar a alguien del equipo NO le quita sus tareas: el equipo no restringe quién es responsable', () => {
@@ -678,8 +678,8 @@ describe('editarEquipo', () => {
         comando: 'editarEquipo',
         proyecto: 'PM',
         miembros: [
-          { persona_id: 'ana', rol: 'uno' },
-          { persona_id: 'ana', rol: 'dos' },
+          { persona_id: 'ana', responsabilidades: ['uno'], capacidad: null },
+          { persona_id: 'ana', responsabilidades: ['dos'], capacidad: null },
         ],
       }),
     );
@@ -694,7 +694,7 @@ describe('editarEquipo', () => {
         reducirSinMutar(doc, {
           comando: 'editarEquipo',
           proyecto: 'PM',
-          miembros: [{ persona_id: 'fantasma', rol: null }],
+          miembros: [{ persona_id: 'fantasma', responsabilidades: [], capacidad: null }],
         }),
       ).codigo,
     ).toBe('no-encontrado');
@@ -716,7 +716,7 @@ describe('editarEquipo', () => {
     const { documento } = exigirOk(
       reducirSinMutar(enAmbos, { comando: 'editarEquipo', proyecto: 'UNO', miembros: [] }),
     );
-    expect(documento.proyectos[0]?.equipo).toEqual([]);
-    expect(documento.proyectos[1]?.equipo).toEqual([{ persona_id: 'ana', rol: null }]);
+    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([]);
+    expect(documento.proyectos[1]?.equipos[0]?.miembros).toEqual([{ persona_id: 'ana', responsabilidades: [], capacidad: null }]);
   });
 });

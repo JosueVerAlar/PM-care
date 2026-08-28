@@ -633,8 +633,8 @@ describe('reordenar no cambia ningún hecho: el documento entero, no un campo', 
     const base = arbol([[3, 1]]);
     const doc = aplicarTodos(base, [
       { comando: 'crearPersona', nombre: 'Ana García' },
-      { comando: 'cambiarEstado', id: 'PM-T1', estado: 'hecha' },
-      { comando: 'cambiarEstado', id: 'PM-T2', estado: 'en_curso' },
+      { comando: 'cambiarEstado', id: 'PM-T1', estado: 'done' },
+      { comando: 'cambiarEstado', id: 'PM-T2', estado: 'iniciado' },
       { comando: 'cambiarEstado', id: 'PM-T3', estado: 'cancelada' },
       { comando: 'editarTarea', id: 'PM-T2', responsable: 'ana-garcia', fechaLimite: '2026-09-15' },
       { comando: 'bloquear', tareaId: 'PM-T2', tipo: 'dependencia', motivo: 'Falta el acceso' },
@@ -803,7 +803,7 @@ describe('reordenar no escribe marcas de tiempo, así que el proyecto sigue igua
     expect(diasSinMovimiento(barajado.proyectos[0]!, HOY_LEJANO)).toBe(quietoAntes);
   });
 
-  it('ninguna creada_en, hecha_en ni bloqueo cambia de valor al reordenar', () => {
+  it('ninguna creada_en, aceptada_en ni bloqueo cambia de valor al reordenar', () => {
     const doc = arbolViejo();
     const marcasAntes = marcas(doc);
     const barajado = aplicarTodos(
@@ -855,7 +855,7 @@ function marcas(doc: Documento): string[] {
       for (const historia of epica.historias) {
         for (const tarea of historia.tareas) {
           salida.push(`${tarea.id}:creada=${tarea.creada_en}`);
-          salida.push(`${tarea.id}:hecha=${tarea.hecha_en}`);
+          salida.push(`${tarea.id}:hecha=${tarea.aceptada_en}`);
           for (const bloqueo of tarea.bloqueos) {
             salida.push(`${tarea.id}:bloq=${bloqueo.bloqueada_en}/${bloqueo.desbloqueada_en}`);
           }

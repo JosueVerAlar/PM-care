@@ -1,7 +1,7 @@
 /**
  * Constructores de datos de prueba.
  *
- * Existen para que cada prueba diga solo lo que le importa: `unaTarea({ estado: 'hecha' })`
+ * Existen para que cada prueba diga solo lo que le importa: `unaTarea({ estado: 'done' })`
  * y nada más. Todo lo demás sale de un valor por defecto válido, así que añadir un campo
  * obligatorio al esquema rompe este archivo y no las ciento y pico pruebas.
  *
@@ -53,6 +53,9 @@ export function unaTarea(over: Con<Tarea> = {}): Tarea {
     titulo: `Tarea ${n}`,
     descripcion: null,
     estado: 'pendiente',
+    tipo: 'trabajo',
+    equipo_id: null,
+    criterios: null,
     planeada: true,
     responsable: null,
     fecha_limite: null,
@@ -60,7 +63,8 @@ export function unaTarea(over: Con<Tarea> = {}): Tarea {
     esfuerzo: null,
     creada_en: null,
     comprometida_en: null,
-    hecha_en: null,
+    aceptada_en: null,
+    trabajo: [],
     bloqueos: [],
     clave_externa: null,
     ...resto,
@@ -123,13 +127,18 @@ export function unProyecto(over: Partial<Proyecto> = {}): Proyecto {
         tareas: sueltas,
       }),
     },
-    equipo: [],
+    equipos: [],
     epicas,
     /** N9: tareas colgadas del proyecto, sin épica. El caso de un trabajo continuo. */
     tareas: [],
     clave_externa: null,
   };
-  return { ...base, ...over };
+  const legado = over['equipo'];
+  const normalizado: Record<string, unknown> = Array.isArray(legado)
+    ? { ...over, equipos: [{ id: `${clave.toLowerCase()}-general`, nombre: 'General', miembros: legado }] }
+    : over;
+  delete normalizado['equipo'];
+  return { ...base, ...normalizado };
 }
 
 export function unaPersona(over: Partial<Persona> = {}): Persona {
@@ -144,7 +153,7 @@ export function unaPersona(over: Partial<Persona> = {}): Persona {
 }
 
 export function unMiembro(personaId: string, rol: string | null = null): MiembroEquipo {
-  return { persona_id: personaId, rol };
+  return { persona_id: personaId, responsabilidades: rol === null ? [] : [rol], capacidad: null };
 }
 
 export function unItem(tareaId: string, over: Partial<ItemSprint> = {}): ItemSprint {
@@ -167,6 +176,15 @@ export function unSprint(over: Partial<Sprint> = {}): Sprint {
     inicio: '2026-08-24',
     fin: '2026-08-30',
     estado: 'activo',
+    /**
+     * `null` = sprint transversal, que es el valor que NO exige que exista un proyecto.
+     * Poner `CLAVE` por omisión obligaba a que cada documento de prueba tuviera ese
+     * proyecto, y el esquema rechaza un sprint que apunta a una clave inexistente: 36
+     * pruebas fallaban por el valor por omisión de un constructor, no por su caso.
+     * Quien pruebe un sprint DE proyecto pasa su clave explícita, que es además lo que
+     * hace visible en la prueba que ese es el caso que está midiendo.
+     */
+    clave: null,
     items: [],
     ...over,
   };
@@ -201,20 +219,20 @@ export function tareasConEstados(estados: readonly EstadoTarea[], clave = CLAVE)
   return estados.map((estado) => unaTarea({ estado, clave }));
 }
 
-/** `unaHistoriaCon(['hecha', 'pendiente'])`. Historia vacía con `[]`. */
+/** `unaHistoriaCon(['done', 'pendiente'])`. Historia vacía con `[]`. */
 export function unaHistoriaCon(estados: readonly EstadoTarea[], clave = CLAVE): Historia {
   return unaHistoria({ clave, tareas: tareasConEstados(estados, clave) });
 }
 
 /**
- * `unaEpicaCon([['hecha'], []])` — una épica de dos historias, la segunda vacía.
+ * `unaEpicaCon([['done'], []])` — una épica de dos historias, la segunda vacía.
  * Es la forma en la que se escriben casi todos los casos límite del avance.
  */
 export function unaEpicaCon(porHistoria: readonly (readonly EstadoTarea[])[], clave = CLAVE): Epica {
   return unaEpica({ clave, historias: porHistoria.map((estados) => unaHistoriaCon(estados, clave)) });
 }
 
-/** Repite un estado n veces. Para los conteos grandes: `repetir('hecha', 199)`. */
+/** Repite un estado n veces. Para los conteos grandes: `repetir('done', 199)`. */
 export function repetir(estado: EstadoTarea, veces: number): EstadoTarea[] {
   return Array.from({ length: veces }, () => estado);
 }

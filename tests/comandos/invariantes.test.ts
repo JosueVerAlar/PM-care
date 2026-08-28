@@ -103,7 +103,7 @@ function casosPorComando(): { comando: Comando; doc: Documento }[] {
     { comando: { comando: 'editarTarea', id: 'PM-T1', titulo: 'Otra' }, doc: conSprints },
     { comando: { comando: 'eliminarTarea', id: 'PM-T2' }, doc: conSprints },
     { comando: { comando: 'reordenarTarea', contenedorId: 'PM-H1', tareaId: 'PM-T2', aIndice: 0 }, doc: conSprints },
-    { comando: { comando: 'cambiarEstado', id: 'PM-T1', estado: 'hecha' }, doc: conSprints },
+    { comando: { comando: 'cambiarEstado', id: 'PM-T1', estado: 'done' }, doc: conSprints },
     { comando: { comando: 'moverAlSprint', tareaId: 'PM-T2', sprintId: 'S-1' }, doc: conSprints },
     { comando: { comando: 'sacarDelSprint', tareaId: 'PM-T1', sprintId: 'S-1' }, doc: conSprints },
     { comando: { comando: 'cerrarSprint', sprintId: 'S-1' }, doc: conSprints },
@@ -114,7 +114,7 @@ function casosPorComando(): { comando: Comando; doc: Documento }[] {
     },
     { comando: { comando: 'desbloquear', tareaId: 'PM-T2' }, doc: conSprints },
     {
-      comando: { comando: 'editarEquipo', proyecto: 'PM', miembros: [{ persona_id: 'ana', rol: null }] },
+      comando: { comando: 'editarEquipo', proyecto: 'PM', miembros: [{ persona_id: 'ana', responsabilidades: [], capacidad: null }] },
       doc: conSprints,
     },
   ];
@@ -187,8 +187,8 @@ describe('el reductor es puro', () => {
 
   it('no consulta el reloj: dos instantes distintos dan documentos distintos, y el instante manda', () => {
     const { doc } = arbolConTareas(1);
-    const temprano = exigirOk(reducir(doc, { comando: 'cambiarEstado', id: 'PM-T1', estado: 'hecha' }, '2020-01-01T00:00:00-06:00'));
-    expect(temprano.documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.hecha_en).toBe(
+    const temprano = exigirOk(reducir(doc, { comando: 'cambiarEstado', id: 'PM-T1', estado: 'done' }, '2020-01-01T00:00:00-06:00'));
+    expect(temprano.documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.aceptada_en).toBe(
       '2020-01-01T00:00:00-06:00',
     );
     expect(temprano.evento.ts).toBe('2020-01-01T00:00:00-06:00');
@@ -244,7 +244,7 @@ describe('regla 14: los campos desconocidos del usuario sobreviven a cualquier c
 
   it('un campo desconocido en el PAYLOAD sí se rechaza: eso no lo escribió el usuario, es un bug', () => {
     // La asimetría es deliberada: `passthrough` en el documento, `strict` en el comando.
-    expect(validarComando({ comando: 'cambiarEstado', id: 'PM-T1', estado: 'hecha', extra: 1 }).ok).toBe(
+    expect(validarComando({ comando: 'cambiarEstado', id: 'PM-T1', estado: 'done', extra: 1 }).ok).toBe(
       false,
     );
   });
@@ -302,7 +302,7 @@ function comprometidaEn(doc: Documento, sprintId: string): string | null {
   return sprint?.items[0]?.tarea_id ?? null;
 }
 
-const ESTADOS = ['pendiente', 'en_curso', 'hecha', 'cancelada'] as const;
+const ESTADOS = ['pendiente', 'iniciado', 'done', 'cancelada'] as const;
 const TIPOS_BLOQUEO = ['dependencia', 'externo', 'decision', 'informacion', 'otro'] as const;
 const PRIORIDADES = ['alta', 'media', 'baja'] as const;
 /** Con acentos, repetidos y sin letras latinas: el desempate del id también se ejercita. */
@@ -428,7 +428,7 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
     () => ({
       comando: 'editarEquipo',
       proyecto,
-      miembros: inv.personas.filter(() => rng() < 0.4).map((id) => ({ persona_id: id, rol: null })),
+      miembros: inv.personas.filter(() => rng() < 0.4).map((id) => ({ persona_id: id, responsabilidades: [], capacidad: null })),
     }),
   ];
   return elegir(rng, opciones)();
@@ -695,7 +695,7 @@ describe('la red de seguridad del reductor', () => {
     const final = aplicarTodos(doc, [
       { comando: 'crearPersona', nombre: 'Ana' },
       { comando: 'editarTarea', id: 'PM-T1', responsable: 'ana' },
-      { comando: 'cambiarEstado', id: 'PM-T1', estado: 'hecha' },
+      { comando: 'cambiarEstado', id: 'PM-T1', estado: 'done' },
       { comando: 'crearEpica', proyecto: 'PM', titulo: 'Otra' },
     ]);
     exigirValido(final);

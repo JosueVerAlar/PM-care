@@ -203,10 +203,10 @@ export function personaPorOmision(doc: Documento): PersonaId | null {
       let lidera = 0;
       for (const proyecto of doc.proyectos) {
         if (proyecto.archivado) continue;
-        const miembro = proyecto.equipo.find((m) => m.persona_id === persona.id);
+        const miembro = proyecto.equipos.flatMap((equipo) => equipo.miembros).find((m) => m.persona_id === persona.id);
         if (miembro === undefined) continue;
         equipos += 1;
-        if (miembro.rol !== null && /l[ií]der/i.test(miembro.rol)) lidera += 1;
+        if (miembro.responsabilidades.some((responsabilidad) => /l[ií]der/i.test(responsabilidad))) lidera += 1;
       }
       return { id: persona.id, nombre: persona.nombre, equipos, lidera };
     })

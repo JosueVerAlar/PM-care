@@ -97,20 +97,14 @@ describe('la semilla estrena esfuerzo y reloj', () => {
     return resultado.documento;
   })();
 
-  it('trae exactamente una resolución medible, y la cuenta bien', () => {
+  it('no inventa resoluciones anteriores a la migración', () => {
     const medidas = resoluciones(doc);
-    expect(medidas.map((m) => m.tarea.id)).toEqual(['IN-T1']);
-    // Comprometida el 24 a las 09:00 —el mismo día del arranque, así que cuenta desde las
-    // 00:00— y cerrada el 28 a las 17:30.
-    expect(medidas[0]?.dias).toBe(4.7);
-    expect(medidas[0]?.responsable).toBe('miguel-medina');
+    expect(medidas).toEqual([]);
   });
 
   /** Una sola medida no da promedio: el conteo crudo y nada más. */
-  it('con una sola medida no se promedia', () => {
-    const [fila] = tiempoPorPersona(doc);
-    expect(fila?.tiempo.promedio).toBeNull();
-    expect(fila?.tiempo.cuentan).toBe(1);
+  it('sin tramos tampoco inventa un promedio', () => {
+    expect(tiempoPorPersona(doc)).toEqual([]);
   });
 
   it('las estimaciones se suman con su letra chica', () => {

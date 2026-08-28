@@ -49,7 +49,7 @@ function documentoBloqueos(): Documento {
     id: 'ALFA-T1',
     clave: 'ALFA',
     titulo: 'Elegir proveedor de firma',
-    estado: 'en_curso',
+    estado: 'iniciado',
     bloqueos: [
       unBloqueo({
         tipo: 'decision',
@@ -195,7 +195,7 @@ describe('filasDeBloqueos', () => {
     // formalmente. Sin esto, un proyecto terminado encabeza el Panorama para siempre.
     const tarea = unaTarea({
       clave: 'ALFA',
-      estado: 'hecha',
+      estado: 'done',
       bloqueos: [unBloqueo({ bloqueada_en: '2026-08-20T09:00:00-06:00' })],
     });
     const doc = unDocumento({ proyectos: [proyectoCon('ALFA', 'Alfa', [tarea])] });

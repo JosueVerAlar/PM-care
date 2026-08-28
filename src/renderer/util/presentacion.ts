@@ -16,15 +16,19 @@ import type { FormaEstado } from '../componentes/iconos';
 
 const FORMA_TAREA: Record<EstadoTarea, FormaEstado> = {
   pendiente: 'pendiente',
-  en_curso: 'curso',
-  hecha: 'hecha',
+  iniciado: 'curso',
+  en_pruebas: 'curso',
+  terminado: 'curso',
+  done: 'hecha',
   cancelada: 'cancelada',
 };
 
 const ETIQUETA_TAREA: Record<EstadoTarea, string> = {
   pendiente: 'Pendiente',
-  en_curso: 'En curso',
-  hecha: 'Hecha',
+  iniciado: 'Iniciado',
+  en_pruebas: 'En pruebas',
+  terminado: 'Terminado',
+  done: 'Done',
   cancelada: 'Cancelada',
 };
 

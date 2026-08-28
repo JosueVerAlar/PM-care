@@ -207,7 +207,7 @@ describe('la etiqueta nombra el paso que deshacer va a revertir', () => {
     await repo.ejecutar({ comando: 'crearTarea', contenedorId: historiaId, titulo: 'Uno' });
     const tareaId = idDeLaTarea(repo) ?? '';
 
-    await repo.ejecutar({ comando: 'cambiarEstado', id: tareaId, estado: 'en_curso' });
+    await repo.ejecutar({ comando: 'cambiarEstado', id: tareaId, estado: 'iniciado' });
     expect(repo.estado().etiquetaDeshacer).toBe(`cambiar el estado de ${tareaId}`);
 
     await repo.ejecutar({ comando: 'eliminarTarea', id: tareaId });

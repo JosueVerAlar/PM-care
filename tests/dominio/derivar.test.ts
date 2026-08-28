@@ -50,7 +50,7 @@ import { SEMILLAS, prng, unDocumentoAleatorio, unProyectoAleatorio } from '../ap
 describe('contarTareas', () => {
   it('reparte cada estado en su casilla y no inventa ninguna', () => {
     const avance = contarTareas(
-      tareasConEstados(['hecha', 'hecha', 'en_curso', 'pendiente', 'cancelada']),
+      tareasConEstados(['done', 'done', 'iniciado', 'pendiente', 'cancelada']),
     );
     expect(avance).toEqual({
       hojas: 4,
@@ -65,8 +65,8 @@ describe('contarTareas', () => {
   });
 
   it('regla 5: las canceladas quedan fuera del denominador', () => {
-    const sinCancelar = contarTareas(tareasConEstados(['hecha', 'pendiente']));
-    const conCancelada = contarTareas(tareasConEstados(['hecha', 'pendiente', 'cancelada']));
+    const sinCancelar = contarTareas(tareasConEstados(['done', 'pendiente']));
+    const conCancelada = contarTareas(tareasConEstados(['done', 'pendiente', 'cancelada']));
     expect(conCancelada.hojas).toBe(sinCancelar.hojas);
     expect(conCancelada.pct).toBe(sinCancelar.pct);
     expect(conCancelada.canceladas).toBe(1);
@@ -80,7 +80,7 @@ describe('contarTareas', () => {
   });
 
   it('regla 5: una cancelada no impide que el resto cuente como completo', () => {
-    const avance = contarTareas(tareasConEstados(['hecha', 'hecha', 'cancelada']));
+    const avance = contarTareas(tareasConEstados(['done', 'done', 'cancelada']));
     expect(avance.pct).toBe(100);
     expect(estadoDerivado(avance)).toBe('hecha');
   });
@@ -97,7 +97,7 @@ describe('contarTareas', () => {
     // El esquema rechaza este documento; solo llega aquí quien llame sin validar. Se deja
     // escrito para que el día que alguien lo vea en pantalla sepa por qué la tarea "no está".
     const rara = unaTarea({ estado: 'zombie' as never });
-    const avance = contarTareas([unaTarea({ estado: 'hecha' }), rara]);
+    const avance = contarTareas([unaTarea({ estado: 'done' }), rara]);
     expect(avance.hojas).toBe(1);
     expect(avance.hechas + avance.enCurso + avance.pendientes + avance.canceladas).toBe(1);
   });
@@ -130,7 +130,7 @@ describe('contenedores sin tareas (regla 2)', () => {
   });
 
   it('una historia vacía junto a otra con tareas no aporta al denominador', () => {
-    const epica = unaEpicaCon([['hecha', 'pendiente'], []]);
+    const epica = unaEpicaCon([['done', 'pendiente'], []]);
     const avance = avanceDeEpica(epica);
     expect(avance.hojas).toBe(2);
     expect(avance.pct).toBe(50);
@@ -142,7 +142,7 @@ describe('contenedores sin tareas (regla 2)', () => {
 describe('regla 4: verde solo si el estado es hecha, jamás por redondeo', () => {
   it('199 de 200 hechas: el porcentaje se topa en 99 aunque redondee a 100', () => {
     const avance = contarTareas(
-      tareasConEstados([...repetir('hecha', 199), ...repetir('en_curso', 1)]),
+      tareasConEstados([...repetir('done', 199), ...repetir('iniciado', 1)]),
     );
     expect(Math.round((199 / 200) * 100)).toBe(100); // el redondeo crudo sí cruza
     expect(avance.pct).toBe(99);
@@ -151,7 +151,7 @@ describe('regla 4: verde solo si el estado es hecha, jamás por redondeo', () =>
 
   it('199 de 200 hechas: el estado derivado sigue en movimiento, no hecha', () => {
     const avance = contarTareas(
-      tareasConEstados([...repetir('hecha', 199), ...repetir('en_curso', 1)]),
+      tareasConEstados([...repetir('done', 199), ...repetir('iniciado', 1)]),
     );
     expect(estadoDerivado(avance)).toBe('en_movimiento');
     expect(estadoDerivado(avance)).not.toBe('hecha');
@@ -173,7 +173,7 @@ describe('regla 4: verde solo si el estado es hecha, jamás por redondeo', () =>
   });
 
   it('200 de 200 hechas: ahora sí, 100 y hecha', () => {
-    const avance = contarTareas(tareasConEstados(repetir('hecha', 200)));
+    const avance = contarTareas(tareasConEstados(repetir('done', 200)));
     expect(avance.pct).toBe(100);
     expect(estadoDerivado(avance)).toBe('hecha');
   });
@@ -181,9 +181,9 @@ describe('regla 4: verde solo si el estado es hecha, jamás por redondeo', () =>
   it('el 100 se alcanza si y solo si hechas === hojas, para cualquier tamaño', () => {
     for (const total of [1, 2, 5, 7, 33, 200, 201, 999]) {
       const casiTodas = contarTareas(
-        tareasConEstados([...repetir('hecha', total - 1), ...repetir('pendiente', 1)]),
+        tareasConEstados([...repetir('done', total - 1), ...repetir('pendiente', 1)]),
       );
-      const todas = contarTareas(tareasConEstados(repetir('hecha', total)));
+      const todas = contarTareas(tareasConEstados(repetir('done', total)));
       expect(casiTodas.pct, `${total - 1} de ${total}`).not.toBe(100);
       expect(todas.pct, `${total} de ${total}`).toBe(100);
     }
@@ -192,7 +192,7 @@ describe('regla 4: verde solo si el estado es hecha, jamás por redondeo', () =>
   it('una emergente sin cerrar entre puras hechas deja el contenedor en movimiento', () => {
     const epica = unaEpica({
       historias: [
-        unaHistoriaCon(repetir('hecha', 4)),
+        unaHistoriaCon(repetir('done', 4)),
         unaHistoria({ tareas: [unaTarea({ estado: 'pendiente', planeada: false })] }),
       ],
     });
@@ -204,8 +204,8 @@ describe('regla 4: verde solo si el estado es hecha, jamás por redondeo', () =>
   it('una emergente YA CERRADA entre puras hechas deja el contenedor hecho (verde, no amarillo)', () => {
     const epica = unaEpica({
       historias: [
-        unaHistoriaCon(repetir('hecha', 4)),
-        unaHistoria({ tareas: [unaTarea({ estado: 'hecha', planeada: false })] }),
+        unaHistoriaCon(repetir('done', 4)),
+        unaHistoria({ tareas: [unaTarea({ estado: 'done', planeada: false })] }),
       ],
     });
     const avance = avanceDeEpica(epica);
@@ -216,7 +216,7 @@ describe('regla 4: verde solo si el estado es hecha, jamás por redondeo', () =>
   it('una emergente cancelada entre puras hechas tampoco impide el verde', () => {
     const epica = unaEpica({
       historias: [
-        unaHistoriaCon(repetir('hecha', 4)),
+        unaHistoriaCon(repetir('done', 4)),
         unaHistoria({ tareas: [unaTarea({ estado: 'cancelada', planeada: false })] }),
       ],
     });
@@ -234,7 +234,7 @@ describe('regla 2: una historia sin desglosar impide el verde de su épica', () 
    * nadie lo ha desglosado todavía— y esconde justo lo siguiente que hay que hacer.
    */
   const epicaDelDefecto = () =>
-    unaEpicaCon([['hecha', 'hecha', 'hecha'], ['hecha', 'hecha', 'hecha'], []]);
+    unaEpicaCon([['done', 'done', 'done'], ['done', 'done', 'done'], []]);
 
   it('6 de 6 hechas con una historia vacía NO es hecha', () => {
     const avance = avanceDeEpica(epicaDelDefecto());
@@ -263,12 +263,12 @@ describe('regla 2: una historia sin desglosar impide el verde de su épica', () 
   });
 
   it('dos historias vacías cuentan dos, no una', () => {
-    const epica = unaEpicaCon([['hecha', 'hecha'], [], []]);
+    const epica = unaEpicaCon([['done', 'done'], [], []]);
     expect(avanceDeEpica(epica).contenedoresSinDesglosar).toBe(2);
   });
 
   it('sin historias vacías el conteo es 0 y el verde llega igual que antes', () => {
-    const epica = unaEpicaCon([['hecha', 'hecha'], ['hecha']]);
+    const epica = unaEpicaCon([['done', 'done'], ['done']]);
     const avance = avanceDeEpica(epica);
     expect(avance.contenedoresSinDesglosar).toBe(0);
     expect(estadoDerivado(avance)).toBe('hecha');
@@ -277,7 +277,7 @@ describe('regla 2: una historia sin desglosar impide el verde de su épica', () 
   it('una historia DESGLOSADA y luego cancelada entera no cuenta como sin desglosar', () => {
     // Aquí está el riesgo de pasarse de estricto. Esta historia sí se planeó; lo que se
     // decidió fue no hacerla. No falta abrir nada, así que la épica sí está terminada.
-    const epica = unaEpicaCon([['hecha', 'hecha', 'hecha'], ['cancelada', 'cancelada']]);
+    const epica = unaEpicaCon([['done', 'done', 'done'], ['cancelada', 'cancelada']]);
     const avance = avanceDeEpica(epica);
     expect(avance.hojas).toBe(3);
     expect(avance.canceladas).toBe(2);
@@ -287,7 +287,7 @@ describe('regla 2: una historia sin desglosar impide el verde de su épica', () 
 
   it('una historia nunca se cuenta a sí misma: sus hijos son tareas, y una tarea no se desglosa', () => {
     expect(avanceDeHistoria(unaHistoria()).contenedoresSinDesglosar).toBe(0);
-    expect(avanceDeHistoria(unaHistoriaCon(['hecha'])).contenedoresSinDesglosar).toBe(0);
+    expect(avanceDeHistoria(unaHistoriaCon(['done'])).contenedoresSinDesglosar).toBe(0);
   });
 
   it('la épica sin historias no se cuenta a sí misma: ya es sin_desglosar por no tener hojas', () => {
@@ -306,7 +306,7 @@ describe('regla 2: una historia sin desglosar impide el verde de su épica', () 
     const proyecto = unProyecto({
       epicas: [
         unaEpica(), // sin historias: cuenta 1
-        unaEpicaCon([['hecha'], [], []]), // dos historias vacías: cuentan 2
+        unaEpicaCon([['done'], [], []]), // dos historias vacías: cuentan 2
       ],
     });
     const avance = avanceDeProyecto(proyecto);
@@ -322,8 +322,8 @@ describe('regla 2: una historia sin desglosar impide el verde de su épica', () 
   it('un conjunto suelto de tareas (sprint, carga) nunca se vuelve estricto: contenedores 0', () => {
     // `contarTareas` la usan sprint.ts y administracion.ts sobre listas planas. Ahí no hay
     // contenedores debajo y no debe aparecer un "sin desglosar" de la nada.
-    expect(contarTareas(tareasConEstados(repetir('hecha', 3))).contenedoresSinDesglosar).toBe(0);
-    expect(estadoDerivado(contarTareas(tareasConEstados(repetir('hecha', 3))))).toBe('hecha');
+    expect(contarTareas(tareasConEstados(repetir('done', 3))).contenedoresSinDesglosar).toBe(0);
+    expect(estadoDerivado(contarTareas(tareasConEstados(repetir('done', 3))))).toBe('hecha');
   });
 });
 
@@ -345,7 +345,7 @@ describe('regla 3: el pct de la épica es el agregado de sus hojas, no el promed
    * no mediría nada — por eso lo primero que hace es exigir que difieran.
    */
   const epicaDesigual = () =>
-    unaEpicaCon([['hecha', 'pendiente'], ['pendiente'], ['pendiente']]);
+    unaEpicaCon([['done', 'pendiente'], ['pendiente'], ['pendiente']]);
 
   it('el caso construido de verdad distingue agregado de promedio', () => {
     const epica = epicaDesigual();
@@ -360,9 +360,9 @@ describe('regla 3: el pct de la épica es el agregado de sus hojas, no el promed
 
   it('tres historias al 33% no hacen una épica al 99%: la suma de los hijos no es el padre', () => {
     const epica = unaEpicaCon([
-      ['hecha', 'pendiente', 'pendiente'],
-      ['hecha', 'pendiente', 'pendiente'],
-      ['hecha', 'pendiente', 'pendiente'],
+      ['done', 'pendiente', 'pendiente'],
+      ['done', 'pendiente', 'pendiente'],
+      ['done', 'pendiente', 'pendiente'],
     ]);
     const hijos = epica.historias.map((h) => avanceDeHistoria(h).pct);
     expect(hijos).toEqual([33, 33, 33]);
@@ -371,15 +371,15 @@ describe('regla 3: el pct de la épica es el agregado de sus hojas, no el promed
   });
 
   it('una historia vacía no arrastra el promedio: no cuenta ni como 0 ni como 100', () => {
-    const conVacia = unaEpicaCon([['hecha', 'hecha', 'pendiente', 'pendiente'], []]);
-    const sinVacia = unaEpicaCon([['hecha', 'hecha', 'pendiente', 'pendiente']]);
+    const conVacia = unaEpicaCon([['done', 'done', 'pendiente', 'pendiente'], []]);
+    const sinVacia = unaEpicaCon([['done', 'done', 'pendiente', 'pendiente']]);
     expect(avanceDeEpica(conVacia).pct).toBe(avanceDeEpica(sinVacia).pct);
     expect(avanceDeEpica(conVacia).pct).toBe(50);
   });
 
   it('el proyecto agrega las hojas de todas sus épicas, no promedia épicas', () => {
     const proyecto = unProyecto({
-      epicas: [unaEpicaCon([['hecha', 'pendiente', 'pendiente']]), unaEpicaCon([['hecha']])],
+      epicas: [unaEpicaCon([['done', 'pendiente', 'pendiente']]), unaEpicaCon([['done']])],
     });
     // Agregado: 2 de 4 = 50. Promedio de épicas: (33 + 100)/2 = 67.
     expect(avanceDeProyecto(proyecto).pct).toBe(50);
@@ -387,12 +387,12 @@ describe('regla 3: el pct de la épica es el agregado de sus hojas, no el promed
   });
 
   it('tareasDeEpica aplana todas las hojas de todas las historias', () => {
-    const epica = unaEpicaCon([['hecha', 'pendiente'], [], ['cancelada']]);
+    const epica = unaEpicaCon([['done', 'pendiente'], [], ['cancelada']]);
     expect(tareasDeEpica(epica)).toHaveLength(3);
   });
 
   it('tareasDeProyecto aplana todas las hojas de todas las épicas', () => {
-    const proyecto = unProyecto({ epicas: [unaEpicaCon([['hecha']]), unaEpicaCon([[], ['pendiente', 'pendiente']])] });
+    const proyecto = unProyecto({ epicas: [unaEpicaCon([['done']]), unaEpicaCon([[], ['pendiente', 'pendiente']])] });
     expect(tareasDeProyecto(proyecto)).toHaveLength(3);
   });
 });
@@ -409,19 +409,19 @@ describe('estadoDerivado', () => {
   });
 
   it('una en curso entre pendientes: en_movimiento', () => {
-    expect(estadoDerivado(contarTareas(tareasConEstados(['en_curso', 'pendiente', 'pendiente'])))).toBe(
+    expect(estadoDerivado(contarTareas(tareasConEstados(['iniciado', 'pendiente', 'pendiente'])))).toBe(
       'en_movimiento',
     );
   });
 
   it('una hecha entre pendientes: en_movimiento', () => {
-    expect(estadoDerivado(contarTareas(tareasConEstados(['hecha', 'pendiente', 'pendiente'])))).toBe(
+    expect(estadoDerivado(contarTareas(tareasConEstados(['done', 'pendiente', 'pendiente'])))).toBe(
       'en_movimiento',
     );
   });
 
   it('todas hechas: hecha', () => {
-    expect(estadoDerivado(contarTareas(tareasConEstados(repetir('hecha', 3))))).toBe('hecha');
+    expect(estadoDerivado(contarTareas(tareasConEstados(repetir('done', 3))))).toBe('hecha');
   });
 
   it('límite conocido: todo cancelado se lee sin_desglosar, y canceladas > 0 lo distingue de vacío', () => {
@@ -436,10 +436,10 @@ describe('estadoDerivado', () => {
   it('cumple su definición ejecutable: hojas > 0 && (hechas + enCurso) > 0 && hechas < hojas', () => {
     const enMovimiento = (a: Avance) => a.hojas > 0 && a.hechas + a.enCurso > 0 && a.hechas < a.hojas;
     for (const estados of [
-      ['hecha', 'pendiente'],
-      ['en_curso', 'pendiente'],
+      ['done', 'pendiente'],
+      ['iniciado', 'pendiente'],
       ['pendiente'],
-      ['hecha'],
+      ['done'],
       [],
       ['cancelada'],
     ] as const) {
@@ -459,13 +459,13 @@ describe('mostrarPct: ningún porcentaje se muestra sin su conteo crudo', () => 
   });
 
   it('con 4 hojas no se muestra el porcentaje: "1 de 4" informa y "25%" engaña', () => {
-    expect(mostrarPct(contarTareas(tareasConEstados(['hecha', 'pendiente', 'pendiente', 'pendiente'])))).toBe(
+    expect(mostrarPct(contarTareas(tareasConEstados(['done', 'pendiente', 'pendiente', 'pendiente'])))).toBe(
       false,
     );
   });
 
   it('con 5 hojas exactas ya se muestra', () => {
-    const avance = contarTareas(tareasConEstados([...repetir('hecha', 1), ...repetir('pendiente', 4)]));
+    const avance = contarTareas(tareasConEstados([...repetir('done', 1), ...repetir('pendiente', 4)]));
     expect(avance.hojas).toBe(5);
     expect(mostrarPct(avance)).toBe(true);
   });
@@ -476,14 +476,14 @@ describe('mostrarPct: ningún porcentaje se muestra sin su conteo crudo', () => 
 
   it('las canceladas no empujan por encima del umbral', () => {
     const avance = contarTareas(
-      tareasConEstados([...repetir('hecha', 2), ...repetir('pendiente', 2), ...repetir('cancelada', 5)]),
+      tareasConEstados([...repetir('done', 2), ...repetir('pendiente', 2), ...repetir('cancelada', 5)]),
     );
     expect(avance.hojas).toBe(4);
     expect(mostrarPct(avance)).toBe(false);
   });
 
   it('todo avance lleva su conteo crudo al lado del pct: hojas y hechas son números', () => {
-    for (const avance of [AVANCE_VACIO, contarTareas(tareasConEstados(repetir('hecha', 7)))]) {
+    for (const avance of [AVANCE_VACIO, contarTareas(tareasConEstados(repetir('done', 7)))]) {
       expect(Number.isInteger(avance.hojas)).toBe(true);
       expect(Number.isInteger(avance.hechas)).toBe(true);
     }
@@ -838,7 +838,7 @@ describe('datos/ejemplo.json', () => {
       ...original,
       historias: original.historias.map((historia) => ({
         ...historia,
-        tareas: historia.tareas.map((tarea) => ({ ...tarea, estado: 'hecha' as const })),
+        tareas: historia.tareas.map((tarea) => ({ ...tarea, estado: 'done' as const })),
       })),
     };
     const avance = avanceDeEpica(cerrada);

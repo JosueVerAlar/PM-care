@@ -63,8 +63,8 @@ function documentoDePartida(): Documento {
               unaHistoria({
                 clave: CLAVE,
                 tareas: [
-                  unaTarea({ id: 'PM-T1', clave: CLAVE, titulo: 'Terminada', estado: 'hecha' }),
-                  unaTarea({ id: 'PM-T2', clave: CLAVE, titulo: 'Se arrastra', estado: 'en_curso' }),
+                  unaTarea({ id: 'PM-T1', clave: CLAVE, titulo: 'Terminada', estado: 'done' }),
+                  unaTarea({ id: 'PM-T2', clave: CLAVE, titulo: 'Se arrastra', estado: 'iniciado' }),
                   unaTarea({ id: 'PM-T3', clave: CLAVE, titulo: 'Al backlog', estado: 'pendiente' }),
                   unaTarea({ id: 'PM-T4', clave: CLAVE, titulo: 'Se descarta', estado: 'pendiente' }),
                 ],

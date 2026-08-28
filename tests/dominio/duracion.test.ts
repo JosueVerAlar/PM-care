@@ -72,7 +72,7 @@ function primera(doc: Documento): Resolucion | null {
 }
 
 const hecha = (id: string, hechaEn: string | null, over: Partial<Tarea> = {}) =>
-  unaTarea({ clave: CLAVE, id, estado: 'hecha', hecha_en: hechaEn, ...over });
+  unaTarea({ clave: CLAVE, id, estado: 'done', aceptada_en: hechaEn, ...over });
 
 describe('el reloj corre desde que arranca el sprint', () => {
   it('una tarea comprometida desde el arranque cuenta los días del sprint', () => {
@@ -139,11 +139,11 @@ describe('lo que NO es calculable devuelve null, jamás cero', () => {
   const sprint = { inicio: '2026-08-24', fin: '2026-09-06', items: [unItem(`${CLAVE}-T1`)] };
 
   it('una tarea que no está hecha', () => {
-    const doc = conSprint([unaTarea({ clave: CLAVE, id: `${CLAVE}-T1`, estado: 'en_curso' })], sprint);
+    const doc = conSprint([unaTarea({ clave: CLAVE, id: `${CLAVE}-T1`, estado: 'iniciado' })], sprint);
     expect(primera(doc)).toBeNull();
   });
 
-  it('una tarea hecha sin `hecha_en` — pasa con las editadas a mano', () => {
+  it('una tarea hecha sin `aceptada_en` — pasa con las editadas a mano', () => {
     expect(primera(conSprint([hecha(`${CLAVE}-T1`, null)], sprint))).toBeNull();
   });
 
@@ -161,7 +161,7 @@ describe('lo que NO es calculable devuelve null, jamás cero', () => {
     expect(primera(doc), 'el sprint arrancó el 24; no pudo cerrarse en él').toBeNull();
   });
 
-  it('un `hecha_en` ilegible no tumba el cálculo del resto', () => {
+  it('un `aceptada_en` ilegible no tumba el cálculo del resto', () => {
     const doc = conSprint([hecha(`${CLAVE}-T1`, 'ayer por la tarde')], sprint);
     expect(primera(doc)).toBeNull();
   });
@@ -408,8 +408,8 @@ describe('invariantes del reloj sobre árboles generados', () => {
     for (const semilla of SEMILLAS) {
       const doc = unDocumentoAleatorio(prng(semilla), semilla);
       for (const medida of resoluciones(doc)) {
-        expect(medida.tarea.estado).toBe('hecha');
-        expect(medida.tarea.hecha_en).not.toBeNull();
+        expect(medida.tarea.estado).toBe('done');
+        expect(medida.tarea.aceptada_en).not.toBeNull();
       }
     }
   });
@@ -532,7 +532,7 @@ describe('cerradasSinMedirEnTodo', () => {
   });
 
   it('no cuenta lo que sigue abierto', () => {
-    const doc = conSprint([unaTarea({ clave: CLAVE, estado: 'en_curso' })], {
+    const doc = conSprint([unaTarea({ clave: CLAVE, estado: 'iniciado' })], {
       inicio: '2026-08-24',
       fin: '2026-09-06',
       items: [],

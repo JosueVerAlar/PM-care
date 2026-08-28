@@ -70,7 +70,7 @@ export interface Resolucion {
   tarea: Tarea;
   /** El sprint en el que se cerró. */
   sprint: Sprint;
-  /** Días desde el arranque efectivo hasta `hecha_en`. */
+  /** Días desde el arranque efectivo hasta `aceptada_en`. */
   dias: number;
   /** Quién la cerró: el responsable del item si lo hay, si no el de la tarea. */
   responsable: PersonaId | null;
@@ -153,20 +153,20 @@ function sprintDelCierre(doc: Documento, tareaId: string, hechaEn: Instante): Sp
  * La resolución de una tarea, o `null` si no es calculable.
  *
  * Devuelve `null` —nunca un cero— en los tres casos honestos: no está hecha, no tiene
- * `hecha_en`, o se cerró sin haber pasado por ningún sprint.
+ * `aceptada_en`, o se cerró sin haber pasado por ningún sprint.
  */
 export function resolucionDe(doc: Documento, ubicacion: UbicacionTarea): Resolucion | null {
   const { tarea } = ubicacion;
-  if (tarea.estado !== 'hecha' || tarea.hecha_en === null) return null;
+  if (tarea.estado !== 'done' || tarea.aceptada_en === null) return null;
 
-  const sprint = sprintDelCierre(doc, tarea.id, tarea.hecha_en);
+  const sprint = sprintDelCierre(doc, tarea.id, tarea.aceptada_en);
   if (sprint === null) return null;
 
   const item = sprint.items.find((i) => i.tarea_id === tarea.id);
   const dias = diasEntreInstantes(
     // La referencia de huso es el cierre: es el instante contra el que se va a restar.
-    arranqueEfectivo(sprint, item?.comprometida_en ?? null, tarea.hecha_en),
-    tarea.hecha_en,
+    arranqueEfectivo(sprint, item?.comprometida_en ?? null, tarea.aceptada_en),
+    tarea.aceptada_en,
   );
   if (dias === null) return null;
 
@@ -248,7 +248,7 @@ export interface FilaTiempo {
 function cerradasSinMedir(doc: Documento, incluye: (u: UbicacionTarea) => boolean): number {
   let n = 0;
   for (const ubicacion of indexarTareas(doc).values()) {
-    if (ubicacion.tarea.estado !== 'hecha' || !incluye(ubicacion)) continue;
+    if (ubicacion.tarea.estado !== 'done' || !incluye(ubicacion)) continue;
     if (resolucionDe(doc, ubicacion) === null) n += 1;
   }
   return n;
@@ -317,7 +317,7 @@ export function tiempoPorProyecto(doc: Documento): FilaTiempo[] {
 export function tiempoPorEquipo(doc: Documento): FilaTiempo[] {
   return tiempoPorProyecto(doc).filter((fila) => {
     const proyecto = doc.proyectos.find((p) => p.clave === fila.id);
-    return proyecto !== undefined && proyecto.equipo.length > 0;
+    return proyecto !== undefined && proyecto.equipos.flatMap((equipo) => equipo.miembros).length > 0;
   });
 }
 

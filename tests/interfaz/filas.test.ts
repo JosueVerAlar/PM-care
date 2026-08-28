@@ -167,7 +167,7 @@ describe('construirFilas · regla 18 · la jerarquía es opcional', () => {
       epicas: [],
       tareas: [
         unaTarea({ clave: CLAVE, id: 'PM-T1', estado: 'pendiente' }),
-        unaTarea({ clave: CLAVE, id: 'PM-T2', estado: 'hecha' }),
+        unaTarea({ clave: CLAVE, id: 'PM-T2', estado: 'done' }),
       ],
     });
     const filas = construirFilas(proyecto, undefined, new Set(), estaHecha);

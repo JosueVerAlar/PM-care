@@ -70,8 +70,8 @@ export function TarjetaSprint({
   const resto = ruta.slice(1).join(' › ');
 
   const cuando =
-    tarea.estado === 'hecha' && tarea.hecha_en !== null
-      ? `cerrada ${instanteCorto(tarea.hecha_en)}`
+    tarea.estado === 'done' && tarea.aceptada_en !== null
+      ? `cerrada ${instanteCorto(tarea.aceptada_en)}`
       : compromiso.fechaLimite !== null
         ? `${vencida ? 'venció el' : 'vence'} ${fechaCorta(compromiso.fechaLimite)}`
         : null;

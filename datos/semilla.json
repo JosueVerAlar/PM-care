@@ -1,5 +1,5 @@
 {
-  "esquema_version": 1,
+  "esquema_version": 2,
   "usuario": "josue-vergara",
   "personas": [
     {
@@ -35,10 +35,16 @@
         "historias": 0,
         "tareas": 0
       },
-      "equipo": [],
       "epicas": [],
       "tareas": [],
-      "clave_externa": "SICOE"
+      "clave_externa": "SICOE",
+      "equipos": [
+        {
+          "id": "sicoe-general",
+          "nombre": "General",
+          "miembros": []
+        }
+      ]
     },
     {
       "clave": "SIES",
@@ -53,10 +59,16 @@
         "historias": 0,
         "tareas": 0
       },
-      "equipo": [],
       "epicas": [],
       "tareas": [],
-      "clave_externa": "SIES"
+      "clave_externa": "SIES",
+      "equipos": [
+        {
+          "id": "sies-general",
+          "nombre": "General",
+          "miembros": []
+        }
+      ]
     },
     {
       "clave": "PED",
@@ -71,10 +83,16 @@
         "historias": 0,
         "tareas": 0
       },
-      "equipo": [],
       "epicas": [],
       "tareas": [],
-      "clave_externa": "PED"
+      "clave_externa": "PED",
+      "equipos": [
+        {
+          "id": "ped-general",
+          "nombre": "General",
+          "miembros": []
+        }
+      ]
     },
     {
       "clave": "DW",
@@ -89,10 +107,16 @@
         "historias": 0,
         "tareas": 0
       },
-      "equipo": [],
       "epicas": [],
       "tareas": [],
-      "clave_externa": "DW"
+      "clave_externa": "DW",
+      "equipos": [
+        {
+          "id": "dw-general",
+          "nombre": "General",
+          "miembros": []
+        }
+      ]
     },
     {
       "clave": "IN",
@@ -107,16 +131,6 @@
         "historias": 0,
         "tareas": 3
       },
-      "equipo": [
-        {
-          "persona_id": "miguel-medina",
-          "rol": "Infraestructura"
-        },
-        {
-          "persona_id": "jesus-alberto-castillo",
-          "rol": "Redes"
-        }
-      ],
       "epicas": [
         {
           "id": "IN-E1",
@@ -130,7 +144,7 @@
               "id": "IN-T1",
               "titulo": "Inventario de servidores",
               "descripcion": "En revisión en Jira.",
-              "estado": "hecha",
+              "estado": "done",
               "planeada": true,
               "responsable": "miguel-medina",
               "fecha_limite": "2026-08-12",
@@ -139,13 +153,18 @@
               "hecha_en": "2026-08-28T17:30:00-06:00",
               "bloqueos": [],
               "clave_externa": "IN-3",
-              "esfuerzo": 3
+              "esfuerzo": 3,
+              "trabajo": [],
+              "tipo": "trabajo",
+              "equipo_id": null,
+              "criterios": null,
+              "aceptada_en": null
             },
             {
               "id": "IN-T2",
               "titulo": "Matriz de comunicación entre servidores y puertos requeridos",
               "descripcion": null,
-              "estado": "en_curso",
+              "estado": "iniciado",
               "planeada": true,
               "responsable": "miguel-medina",
               "fecha_limite": "2026-08-13",
@@ -154,7 +173,12 @@
               "hecha_en": null,
               "bloqueos": [],
               "clave_externa": "IN-4",
-              "esfuerzo": 5
+              "esfuerzo": 5,
+              "trabajo": [],
+              "tipo": "trabajo",
+              "equipo_id": null,
+              "criterios": null,
+              "aceptada_en": null
             },
             {
               "id": "IN-T3",
@@ -169,13 +193,40 @@
               "hecha_en": null,
               "bloqueos": [],
               "clave_externa": "IN-9",
-              "esfuerzo": 2
+              "esfuerzo": 2,
+              "trabajo": [],
+              "tipo": "trabajo",
+              "equipo_id": null,
+              "criterios": null,
+              "aceptada_en": null
             }
           ]
         }
       ],
       "tareas": [],
-      "clave_externa": "IN"
+      "clave_externa": "IN",
+      "equipos": [
+        {
+          "id": "in-general",
+          "nombre": "General",
+          "miembros": [
+            {
+              "persona_id": "miguel-medina",
+              "responsabilidades": [
+                "Infraestructura"
+              ],
+              "capacidad": null
+            },
+            {
+              "persona_id": "jesus-alberto-castillo",
+              "responsabilidades": [
+                "Redes"
+              ],
+              "capacidad": null
+            }
+          ]
+        }
+      ]
     },
     {
       "clave": "IDCE",
@@ -190,10 +241,16 @@
         "historias": 0,
         "tareas": 0
       },
-      "equipo": [],
       "epicas": [],
       "tareas": [],
-      "clave_externa": "IDCE"
+      "clave_externa": "IDCE",
+      "equipos": [
+        {
+          "id": "idce-general",
+          "nombre": "General",
+          "miembros": []
+        }
+      ]
     },
     {
       "clave": "INDICA",
@@ -208,10 +265,16 @@
         "historias": 0,
         "tareas": 0
       },
-      "equipo": [],
       "epicas": [],
       "tareas": [],
-      "clave_externa": "INDICA"
+      "clave_externa": "INDICA",
+      "equipos": [
+        {
+          "id": "indica-general",
+          "nombre": "General",
+          "miembros": []
+        }
+      ]
     },
     {
       "clave": "PULSO",
@@ -226,7 +289,6 @@
         "historias": 0,
         "tareas": 2
       },
-      "equipo": [],
       "epicas": [],
       "tareas": [
         {
@@ -242,7 +304,12 @@
           "hecha_en": null,
           "bloqueos": [],
           "clave_externa": null,
-          "esfuerzo": 3
+          "esfuerzo": 3,
+          "trabajo": [],
+          "tipo": "trabajo",
+          "equipo_id": null,
+          "criterios": null,
+          "aceptada_en": null
         },
         {
           "id": "PULSO-T2",
@@ -257,10 +324,22 @@
           "hecha_en": null,
           "bloqueos": [],
           "clave_externa": null,
-          "esfuerzo": null
+          "esfuerzo": null,
+          "trabajo": [],
+          "tipo": "trabajo",
+          "equipo_id": null,
+          "criterios": null,
+          "aceptada_en": null
         }
       ],
-      "clave_externa": "PULSO"
+      "clave_externa": "PULSO",
+      "equipos": [
+        {
+          "id": "pulso-general",
+          "nombre": "General",
+          "miembros": []
+        }
+      ]
     },
     {
       "clave": "REDOC",
@@ -275,10 +354,16 @@
         "historias": 0,
         "tareas": 0
       },
-      "equipo": [],
       "epicas": [],
       "tareas": [],
-      "clave_externa": "REDOC"
+      "clave_externa": "REDOC",
+      "equipos": [
+        {
+          "id": "redoc-general",
+          "nombre": "General",
+          "miembros": []
+        }
+      ]
     },
     {
       "clave": "RENAC",
@@ -293,10 +378,16 @@
         "historias": 0,
         "tareas": 0
       },
-      "equipo": [],
       "epicas": [],
       "tareas": [],
-      "clave_externa": "RENAC"
+      "clave_externa": "RENAC",
+      "equipos": [
+        {
+          "id": "renac-general",
+          "nombre": "General",
+          "miembros": []
+        }
+      ]
     },
     {
       "clave": "SISEC",
@@ -311,10 +402,16 @@
         "historias": 0,
         "tareas": 0
       },
-      "equipo": [],
       "epicas": [],
       "tareas": [],
-      "clave_externa": "SISEC"
+      "clave_externa": "SISEC",
+      "equipos": [
+        {
+          "id": "sisec-general",
+          "nombre": "General",
+          "miembros": []
+        }
+      ]
     }
   ],
   "sprints": [
@@ -341,7 +438,8 @@
           "desenlace": null,
           "comprometida_en": "2026-08-24T09:00:00-06:00"
         }
-      ]
+      ],
+      "clave": "IN"
     }
   ]
 }

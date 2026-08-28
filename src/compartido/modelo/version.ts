@@ -7,7 +7,7 @@
  */
 
 /** Versión que escribe esta build. Súbela en el mismo commit que cambie la forma del documento. */
-export const ESQUEMA_VERSION = 1;
+export const ESQUEMA_VERSION = 2;
 
 /** Versión más vieja que esta build sabe leer y migrar hacia adelante. */
 export const VERSION_MINIMA_SOPORTADA = 1;

@@ -13,7 +13,7 @@
  * ## Se cuenta el desenlace congelado, no el árbol vivo
  *
  * Una tarea se cuenta en un sprint si su item quedó con `desenlace === 'completada'`. Si
- * se leyera `tarea.estado === 'hecha'`, reabrir hoy una tarea cambiaría lo que se cerró en
+ * se leyera `tarea.estado === 'done'`, reabrir hoy una tarea cambiaría lo que se cerró en
  * julio, y el registro dejaría de ser un registro. Los sprints cerrados son inmutables
  * (regla 8) y esta vista es su lectura.
  *
@@ -90,7 +90,7 @@ export function registroDeTerminadas(doc: Documento): RegistroSprint[] {
 
     const porProyecto = agruparPorProyecto(terminadas, (u) => ({
       ubicacion: u,
-      hechaEn: u.tarea.hecha_en,
+      hechaEn: u.tarea.aceptada_en,
       reabierta: marcas.get(u.tarea.id) ?? false,
     }));
 
@@ -126,7 +126,7 @@ export function terminadasFueraDeSprint(doc: Documento): TerminadasFuera {
     total: sueltas.length,
     porProyecto: agruparPorProyecto(sueltas, (u) => ({
       ubicacion: u,
-      hechaEn: u.tarea.hecha_en,
+      hechaEn: u.tarea.aceptada_en,
       reabierta: false,
     })),
   };

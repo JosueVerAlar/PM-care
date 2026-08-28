@@ -67,7 +67,7 @@ export function useAccionesCierre(sprint: Sprint): AccionesCierre {
   const corregir = useCallback(
     async (tareaId: string) => {
       await mutar(
-        { comando: 'cambiarEstado', id: tareaId, estado: 'en_curso' },
+        { comando: 'cambiarEstado', id: tareaId, estado: 'iniciado' },
         `Corregir ${tareaId} a «en curso»`,
       );
     },
@@ -76,7 +76,7 @@ export function useAccionesCierre(sprint: Sprint): AccionesCierre {
 
   const darPorHecha = useCallback(
     async (tareaId: string) => {
-      await mutar({ comando: 'cambiarEstado', id: tareaId, estado: 'hecha' }, `Dar ${tareaId} por hecha`);
+      await mutar({ comando: 'cambiarEstado', id: tareaId, estado: 'done' }, `Dar ${tareaId} por hecha`);
     },
     [mutar],
   );

@@ -51,7 +51,7 @@ export const ALCANCE_POR_OMISION: AlcanceBacklog = 'todas';
 export const AGRUPACION_POR_OMISION: AgrupacionBacklog = 'proyecto';
 
 /** El orden en que se leen los estados. No es alfabético: es el ciclo de vida. */
-const ORDEN_ESTADO: readonly EstadoTarea[] = ['en_curso', 'pendiente', 'hecha', 'cancelada'];
+const ORDEN_ESTADO: readonly EstadoTarea[] = ['iniciado', 'pendiente', 'done', 'cancelada'];
 
 export interface FilaBacklog {
   ubicacion: UbicacionTarea;

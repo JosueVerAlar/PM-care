@@ -48,7 +48,7 @@ const jesus = unaPersona({ id: 'jesus-castillo', nombre: 'Jesús Castillo' });
  */
 function documentoCompromisoEnItem(): Documento {
   const tareas: Tarea[] = [
-    unaTarea({ id: 'SICOE-T1', clave: 'SICOE', titulo: 'Cargar el padrón', estado: 'en_curso' }),
+    unaTarea({ id: 'SICOE-T1', clave: 'SICOE', titulo: 'Cargar el padrón', estado: 'iniciado' }),
     unaTarea({ id: 'SICOE-T2', clave: 'SICOE', titulo: 'Definir criterios', estado: 'pendiente' }),
     unaTarea({ id: 'SICOE-T3', clave: 'SICOE', titulo: 'Revisar actas', estado: 'pendiente' }),
     unaTarea({
@@ -59,12 +59,12 @@ function documentoCompromisoEnItem(): Documento {
       planeada: false,
       bloqueos: [unBloqueo({ bloqueada_en: '2026-08-16T09:00:00-06:00' })],
     }),
-    unaTarea({ id: 'SICOE-T5', clave: 'SICOE', titulo: 'Cerrar el ciclo', estado: 'hecha' }),
+    unaTarea({ id: 'SICOE-T5', clave: 'SICOE', titulo: 'Cerrar el ciclo', estado: 'done' }),
     unaTarea({ id: 'SICOE-T6', clave: 'SICOE', titulo: 'Idea descartada', estado: 'cancelada' }),
   ];
   const otras: Tarea[] = [
     unaTarea({ id: 'BECAS-T1', clave: 'BECAS', titulo: 'Convocatoria', estado: 'pendiente' }),
-    unaTarea({ id: 'BECAS-T2', clave: 'BECAS', titulo: 'Dictamen', estado: 'en_curso' }),
+    unaTarea({ id: 'BECAS-T2', clave: 'BECAS', titulo: 'Dictamen', estado: 'iniciado' }),
   ];
 
   return unDocumento({
@@ -299,7 +299,7 @@ describe('compromiso efectivo: el responsable', () => {
                         unaTarea({
                           id: 'BECAS-T2',
                           clave: 'BECAS',
-                          estado: 'en_curso',
+                          estado: 'iniciado',
                           responsable: 'ana-lopez',
                         }),
                       ],
@@ -362,7 +362,7 @@ describe('alcance', () => {
   it('«todas» incluye hechas y canceladas: es lo que hace que agrupar por estado signifique algo', () => {
     const { filas: lista } = filas(documentoCompromisoEnItem(), 'todas');
     const estados = new Set(lista.map((f) => f.ubicacion.tarea.estado));
-    expect(estados).toEqual(new Set(['en_curso', 'pendiente', 'hecha', 'cancelada']));
+    expect(estados).toEqual(new Set(['iniciado', 'pendiente', 'done', 'cancelada']));
     expect(lista).toHaveLength(8);
   });
 
@@ -535,7 +535,7 @@ describe('agruparBacklog', () => {
 
   it('por estado sigue el ciclo de vida, no el alfabeto', () => {
     const grupos = agruparBacklog(filas(documentoCompromisoEnItem()).filas, 'estado');
-    expect(grupos.map((g) => g.estado)).toEqual(['en_curso', 'pendiente', 'hecha', 'cancelada']);
+    expect(grupos.map((g) => g.estado)).toEqual(['iniciado', 'pendiente', 'done', 'cancelada']);
     expect(grupos.every((g) => g.nombre === null)).toBe(true);
   });
 

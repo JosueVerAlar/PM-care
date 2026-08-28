@@ -364,14 +364,14 @@ describe('sacarDelSprint — conserva lo escrito', () => {
   it('tampoco toca el estado ni el historial de bloqueos', () => {
     const doc = comprometido(1);
     const trabajada = aplicarTodos(doc, [
-      { comando: 'cambiarEstado', id: 'PM-T1', estado: 'en_curso' },
+      { comando: 'cambiarEstado', id: 'PM-T1', estado: 'iniciado' },
       { comando: 'bloquear', tareaId: 'PM-T1', tipo: 'externo', motivo: 'proveedor' },
     ]);
     const { documento } = exigirOk(
       reducirSinMutar(trabajada, { comando: 'sacarDelSprint', tareaId: 'PM-T1', sprintId: 'S-1' }),
     );
     const tarea = documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0];
-    expect(tarea?.estado).toBe('en_curso');
+    expect(tarea?.estado).toBe('iniciado');
     expect(tarea?.bloqueos).toHaveLength(1);
   });
 
@@ -475,8 +475,8 @@ describe('cerrarSprint — el desenlace sale del estado de cada tarea', () => {
   /** Sprint con cuatro tareas, una por estado, comprometidas en orden. */
   function conLosCuatroEstados(): Documento {
     return aplicarTodos(comprometido(4), [
-      { comando: 'cambiarEstado', id: 'PM-T1', estado: 'hecha' },
-      { comando: 'cambiarEstado', id: 'PM-T2', estado: 'en_curso' },
+      { comando: 'cambiarEstado', id: 'PM-T1', estado: 'done' },
+      { comando: 'cambiarEstado', id: 'PM-T2', estado: 'iniciado' },
       { comando: 'cambiarEstado', id: 'PM-T3', estado: 'cancelada' },
     ]);
   }
@@ -627,7 +627,7 @@ describe('cerrarSprint — después queda inmutable (regla 8)', () => {
   it('un desenlace ya fijado no cambia aunque la tarea cambie de estado después', () => {
     const doc = yaCerrado();
     expect(doc.sprints[0]?.items[0]?.desenlace).toBe('devuelta');
-    const terminada = aplicar(doc, { comando: 'cambiarEstado', id: 'PM-T1', estado: 'hecha' });
+    const terminada = aplicar(doc, { comando: 'cambiarEstado', id: 'PM-T1', estado: 'done' });
     expect(terminada.sprints[0]?.items[0]?.desenlace).toBe('devuelta');
   });
 

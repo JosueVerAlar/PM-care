@@ -63,7 +63,16 @@ export const EsquemaEsfuerzo = z.union([
  * avance — una tarea bloqueada estaba en curso y se atoró, y conserva ese avance. Vive
  * en `Tarea.bloqueos` como lista histórica.
  */
-export const EsquemaEstadoTarea = z.enum(['pendiente', 'en_curso', 'hecha', 'cancelada']);
+export const EsquemaEstadoTarea = z.enum([
+  'pendiente',
+  'iniciado',
+  'en_pruebas',
+  'terminado',
+  'done',
+  'cancelada',
+]);
+
+export const EsquemaTipoTarea = z.enum(['trabajo', 'error']);
 
 export const EsquemaTipoBloqueo = z.enum([
   'dependencia',
@@ -131,8 +140,16 @@ export const EsquemaPersona = z
 export const EsquemaMiembroEquipo = z
   .object({
     persona_id: z.string().min(1),
-    /** Texto libre a propósito: "backend", "vistas", "QA". No es un enum que mantener. */
-    rol: z.string().nullable().default(null),
+    responsabilidades: z.array(z.string().min(1)).default([]),
+    capacidad: z.number().nonnegative().nullable().default(null),
+  })
+  .passthrough();
+
+export const EsquemaEquipo = z
+  .object({
+    id: z.string().regex(PATRON_ID_PERSONA, 'id de equipo en minúsculas y guiones: "sicoe-frontend"'),
+    nombre: z.string().min(1),
+    miembros: z.array(EsquemaMiembroEquipo).default([]),
   })
   .passthrough();
 
@@ -146,12 +163,32 @@ export const EsquemaBloqueo = z
   })
   .passthrough();
 
+export const EsquemaTramoTrabajo = z
+  .object({
+    desde: EsquemaInstante,
+    hasta: EsquemaInstante.nullable().default(null),
+    estado: z.enum(['iniciado', 'en_pruebas']),
+  })
+  .passthrough()
+  .superRefine((tramo, ctx) => {
+    if (tramo.hasta !== null && tramo.hasta < tramo.desde) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['hasta'],
+        message: 'el final del tramo es anterior a su inicio',
+      });
+    }
+  });
+
 export const EsquemaTarea = z
   .object({
     id: z.string().min(1),
     titulo: z.string().min(1),
     descripcion: z.string().nullable().default(null),
     estado: EsquemaEstadoTarea,
+    tipo: EsquemaTipoTarea.default('trabajo'),
+    equipo_id: z.string().nullable().default(null),
+    criterios: z.string().nullable().default(null),
     /**
      * Procedencia, no estado (regla 17): una tarea no planeada puede estar pendiente,
      * en curso o bloqueada. La marca el proyecto según `planeacion_cerrada_en`.
@@ -178,8 +215,10 @@ export const EsquemaTarea = z
      * conservarlo permite volver a comprometerla sin reiniciar su historia en silencio.
      */
     comprometida_en: EsquemaInstante.nullable().default(null),
-    /** Cuándo pasó a `hecha`. Las métricas que lo necesiten ignoran las que no lo tengan. */
-    hecha_en: EsquemaInstante.nullable().default(null),
+    /** Cuándo pasó a `done`. Las métricas que lo necesiten ignoran las que no lo tengan. */
+    aceptada_en: EsquemaInstante.nullable().default(null),
+    /** Tramos reales del reloj; vacío significa que el pasado no se inventó al migrar. */
+    trabajo: z.array(EsquemaTramoTrabajo).default([]),
     /** Lista histórica, no un flag. Vacía = nunca se bloqueó. */
     bloqueos: z.array(EsquemaBloqueo).default([]),
     /** Clave en Jira (`"SICOE-104"`). Reservado para la importación. */
@@ -195,6 +234,14 @@ export const EsquemaTarea = z
         code: 'custom',
         path: ['bloqueos'],
         message: `${tarea.id}: hay ${abiertos} bloqueos abiertos a la vez; cierra los anteriores con "desbloqueada_en"`,
+      });
+    }
+    const tramosAbiertos = tarea.trabajo.filter((tramo) => tramo.hasta === null).length;
+    if (tramosAbiertos > 1) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['trabajo'],
+        message: `${tarea.id}: hay ${tramosAbiertos} tramos de trabajo abiertos a la vez`,
       });
     }
   });
@@ -293,7 +340,7 @@ export const EsquemaProyecto = z
      */
     planeacion_cerrada_en: EsquemaFecha.nullable().default(null),
     contadores: EsquemaContadores.default({ epicas: 0, historias: 0, tareas: 0 }),
-    equipo: z.array(EsquemaMiembroEquipo).default([]),
+    equipos: z.array(EsquemaEquipo).default([]),
     epicas: z.array(EsquemaEpica).default([]),
     /**
      * Tareas colgadas del proyecto, sin épica ni historia (N9). Es el caso de un proyecto
@@ -347,6 +394,8 @@ export const EsquemaSprint = z
     inicio: EsquemaFecha,
     fin: EsquemaFecha,
     estado: EsquemaEstadoSprint,
+    /** `null` conserva los sprints transversales anteriores al esquema v2. */
+    clave: z.string().regex(PATRON_CLAVE_PROYECTO).nullable(),
     /**
      * El orden del array ES la prioridad dentro del sprint. No hay campo `orden`: dos
      * fuentes de orden divergen en cuanto alguien arrastra una fila.
@@ -423,6 +472,7 @@ function validacionesCruzadas(
   }
 
   const claves = new Set<string>();
+  const idsEquipo = new Set<string>();
   const idsDeTarea = new Set<string>();
   const idsVistos = new Set<string>();
 
@@ -433,17 +483,19 @@ function validacionesCruzadas(
     }
     claves.add(proyecto.clave);
 
-    proyecto.equipo.forEach((miembro, m) => {
-      const ruta = [...rutaProyecto, 'equipo', m, 'persona_id'];
-      if (!personas.has(miembro.persona_id)) {
-        anotar(
-          ruta,
-          `${proyecto.clave}: el equipo referencia a "${miembro.persona_id}", que no está en personas`,
-        );
-      }
-      if (proyecto.equipo.findIndex((otro) => otro.persona_id === miembro.persona_id) !== m) {
-        anotar(ruta, `${proyecto.clave}: "${miembro.persona_id}" aparece dos veces en el equipo`);
-      }
+    proyecto.equipos.forEach((equipo, e) => {
+      const rutaEquipo = [...rutaProyecto, 'equipos', e];
+      if (idsEquipo.has(equipo.id)) anotar([...rutaEquipo, 'id'], `id de equipo duplicado: ${equipo.id}`);
+      idsEquipo.add(equipo.id);
+      equipo.miembros.forEach((miembro, m) => {
+        const ruta = [...rutaEquipo, 'miembros', m, 'persona_id'];
+        if (!personas.has(miembro.persona_id)) {
+          anotar(ruta, `${equipo.id}: referencia a "${miembro.persona_id}", que no está en personas`);
+        }
+        if (equipo.miembros.findIndex((otro) => otro.persona_id === miembro.persona_id) !== m) {
+          anotar(ruta, `${equipo.id}: "${miembro.persona_id}" aparece dos veces en el equipo`);
+        }
+      });
     });
 
     // El id de cada item debe llevar la clave de SU proyecto. Copiar y pegar una historia
@@ -478,6 +530,9 @@ function validacionesCruzadas(
             `${tarea.id}: responsable "${tarea.responsable}" no está en personas`,
           );
         }
+        if (tarea.equipo_id !== null && !proyecto.equipos.some((equipo) => equipo.id === tarea.equipo_id)) {
+          anotar([...rutaTarea, 'equipo_id'], `${tarea.id}: el equipo "${tarea.equipo_id}" no existe en ${proyecto.clave}`);
+        }
       });
     };
 
@@ -501,12 +556,17 @@ function validacionesCruzadas(
   });
 
   const idsSprint = new Set<string>();
-  let activos = 0;
+  const activosPorClave = new Map<string, number>();
   doc.sprints.forEach((sprint, s) => {
     const rutaSprint: (string | number)[] = ['sprints', s];
     if (idsSprint.has(sprint.id)) anotar([...rutaSprint, 'id'], `sprint duplicado: ${sprint.id}`);
     idsSprint.add(sprint.id);
-    if (sprint.estado === 'activo') activos += 1;
+    if (sprint.clave !== null && !claves.has(sprint.clave)) {
+      anotar([...rutaSprint, 'clave'], `${sprint.id}: el proyecto "${sprint.clave}" no existe`);
+    }
+    if (sprint.estado === 'activo' && sprint.clave !== null) {
+      activosPorClave.set(sprint.clave, (activosPorClave.get(sprint.clave) ?? 0) + 1);
+    }
 
     const enEsteSprint = new Set<string>();
     sprint.items.forEach((item, i) => {
@@ -527,9 +587,10 @@ function validacionesCruzadas(
     });
   });
 
-  if (activos > 1) {
-    // "El sprint activo" es singular en toda la interfaz; dos romperían la vista de carga.
-    anotar(['sprints'], `hay ${activos} sprints con estado "activo"; solo puede haber uno`);
+  for (const [clave, activos] of activosPorClave) {
+    if (activos > 1) {
+      anotar(['sprints'], `hay ${activos} sprints activos para ${clave}; solo puede haber uno por proyecto`);
+    }
   }
 }
 

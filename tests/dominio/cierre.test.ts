@@ -93,8 +93,8 @@ describe('bloquesDeCierre — el reparto en bloques', () => {
   /** Una por bloque, comprometidas en ese orden. */
   function cuatroBloques(): Documento {
     const tareas = [
-      unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'hecha' }),
-      unaTarea({ id: 'PM-T2', clave: CLAVE, estado: 'en_curso' }),
+      unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'done' }),
+      unaTarea({ id: 'PM-T2', clave: CLAVE, estado: 'iniciado' }),
       unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'pendiente', bloqueos: [unBloqueo()] }),
       unaTarea({ id: 'PM-T4', clave: CLAVE, estado: 'cancelada' }),
     ];
@@ -116,7 +116,7 @@ describe('bloquesDeCierre — el reparto en bloques', () => {
     // que el estado gana sobre la bandera. Queda congelado: si algún día el bloqueo
     // abierto pasa a mandar, esta prueba es la que avisa.
     const tareas = [
-      unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'hecha', bloqueos: [unBloqueo()] }),
+      unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'done', bloqueos: [unBloqueo()] }),
     ];
     const doc = docCon(tareas, [sprintCon(['PM-T1'])]);
     const bloques = bloquesDeCierre(doc, doc.sprints[0]!, HOY);
@@ -146,7 +146,7 @@ describe('bloquesDeCierre — el reparto en bloques', () => {
       unaTarea({
         id: 'PM-T1',
         clave: CLAVE,
-        estado: 'en_curso',
+        estado: 'iniciado',
         bloqueos: [unBloqueo({ desbloqueada_en: '2026-08-25T09:00:00-06:00' })],
       }),
     ];
@@ -259,7 +259,7 @@ describe('bloquesDeCierre — el reparto en bloques', () => {
       unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'pendiente', planeada: false }),
       unaTarea({ id: 'PM-T2', clave: CLAVE, estado: 'pendiente', planeada: true }),
       // Emergente pero ya cerrada: la marca es de lo que sigue vivo.
-      unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'hecha', planeada: false }),
+      unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'done', planeada: false }),
     ];
     const doc = docCon(tareas, [sprintCon(['PM-T1', 'PM-T2', 'PM-T3'])]);
     const bloques = bloquesDeCierre(doc, doc.sprints[0]!, HOY);
@@ -316,9 +316,9 @@ describe('resumirDecisiones — lo que dice el botón antes de pulsarlo', () => 
   /** Hecha, cancelada y tres abiertas, una por destino. */
   function conLosCincoCasos(): { doc: Documento; destinos: MapaDestinos } {
     const tareas = [
-      unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'hecha' }),
+      unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'done' }),
       unaTarea({ id: 'PM-T2', clave: CLAVE, estado: 'cancelada' }),
-      unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'en_curso' }),
+      unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'iniciado' }),
       unaTarea({ id: 'PM-T4', clave: CLAVE, estado: 'pendiente' }),
       unaTarea({ id: 'PM-T5', clave: CLAVE, estado: 'pendiente' }),
     ];
@@ -390,9 +390,9 @@ describe('resumirDecisiones — lo que dice el botón antes de pulsarlo', () => 
 describe('decisionesParaComando — lo que viaja en el comando', () => {
   function conTodo(): Documento {
     const tareas = [
-      unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'hecha' }),
+      unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'done' }),
       unaTarea({ id: 'PM-T2', clave: CLAVE, estado: 'cancelada' }),
-      unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'en_curso' }),
+      unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'iniciado' }),
       unaTarea({ id: 'PM-T4', clave: CLAVE, estado: 'pendiente', bloqueos: [unBloqueo()] }),
     ];
     return docCon(tareas, [sprintCon(['PM-T1', 'PM-T2', 'PM-T3', 'PM-T4'])]);
@@ -416,7 +416,7 @@ describe('decisionesParaComando — lo que viaja en el comando', () => {
   });
 
   it('un sprint sin nada pendiente produce una lista vacía, no una decisión inventada', () => {
-    const doc = docCon([unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'hecha' })], [
+    const doc = docCon([unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'done' })], [
       sprintCon(['PM-T1']),
     ]);
     expect(decisionesParaComando(bloquesDeCierre(doc, doc.sprints[0]!, HOY), new Map())).toEqual([]);
@@ -533,7 +533,7 @@ describe('resumenTrasCierre — se lee lo que QUEDÓ, no lo que pedimos', () => 
 
   it('cuenta cada desenlace en su casilla', () => {
     const tareas = [
-      unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'hecha' }),
+      unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'done' }),
       unaTarea({ id: 'PM-T2', clave: CLAVE, estado: 'pendiente' }),
       unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'pendiente' }),
       unaTarea({ id: 'PM-T4', clave: CLAVE, estado: 'cancelada' }),
@@ -567,9 +567,9 @@ describe('resumenTrasCierre — se lee lo que QUEDÓ, no lo que pedimos', () => 
     // «devueltas» ni a «descartadas»: un documento de hace tres meses no puede hacer que
     // el resumen mienta sobre a dónde fue nada.
     const tareas = [
-      unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'hecha' }),
+      unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'done' }),
       unaTarea({ id: 'PM-T2', clave: CLAVE, estado: 'pendiente' }),
-      unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'en_curso' }),
+      unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'iniciado' }),
     ];
     const doc = docCon(tareas, [
       sprintCon([], {
@@ -653,7 +653,7 @@ describe('resumenTrasCierre — se lee lo que QUEDÓ, no lo que pedimos', () => 
 
   it('ESLABÓN: sobre el documento que devuelve el reductor, el resumen cuadra con el evento', () => {
     const tareas = [
-      unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'hecha' }),
+      unaTarea({ id: 'PM-T1', clave: CLAVE, estado: 'done' }),
       unaTarea({ id: 'PM-T2', clave: CLAVE, estado: 'pendiente' }),
       unaTarea({ id: 'PM-T3', clave: CLAVE, estado: 'pendiente' }),
       unaTarea({ id: 'PM-T4', clave: CLAVE, estado: 'pendiente' }),

@@ -93,7 +93,7 @@ export function ultimoMovimiento(proyecto: Proyecto): Instante | null {
 
   for (const tarea of tareasDeProyecto(proyecto)) {
     anotar(tarea.creada_en);
-    anotar(tarea.hecha_en);
+    anotar(tarea.aceptada_en);
     for (const bloqueo of tarea.bloqueos) {
       anotar(bloqueo.bloqueada_en);
       anotar(bloqueo.desbloqueada_en);

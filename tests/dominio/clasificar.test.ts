@@ -87,13 +87,13 @@ describe('fechas', () => {
 // --- predicados de tarea ----------------------------------------------------
 
 describe('predicados de estado', () => {
-  it('pendiente y en_curso están abiertas', () => {
+  it('pendiente y iniciado están abiertas', () => {
     expect(estaAbierta(unaTarea({ estado: 'pendiente' }))).toBe(true);
-    expect(estaAbierta(unaTarea({ estado: 'en_curso' }))).toBe(true);
+    expect(estaAbierta(unaTarea({ estado: 'iniciado' }))).toBe(true);
   });
 
   it('hecha no está abierta', () => {
-    expect(estaAbierta(unaTarea({ estado: 'hecha' }))).toBe(false);
+    expect(estaAbierta(unaTarea({ estado: 'done' }))).toBe(false);
   });
 
   it('cancelada no está abierta: no cuenta para la carga de nadie', () => {
@@ -101,7 +101,7 @@ describe('predicados de estado', () => {
   });
 
   it('estaHecha solo con estado hecha, nunca por porcentaje', () => {
-    expect(estaHecha(unaTarea({ estado: 'hecha' }))).toBe(true);
+    expect(estaHecha(unaTarea({ estado: 'done' }))).toBe(true);
     expect(estaHecha(unaTarea({ estado: 'cancelada' }))).toBe(false);
   });
 });
@@ -122,10 +122,10 @@ describe('bloqueo: bandera con historial, no estado', () => {
     expect(tarea.bloqueos).toHaveLength(1);
   });
 
-  it('bloqueada conserva su propio estado: sigue siendo en_curso', () => {
-    const tarea = unaTarea({ estado: 'en_curso', bloqueos: [unBloqueo()] });
+  it('bloqueada conserva su propio estado: sigue siendo iniciado', () => {
+    const tarea = unaTarea({ estado: 'iniciado', bloqueos: [unBloqueo()] });
     expect(estaBloqueada(tarea)).toBe(true);
-    expect(tarea.estado).toBe('en_curso');
+    expect(tarea.estado).toBe('iniciado');
     expect(estaAbierta(tarea)).toBe(true);
   });
 
@@ -143,7 +143,7 @@ describe('bloqueo: bandera con historial, no estado', () => {
     // El registro histórico no se toca: el bloqueo sigue abierto en el documento, porque
     // cerrarlo inventaría una fecha de resolución que quizá nunca ocurrió. Lo que cambia
     // es a qué le pedimos atención hoy: si la tarea se terminó, nada la detiene.
-    const tarea = unaTarea({ estado: 'hecha', bloqueos: [unBloqueo()] });
+    const tarea = unaTarea({ estado: 'done', bloqueos: [unBloqueo()] });
     expect(tarea.bloqueos).toHaveLength(1);
     expect(estaBloqueada(tarea)).toBe(false);
     expect(estaHecha(tarea)).toBe(true);
@@ -183,7 +183,7 @@ describe('vencimiento', () => {
   });
 
   it('una tarea hecha con fecha pasada no cuenta como vencida', () => {
-    expect(estaVencida(unaTarea({ fecha_limite: '2026-01-01', estado: 'hecha' }), HOY)).toBe(false);
+    expect(estaVencida(unaTarea({ fecha_limite: '2026-01-01', estado: 'done' }), HOY)).toBe(false);
   });
 
   it('una tarea cancelada con fecha pasada no cuenta como vencida', () => {
@@ -193,7 +193,7 @@ describe('vencimiento', () => {
   it('venceHoy solo con la fecha de hoy exacta y la tarea abierta', () => {
     expect(venceHoy(unaTarea({ fecha_limite: HOY }), HOY)).toBe(true);
     expect(venceHoy(unaTarea({ fecha_limite: '2026-08-25' }), HOY)).toBe(false);
-    expect(venceHoy(unaTarea({ fecha_limite: HOY, estado: 'hecha' }), HOY)).toBe(false);
+    expect(venceHoy(unaTarea({ fecha_limite: HOY, estado: 'done' }), HOY)).toBe(false);
   });
 
   it('vencida y venceHoy son excluyentes: ninguna tarea puede ser las dos', () => {
@@ -210,11 +210,11 @@ describe('procedencia: emergente es de dónde viene, no en qué estado está (re
   });
 
   it('una emergente abierta pinta la banda', () => {
-    expect(mostrarProcedencia(unaTarea({ planeada: false, estado: 'en_curso' }))).toBe(true);
+    expect(mostrarProcedencia(unaTarea({ planeada: false, estado: 'iniciado' }))).toBe(true);
   });
 
   it('una emergente YA CERRADA no pinta la banda: verde, no amarillo', () => {
-    expect(mostrarProcedencia(unaTarea({ planeada: false, estado: 'hecha' }))).toBe(false);
+    expect(mostrarProcedencia(unaTarea({ planeada: false, estado: 'done' }))).toBe(false);
   });
 
   it('una emergente CANCELADA tampoco pinta la banda: también está cerrada', () => {
@@ -233,9 +233,9 @@ describe('procedencia: emergente es de dónde viene, no en qué estado está (re
  * una bloqueada, una vencida, una emergente y una arrastrada.
  */
 function documentoDePrueba() {
-  const t1 = unaTarea({ id: 'PRUEBA-T1', estado: 'en_curso', responsable: 'ana', fecha_limite: '2026-08-25' });
+  const t1 = unaTarea({ id: 'PRUEBA-T1', estado: 'iniciado', responsable: 'ana', fecha_limite: '2026-08-25' });
   const t2 = unaTarea({ id: 'PRUEBA-T2', estado: 'pendiente', responsable: 'ana', bloqueos: [unBloqueo()] });
-  const t3 = unaTarea({ id: 'PRUEBA-T3', estado: 'hecha', responsable: 'beto' });
+  const t3 = unaTarea({ id: 'PRUEBA-T3', estado: 'done', responsable: 'beto' });
   const t4 = unaTarea({ id: 'PRUEBA-T4', estado: 'cancelada' });
   const t5 = unaTarea({ id: 'PRUEBA-T5', estado: 'pendiente', planeada: false });
   const o1 = unaTarea({ id: 'OTRO-T1', clave: 'OTRO', estado: 'pendiente', responsable: 'beto' });
@@ -427,7 +427,7 @@ describe('senalesDeProyecto', () => {
               historias: [
                 unaHistoria({
                   tareas: [
-                    unaTarea({ planeada: false, estado: 'hecha' }),
+                    unaTarea({ planeada: false, estado: 'done' }),
                     unaTarea({ planeada: false, estado: 'cancelada' }),
                   ],
                 }),

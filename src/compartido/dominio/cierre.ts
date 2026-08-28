@@ -100,7 +100,7 @@ function filaDe(doc: Documento, item: ItemSprint, ubicacion: UbicacionTarea, hoy
     bloqueo: bloqueoAbierto(tarea),
     diasDetenida: diasBloqueada(tarea, hoy),
     pasos: sprintsQueLaTocaron(doc, tarea.id).length,
-    decide: tarea.estado !== 'hecha',
+    decide: tarea.estado !== 'done',
     nuevo: mostrarProcedencia(tarea),
   };
 }
@@ -120,7 +120,7 @@ export function bloquesDeCierre(doc: Documento, sprint: Sprint, hoy: Fecha): Blo
   for (const { item, ubicacion } of paraVistaSprint(doc, sprint)) {
     const fila = filaDe(doc, item, ubicacion, hoy);
     const { estado } = ubicacion.tarea;
-    if (estado === 'hecha') terminadas.push(fila);
+    if (estado === 'done') terminadas.push(fila);
     else if (estado === 'cancelada') canceladas.push(fila);
     else if (estaBloqueada(ubicacion.tarea)) bloqueadas.push(fila);
     else sinTerminar.push(fila);

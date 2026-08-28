@@ -33,6 +33,7 @@ import type {
   EsquemaContadores,
   EsquemaDesenlaceItem,
   EsquemaDocumento,
+  EsquemaEquipo,
   EsquemaEpica,
   EsquemaEstadoSprint,
   EsquemaEstadoTarea,
@@ -46,6 +47,8 @@ import type {
   EsquemaSprint,
   EsquemaTarea,
   EsquemaTipoBloqueo,
+  EsquemaTipoTarea,
+  EsquemaTramoTrabajo,
 } from './esquema';
 
 /** Fecha de calendario `YYYY-MM-DD`. Se compara lexicográficamente: sin `Date`, sin zona horaria. */
@@ -70,12 +73,15 @@ export type Prioridad = z.infer<typeof EsquemaPrioridad>;
 /** 1 · 2 · 3 · 5 · 8. Ver `EsquemaEsfuerzo` para por qué esta escala y no otra. */
 export type Esfuerzo = z.infer<typeof EsquemaEsfuerzo>;
 export type EstadoTarea = z.infer<typeof EsquemaEstadoTarea>;
+export type TipoTarea = z.infer<typeof EsquemaTipoTarea>;
 export type TipoBloqueo = z.infer<typeof EsquemaTipoBloqueo>;
 export type EstadoSprint = z.infer<typeof EsquemaEstadoSprint>;
 export type DesenlaceItem = z.infer<typeof EsquemaDesenlaceItem>;
 
 export type Persona = z.infer<typeof EsquemaPersona>;
 export type MiembroEquipo = z.infer<typeof EsquemaMiembroEquipo>;
+export type Equipo = z.infer<typeof EsquemaEquipo>;
+export type TramoTrabajo = z.infer<typeof EsquemaTramoTrabajo>;
 export type Bloqueo = z.infer<typeof EsquemaBloqueo>;
 export type Tarea = z.infer<typeof EsquemaTarea>;
 export type Historia = z.infer<typeof EsquemaHistoria>;
