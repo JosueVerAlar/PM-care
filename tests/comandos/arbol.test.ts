@@ -277,6 +277,9 @@ describe('crearTarea', () => {
       creada_en: AHORA,
       // Sin estimar: `null` es lo normal, no un hueco por llenar.
       esfuerzo: null,
+      // El anclaje del reloj vive en la TAREA desde MA, no en el item del sprint: si
+      // viviera en el item, sacarla para redefinirla y volver a meterla lo reiniciaría.
+      comprometida_en: null,
       hecha_en: null,
       bloqueos: [],
       clave_externa: null,

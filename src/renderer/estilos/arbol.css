@@ -51,9 +51,11 @@
   width: 3px; background: var(--nuevo-banda);
 }
 
-/* Tarea ya llevada al sprint: atenuada en el árbol, no oculta. */
-.fila--en-sprint .fila__texto { color: var(--tinta-2); }
-.fila--en-sprint .glifo { opacity: .65; }
+/* El compromiso pide atención sin apropiarse del azul de estado: conserva tinta y glifo
+   plenos, y el contorno del chip aporta la señal adicional en un canal neutro. */
+.fila--en-sprint .fila__texto { color: var(--tinta-1); }
+.fila--en-sprint .glifo { opacity: 1; }
+.fila--en-sprint .chip--neutro { border: 1px solid var(--hairline-fuerte); }
 
 /* Cancelada: tachada, tinta apagada y fuera de todo denominador. No gasta un tono
    de la paleta: no es una señal que haya que perseguir. */

@@ -195,7 +195,7 @@ describe('sacarDelSprint — conserva lo escrito', () => {
     expect(ids(documento)).toEqual(['PM-T2']);
   });
 
-  it('la TAREA queda intacta: responsable, fecha límite, prioridad y descripción siguen ahí', () => {
+  it('los datos propios quedan intactos y solo se añade la custodia temporal del reloj', () => {
     // Este es el flujo real: se saca del sprint para redefinir la historia y se vuelve a
     // meter. Si sacar borrara el responsable, el usuario lo perdería cada vez.
     const { doc, historiaId } = arbolConTareas(0);
@@ -213,12 +213,14 @@ describe('sacarDelSprint — conserva lo escrito', () => {
       { ...conTarea, sprints: [unSprint({ id: 'S-1', estado: 'activo' })] },
       { comando: 'moverAlSprint', tareaId: 'PM-T1', sprintId: 'S-1' },
     );
-    const antes = copiaProfunda(enSprint.proyectos);
+    const antes = enSprint.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0];
+    const origen = enSprint.sprints[0]?.items[0]?.comprometida_en;
 
     const { documento } = exigirOk(
       reducirSinMutar(enSprint, { comando: 'sacarDelSprint', tareaId: 'PM-T1', sprintId: 'S-1' }),
     );
-    expect(documento.proyectos).toEqual(antes);
+    const despues = documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0];
+    expect(despues).toEqual({ ...antes, comprometida_en: origen });
   });
 
   it('el compromiso que vivía SOLO en el item se vuelca a la tarea al sacarla', () => {
@@ -341,6 +343,22 @@ describe('sacarDelSprint — conserva lo escrito', () => {
     expect(compromisoEfectivo(item!, tarea)).toEqual(antes);
     // El item vuelve heredando: el dato ya no vive por duplicado.
     expect(item).toMatchObject({ responsable: null, fecha_limite: null, prioridad: null });
+  });
+
+  it('sacar y volver a meter conserva comprometida_en: el reloj no vuelve a empezar', () => {
+    const origen = '2026-08-25T09:30:00-06:00';
+    const doc = copiaProfunda(comprometido(1));
+    const itemInicial = doc.sprints[0]?.items[0];
+    if (itemInicial === undefined) throw new Error('fixture sin item');
+    itemInicial.comprometida_en = origen;
+
+    const fuera = aplicar(doc, { comando: 'sacarDelSprint', tareaId: 'PM-T1', sprintId: 'S-1' });
+    const tareaFuera = fuera.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0];
+    expect(tareaFuera?.comprometida_en).toBe(origen);
+
+    const deVuelta = aplicar(fuera, { comando: 'moverAlSprint', tareaId: 'PM-T1', sprintId: 'S-1' });
+    expect(deVuelta.sprints[0]?.items[0]?.comprometida_en).toBe(origen);
+    expect(deVuelta.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.comprometida_en).toBeNull();
   });
 
   it('tampoco toca el estado ni el historial de bloqueos', () => {

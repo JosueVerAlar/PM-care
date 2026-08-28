@@ -157,14 +157,12 @@ export function paraVistaTerminadas(doc: Documento): UbicacionTarea[] {
 }
 
 /**
- * Backlog del área: lo que está abierto y NO está comprometido en el sprint activo.
- *
- * Es la definición útil para "qué podría entrar al sprint". Si incluyera lo ya
- * comprometido, la vista repetiría el sprint y dejaría de servir para elegir.
+ * Backlog del área: todo lo capturado. El compromiso no cambia la pertenencia al backlog:
+ * solo añade una marca visible, porque el usuario sigue necesitando encontrar la tarea en
+ * su lugar de origen mientras trabaja el sprint.
  */
 export function paraBacklogDelArea(doc: Documento): UbicacionTarea[] {
-  const activo = sprintActivo(doc);
-  return todasLasTareas(doc).filter((u) => estaAbierta(u.tarea) && !estaEnSprint(u.tarea.id, activo));
+  return todasLasTareas(doc);
 }
 
 export interface FilaSprint {

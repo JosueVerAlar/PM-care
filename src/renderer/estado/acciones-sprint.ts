@@ -30,7 +30,7 @@ export interface AccionesSprint {
 
 export function useAccionesSprint(sprint: Sprint | undefined): AccionesSprint {
   const mutar = useMutar();
-  const { redactar, avisar } = useAccionesInterfaz();
+  const { redactar, avisar, confirmar } = useAccionesInterfaz();
 
   const admiteSprint = useCallback(
     (tarea: Tarea) =>
@@ -96,15 +96,11 @@ export function useAccionesSprint(sprint: Sprint | undefined): AccionesSprint {
   const sacar = useCallback(
     async (tareaId: string) => {
       if (sprint === undefined) return;
-      const ok = await mutar(
-        { comando: 'sacarDelSprint', tareaId, sprintId: sprint.id },
-        `Sacar ${tareaId} del sprint`,
-      );
-      // Lo escrito (quién, para cuándo, qué hay que hacer) vive en la TAREA, no en el
-      // item, así que sacarla no lo pierde: volver a meterla lo trae de vuelta tal cual.
-      if (ok) redactar(null);
+      // El diálogo vive arriba de ambas vistas de sprint: así botón y drag comparten la
+      // misma excepción N16 y ninguno puede sacar por un camino silencioso.
+      confirmar({ tipo: 'sacarDelSprint', tareaId, sprintId: sprint.id });
     },
-    [mutar, redactar, sprint],
+    [confirmar, sprint],
   );
 
   return useMemo(

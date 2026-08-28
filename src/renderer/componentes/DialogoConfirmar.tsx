@@ -1,11 +1,13 @@
 /**
- * La ÚNICA confirmación de toda la app: borrar un contenedor que se lleva hijos por
- * delante.
+ * Las dos confirmaciones de la app: borrar un contenedor que se lleva hijos por delante
+ * y sacar una tarea del sprint.
  *
- * Nada más pregunta. Cambiar un estado, sacar algo del sprint, renombrar, capturar de
- * más: todo eso lo deshace `⌘Z` en una tecla, y una app que pregunta por todo entrena a
- * pulsar «Aceptar» sin leer — que es exactamente lo que hace peligrosa la única pregunta
- * que sí importa.
+ * Sacar se admite como segunda excepción porque tiene una consecuencia invisible sobre
+ * datos tecleados a mano: responsable, fecha, prioridad, descripción y origen del reloj
+ * dejan de vivir en el item y se vuelcan a la tarea. Aunque `⌘Z` revierta el comando, la
+ * pantalla no hace visible ese traslado; confirmar evita que un drop fuera del sprint lo
+ * provoque sin que el usuario entienda qué cambió. Nada más pregunta, para no entrenar a
+ * pulsar «Aceptar» sin leer.
  *
  * El texto lleva el CONTEO, no una advertencia genérica: «Borrar E3 y sus 12 tareas»
  * responde la pregunta que el usuario se está haciendo. «¿Estás seguro?» no responde

@@ -341,6 +341,9 @@
   max-width: calc(var(--medida) + 32px);
 }
 .fila-backlog:hover { background: var(--hover); }
+.fila-backlog--en-sprint { color: var(--tinta-1); }
+.fila-backlog--en-sprint .glifo { opacity: 1; }
+.fila-backlog--en-sprint .chip--neutro { border: 1px solid var(--hairline-fuerte); }
 .fila-backlog--nuevo::before {
   content: ""; position: absolute; left: 0; top: 0; bottom: 0;
   width: 3px; background: var(--nuevo-banda);

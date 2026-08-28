@@ -192,7 +192,9 @@ function Fila({ fila, agrupacion }: { fila: FilaBacklog; agrupacion: AgrupacionB
   const { tarea, proyecto } = fila.ubicacion;
 
   return (
-    <div className={`fila-backlog${fila.nuevo ? ' fila-backlog--nuevo' : ''}`}>
+    <div
+      className={`fila-backlog${fila.nuevo ? ' fila-backlog--nuevo' : ''}${fila.enSprintActivo ? ' fila-backlog--en-sprint' : ''}`}
+    >
       {/* CANAL 1 · estado: la forma del glifo, en su columna fija. */}
       <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} />
 

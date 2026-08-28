@@ -59,6 +59,7 @@ export function unaTarea(over: Con<Tarea> = {}): Tarea {
     prioridad: null,
     esfuerzo: null,
     creada_en: null,
+    comprometida_en: null,
     hecha_en: null,
     bloqueos: [],
     clave_externa: null,

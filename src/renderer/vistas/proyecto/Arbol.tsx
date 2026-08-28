@@ -599,6 +599,7 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
         return;
       }
       confirmar({
+        tipo: 'eliminarContenedor',
         clase: fila.tipo,
         id: fila.id,
         titulo: fila.tipo === 'epica' ? fila.epica.titulo : fila.historia.titulo,

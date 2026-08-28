@@ -330,22 +330,29 @@ describe('selectores por vista', () => {
     expect(paraVistaTerminadas(doc).map((u) => u.tarea.id)).toEqual(['PRUEBA-T3']);
   });
 
-  it('Backlog del área: lo abierto que NO está comprometido en el sprint activo', () => {
+  it('Backlog del área conserva todo lo capturado, también lo comprometido', () => {
     const { doc } = documentoDePrueba();
-    expect(paraBacklogDelArea(doc).map((u) => u.tarea.id)).toEqual(['PRUEBA-T5']);
+    expect(paraBacklogDelArea(doc).map((u) => u.tarea.id)).toEqual([
+      'PRUEBA-T1',
+      'PRUEBA-T2',
+      'PRUEBA-T3',
+      'PRUEBA-T4',
+      'PRUEBA-T5',
+      'OTRO-T1',
+    ]);
   });
 
   it('Backlog: haber estado en un sprint cerrado no saca a una tarea del backlog', () => {
     const { doc } = documentoDePrueba();
-    // PRUEBA-T1 está en el cerrado y en el activo: la excluye el activo, no el cerrado.
+    // El historial de sprints no cambia la pertenencia al backlog del área.
     const sinActivo = unDocumento({ ...doc, sprints: doc.sprints.filter((s) => s.estado === 'cerrado') });
     expect(paraBacklogDelArea(sinActivo).map((u) => u.tarea.id)).toContain('PRUEBA-T1');
   });
 
-  it('Backlog: sin sprint activo, todo lo abierto es backlog', () => {
+  it('Backlog: sin sprint activo sigue devolviendo todo lo capturado', () => {
     const { doc } = documentoDePrueba();
     const sinSprints = unDocumento({ ...doc, sprints: [] });
-    expect(paraBacklogDelArea(sinSprints)).toHaveLength(4);
+    expect(paraBacklogDelArea(sinSprints)).toHaveLength(6);
   });
 
   it('Sprint: los items salen en el orden del array, resueltos a su ubicación', () => {

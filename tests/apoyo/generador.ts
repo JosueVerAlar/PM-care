@@ -85,6 +85,7 @@ export function unProyectoAleatorio(rng: Aleatorio, opciones: OpcionesArbol = {}
         // parecerse a eso o las pruebas de esfuerzo medirían un mundo que no existe.
         esfuerzo: rng() < 0.33 ? elegir(rng, [1, 2, 3, 5, 8] as const) : null,
         creada_en: null,
+        comprometida_en: null,
         // Solo lo hecho tiene fecha de cierre. Una hecha sin `hecha_en` también se genera
         // —pasa con las editadas a mano— y ahí la duración tiene que salir `null`.
         hecha_en:

@@ -809,6 +809,7 @@ function aplicar(
         // Sin estimar. Se pone después, y solo donde importa.
         esfuerzo: comando.esfuerzo ?? null,
         creada_en: ahora,
+        comprometida_en: null,
         hecha_en: null,
         bloqueos: [],
         clave_externa: null,
@@ -970,16 +971,21 @@ function aplicar(
         const [item] = sprint.items.splice(existente, 1);
         if (item !== undefined) sprint.items.splice(destino, 0, item);
       } else {
+        const origenDelReloj = sitio.tarea.comprometida_en ?? ahora;
         sprint.items.splice(destino, 0, {
           tarea_id: sitio.tarea.id,
           // `null` = «hereda de la tarea», no «sin asignar». Se materializa al cerrar.
           responsable: null,
           fecha_limite: null,
           prioridad: null,
-          // El anclaje del reloj de resolución: cuándo entró a ESTE sprint.
-          comprometida_en: ahora,
+          // Si vuelve después de salir para redefinirse, el origen vive temporalmente en
+          // la tarea: sellarlo otra vez con `ahora` borraría días reales del reloj.
+          comprometida_en: origenDelReloj,
           desenlace: null,
         });
+        // Dentro del sprint el item vuelve a ser el dueño del origen; dejar una copia en
+        // la tarea crearía dos fuentes que podrían separarse al editar JSON a mano.
+        sitio.tarea.comprometida_en = null;
       }
 
       return {
@@ -1016,6 +1022,12 @@ function aplicar(
       const saliente = sprint.items[indice];
       if (saliente !== undefined) {
         volcarCompromiso(sitio.tarea, compromisoEfectivo(saliente, sitio.tarea));
+        // Fuera del sprint ya no queda item que pueda guardar el origen del reloj. La
+        // tarea lo custodia solo para que el flujo normal sacar → redefinir → volver a
+        // meter conserve el primer compromiso, en vez de empezar a contar de nuevo.
+        if (sitio.tarea.comprometida_en === null) {
+          sitio.tarea.comprometida_en = saliente.comprometida_en;
+        }
       }
       // Se quita el item entero, no se marca. El rastro de la salida vive en el historial
       // append-only; así `items` siempre significa «lo comprometido», sin filtros.

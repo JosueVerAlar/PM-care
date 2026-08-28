@@ -116,15 +116,12 @@ export interface Arrastre {
 }
 
 /**
- * La ÚNICA confirmación de la app: borrar un contenedor con hijos. Lleva el conteo
- * porque «Borrar E3» y «Borrar E3 y sus 12 tareas» son dos preguntas distintas.
+ * Las dos preguntas excepcionales: borrar un contenedor con hijos o sacar del sprint,
+ * cuyo volcado de datos existe pero no se ve en pantalla.
  */
-export interface Confirmacion {
-  clase: 'epica' | 'historia';
-  id: string;
-  titulo: string;
-  tareas: number;
-}
+export type Confirmacion =
+  | { tipo: 'eliminarContenedor'; clase: 'epica' | 'historia'; id: string; titulo: string; tareas: number }
+  | { tipo: 'sacarDelSprint'; tareaId: string; sprintId: string };
 
 export interface EstadoInterfaz {
   /** `null` = todavía no se eligió nada; quien pinta cae al primer proyecto. */

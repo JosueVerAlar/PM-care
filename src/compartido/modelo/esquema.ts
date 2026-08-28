@@ -172,6 +172,12 @@ export const EsquemaTarea = z
     esfuerzo: EsquemaEsfuerzo.nullable().default(null),
     /** Nullable: una tarea escrita a mano no debería tumbar la app por omitirla. */
     creada_en: EsquemaInstante.nullable().default(null),
+    /**
+     * Origen del reloj cuando la tarea salió de un sprint para redefinirse. Vive en la
+     * tarea porque durante ese intervalo ya no existe un item que pueda custodiarlo;
+     * conservarlo permite volver a comprometerla sin reiniciar su historia en silencio.
+     */
+    comprometida_en: EsquemaInstante.nullable().default(null),
     /** Cuándo pasó a `hecha`. Las métricas que lo necesiten ignoran las que no lo tengan. */
     hecha_en: EsquemaInstante.nullable().default(null),
     /** Lista histórica, no un flag. Vacía = nunca se bloqueó. */

@@ -19,9 +19,8 @@
  *
  * - **`⌘Z`.** Un solo escucha en `window`, no uno por panel. La pila de 20 vive en el
  *   proceso principal y se vacía ante un cambio externo del archivo; aquí solo se llama.
- * - **La única confirmación de la app.** El diálogo se monta arriba del todo para que sea
- *   modal de verdad, y quien pide borrar solo publica la intención en el estado de
- *   interfaz.
+ * - **Las dos confirmaciones de la app.** El diálogo se monta arriba del todo para que sea
+ *   modal de verdad, y borrar o sacar del sprint solo publican la intención.
  * - **El menú Edición ▸ Deshacer** (E13). El ítem vive en el proceso principal, pero lo
  *   que hace y cómo se llama se deciden aquí: es el mismo `alDeshacer` de `⌘Z`, para que
  *   el menú y la tecla no puedan divergir nunca.
@@ -356,7 +355,7 @@ function Aplicacion({
           );
         })()}
 
-      {confirmacion !== null && (
+      {confirmacion?.tipo === 'eliminarContenedor' && (
         <DialogoConfirmar
           titulo={`Borrar ${confirmacion.id}`}
           detalle={`«${confirmacion.titulo}» se lleva ${cuentaTareas(confirmacion.tareas)} por delante. ⌘Z lo revierte mientras la pila no se vacíe.`}
@@ -372,6 +371,22 @@ function Aplicacion({
                 ? { comando: 'eliminarEpica', id: objetivo.id }
                 : { comando: 'eliminarHistoria', id: objetivo.id },
               `Eliminar ${objetivo.id}`,
+            );
+          }}
+        />
+      )}
+      {confirmacion?.tipo === 'sacarDelSprint' && (
+        <DialogoConfirmar
+          titulo={`Sacar ${confirmacion.tareaId} del sprint`}
+          detalle="El compromiso se conservará en la tarea: responsable, fecha, prioridad, descripción y origen del reloj. ⌘Z revierte la operación."
+          accion="Sacar del sprint"
+          cancelar={() => confirmar(null)}
+          confirmar={() => {
+            const objetivo = confirmacion;
+            confirmar(null);
+            void mutar(
+              { comando: 'sacarDelSprint', tareaId: objetivo.tareaId, sprintId: objetivo.sprintId },
+              `Sacar ${objetivo.tareaId} del sprint`,
             );
           }}
         />
