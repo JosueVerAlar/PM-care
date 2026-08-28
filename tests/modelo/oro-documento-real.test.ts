@@ -73,7 +73,7 @@ async function documentoReal(): Promise<Documento> {
  */
 function radiografia(doc: Documento) {
   const indice = indexarTareas(doc);
-  const activo = sprintActivo(doc);
+  const activo = sprintActivo(doc, null);
 
   return {
     proyectos: doc.proyectos.map((proyecto) => {

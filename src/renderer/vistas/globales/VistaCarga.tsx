@@ -35,7 +35,7 @@ import {
   type OrdenCarga,
   type RepartoAbierto,
 } from '../../../compartido/dominio/carga';
-import { sprintActivo } from '../../../compartido/dominio/derivar';
+import { sprintsActivos } from '../../../compartido/dominio/derivar';
 import type { Documento, Fecha } from '../../../compartido/modelo/tipos';
 import { CuadroBloqueo } from '../../componentes/iconos';
 import { useAccionesInterfaz } from '../../estado/interfaz';
@@ -47,7 +47,7 @@ export function VistaCarga({ documento, hoy }: { documento: Documento; hoy: Fech
   const [orden, setOrden] = useState<OrdenCarga>('total');
   const { verAdmin } = useAccionesInterfaz();
 
-  const sprint = useMemo(() => sprintActivo(documento), [documento]);
+  const sprint = useMemo(() => sprintsActivos(documento)[0], [documento]);
   const cargas = useMemo(() => cargaPorPersona(documento, hoy), [documento, hoy]);
   const sinAsignar = useMemo(() => cargaSinAsignar(documento, hoy), [documento, hoy]);
   const ordenadas = useMemo(() => ordenarCargas(cargas, orden), [cargas, orden]);

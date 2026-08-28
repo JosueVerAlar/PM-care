@@ -49,7 +49,7 @@ describe('crearProyecto', () => {
       archivado: false,
       cerrado_en: null,
       planeacion_cerrada_en: null,
-      contadores: { epicas: 0, historias: 0, tareas: 0 },
+      contadores: { epicas: 0, historias: 0, tareas: 0, sprints: 0 },
       equipos: [],
       epicas: [],
     });

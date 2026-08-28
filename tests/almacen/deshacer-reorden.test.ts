@@ -57,7 +57,7 @@ function documentoDePartida(): Documento {
     proyectos: [
       unProyecto({
         clave: CLAVE,
-        contadores: { epicas: 3, historias: 2, tareas: 2 },
+        contadores: { epicas: 3, historias: 2, tareas: 2, sprints: 0 },
         epicas: [
           unaEpica({
             id: 'PM-E1',

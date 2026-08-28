@@ -42,7 +42,7 @@ import {
   mostrarProcedencia,
   todasLasTareas,
 } from './clasificar';
-import { compromisoEfectivo, sprintActivo, type UbicacionTarea } from './derivar';
+import { compromisoEfectivo, sprintsActivos, type UbicacionTarea } from './derivar';
 
 export type AlcanceBacklog = 'todas' | 'sin-comprometer';
 export type AgrupacionBacklog = 'proyecto' | 'responsable' | 'estado';
@@ -97,7 +97,7 @@ export function filasDeBacklog(
   alcance: AlcanceBacklog,
   texto: string,
 ): { filas: FilaBacklog[]; conteo: ConteoBacklog } {
-  const activo = sprintActivo(doc);
+  const activo = sprintsActivos(doc)[0];
   const nombres = new Map(doc.personas.map((persona) => [persona.id, persona.nombre]));
   const aguja = normalizar(texto);
 

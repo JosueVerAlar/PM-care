@@ -23,7 +23,7 @@
 import { useMemo } from 'react';
 
 import { paraVistaBloqueos, senalesDeProyecto } from '../../compartido/dominio/clasificar';
-import { sprintActivo } from '../../compartido/dominio/derivar';
+import { sprintsActivos } from '../../compartido/dominio/derivar';
 import type { Documento, Fecha } from '../../compartido/modelo/tipos';
 import { ContadorBloqueos } from '../componentes/Chips';
 import { Icono } from '../componentes/iconos';
@@ -55,7 +55,7 @@ export function BarraLateral({
   const porGrupo = (grupo: GrupoLateral) => GLOBALES.filter((entrada) => entrada.grupo === grupo);
 
   const bloqueosTotales = useMemo(() => paraVistaBloqueos(documento).length, [documento]);
-  const activo = useMemo(() => sprintActivo(documento), [documento]);
+  const activo = useMemo(() => sprintsActivos(documento)[0], [documento]);
 
   /** Un solo recorrido por proyecto: `senalesDeProyecto` ya trae lo que la lista pinta. */
   const proyectos = useMemo(

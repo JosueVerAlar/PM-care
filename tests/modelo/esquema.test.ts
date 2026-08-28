@@ -60,7 +60,7 @@ describe('documentos válidos', () => {
         {
           clave: 'PRUEBA',
           nombre: 'Proyecto',
-          contadores: { epicas: 1, historias: 1, tareas: 1 },
+          contadores: { epicas: 1, historias: 1, tareas: 1, sprints: 0 },
           epicas: [
             {
               id: 'PRUEBA-E1',
@@ -222,7 +222,7 @@ describe('ids duplicados y mal prefijados', () => {
       proyectos: [
         unProyecto({
           clave: 'PRUEBA',
-          contadores: { epicas: 9, historias: 9, tareas: 9 },
+          contadores: { epicas: 9, historias: 9, tareas: 9, sprints: 0 },
           epicas: [unaEpica({ id: 'PRUEBA-E1', historias: [unaHistoria({ id: 'PRUEBA-E1' })] })],
         }),
       ],
@@ -272,7 +272,7 @@ describe('ids duplicados y mal prefijados', () => {
       proyectos: [
         unProyecto({
           clave: 'PRUEBA',
-          contadores: { epicas: 1, historias: 1, tareas: 108 },
+          contadores: { epicas: 1, historias: 1, tareas: 108, sprints: 0 },
           epicas: [
             unaEpica({
               id: 'PRUEBA-E1',
@@ -292,7 +292,7 @@ describe('ids duplicados y mal prefijados', () => {
       proyectos: [
         unProyecto({
           clave: 'PRUEBA',
-          contadores: { epicas: 9, historias: 9, tareas: 900 },
+          contadores: { epicas: 9, historias: 9, tareas: 900, sprints: 0 },
           epicas: [
             unaEpica({
               id: 'PRUEBA-E1',
@@ -643,7 +643,7 @@ describe('N9 · tareas sin jerarquía completa', () => {
           clave: 'INFRA',
           epicas: [],
           tareas: [unaTarea({ clave: 'INFRA', id: 'INFRA-T500' })],
-          contadores: { epicas: 0, historias: 0, tareas: 3 },
+          contadores: { epicas: 0, historias: 0, tareas: 3, sprints: 0 },
         }),
       ],
     });
@@ -666,7 +666,7 @@ describe('N9 · tareas sin jerarquía completa', () => {
             }),
           ],
           tareas: [unaTarea({ clave: 'INFRA', id: 'INFRA-T1' })],
-          contadores: { epicas: 1, historias: 0, tareas: 1 },
+          contadores: { epicas: 1, historias: 0, tareas: 1, sprints: 0 },
         }),
       ],
     });

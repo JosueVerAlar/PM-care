@@ -150,7 +150,7 @@ export function unProyectoAleatorio(rng: Aleatorio, opciones: OpcionesArbol = {}
     archivado: false,
     cerrado_en: null,
     planeacion_cerrada_en: null,
-    contadores: { epicas: nE, historias: nH, tareas: nT },
+    contadores: { epicas: nE, historias: nH, tareas: nT, sprints: 0 },
     equipos: [],
     epicas,
     tareas: sueltas,
@@ -211,14 +211,22 @@ export function unDocumentoAleatorio(rng: Aleatorio, semilla: number): Documento
     const cerrado = i < cuantos - 1;
     const dia = String(1 + i * 3).padStart(2, '0');
     const fin = String(2 + i * 3).padStart(2, '0');
-    const disponibles = idsDeTarea.filter(() => rng() < 0.4);
+    // El sprint es DE un proyecto, y sus items solo pueden ser tareas de ESE proyecto.
+    // Antes se elegía la clave al azar y las tareas de cualquier parte: eso producía
+    // justo el documento que el esquema ahora rechaza —items cruzados entre proyectos—,
+    // y con razón: la vista de proyecto filtra el sprint por clave y esas tareas
+    // desaparecerían de todas las pantallas sin que nada fallara.
+    const suyo = proyectos.length === 0 ? null : elegir(rng, proyectos);
+    const disponibles = idsDeTarea
+      .filter((id) => suyo !== null && id.startsWith(`${suyo.clave}-`))
+      .filter(() => rng() < 0.4);
     return {
       id: `S-${semilla}-${i + 1}`,
       nombre: `Sprint ${i + 1}`,
       inicio: `2026-06-${dia}`,
       fin: `2026-06-${fin}`,
       estado: cerrado ? ('cerrado' as const) : ('activo' as const),
-      clave: proyectos.length === 0 ? null : elegir(rng, proyectos).clave,
+      clave: suyo === null ? null : suyo.clave,
       items: disponibles.map((tareaId) => ({
         tarea_id: tareaId,
         responsable: null,

@@ -29,7 +29,7 @@
 import { useMemo } from 'react';
 
 import { primerSprintPlaneado } from '../../../compartido/dominio/cierre';
-import { sprintActivo } from '../../../compartido/dominio/derivar';
+import { sprintsActivos } from '../../../compartido/dominio/derivar';
 import {
   filasDePersona,
   filasDeSprint,
@@ -55,7 +55,7 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
   const soloLectura = useSoloLectura();
   const mutar = useMutar();
 
-  const sprint = useMemo(() => sprintActivo(documento), [documento]);
+  const sprint = useMemo(() => sprintsActivos(documento)[0], [documento]);
   const acciones = useAccionesSprint(sprint);
 
   const todas = useMemo(() => filasDeSprint(documento, sprint, hoy), [documento, sprint, hoy]);

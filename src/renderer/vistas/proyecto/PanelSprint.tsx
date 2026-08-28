@@ -45,6 +45,7 @@ import { useMutar } from '../../estado/mutaciones';
 import { chipDeArrastre, esArrastreDeTarea, TIPO_TAREA } from '../../util/arrastre';
 import { cuenta, fechaCorta } from '../../util/presentacion';
 import { FormularioCompromiso } from './FormularioCompromiso';
+import { FormularioSprint } from './FormularioSprint';
 
 export interface PropsPanelSprint {
   documento: Documento;
@@ -78,6 +79,8 @@ export function PanelSprint({
   const { arrastrar, verCierre, redactar, irANodo, irASiguiente } = useAccionesInterfaz();
   const acciones = useAccionesSprint(sprint);
   const mutar = useMutar();
+  const [formularioSprint, setFormularioSprint] = useState<'crear' | 'editar' | null>(null);
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   /**
    * Con qué sprint se puede empezar cuando no hay ninguno activo. Es el estado en el que
@@ -86,9 +89,18 @@ export function PanelSprint({
    * no se puede volver a abrir, porque la entrada al cierre solo existe para el activo.
    */
   const planeado = useMemo(
-    () => (sprint === undefined ? primerSprintPlaneado(documento) : undefined),
-    [documento, sprint],
+    () => (sprint === undefined ? primerSprintPlaneado(documento, undefined, clave) : undefined),
+    [documento, sprint, clave],
   );
+  const sprintsDelProyecto = useMemo(
+    () => documento.sprints.filter((s) => s.clave === clave),
+    [documento.sprints, clave],
+  );
+  const ultimoCerrado = useMemo(
+    () => [...sprintsDelProyecto].filter((s) => s.estado === 'cerrado').sort((a, b) => b.fin.localeCompare(a.fin))[0],
+    [sprintsDelProyecto],
+  );
+  const enEspera = ultimoCerrado?.items.filter((item) => item.desenlace === 'arrastrada').length ?? 0;
 
   const todas = useMemo(() => filasDeSprint(documento, sprint, hoy), [documento, sprint, hoy]);
   const filas = useMemo(
@@ -160,6 +172,15 @@ export function PanelSprint({
             Cerrar sprint
           </button>
         )}
+        {editable && (sprint === undefined || sprint.estado !== 'cerrado') && (
+          <div className="menu-sprint">
+            <button type="button" className="cab__accion" aria-label={`Acciones de sprint de ${clave}`} aria-expanded={menuAbierto} onClick={() => setMenuAbierto((v) => !v)}>⋯</button>
+            {menuAbierto && <div className="menu-sprint__lista">
+              {sprint !== undefined && <button type="button" onClick={() => { setFormularioSprint('editar'); setMenuAbierto(false); }}>Editar sprint…</button>}
+              <button type="button" onClick={() => { setFormularioSprint('crear'); setMenuAbierto(false); }}>Crear el siguiente…</button>
+            </div>}
+          </div>
+        )}
         <div className="alternador" role="group" aria-label="Alcance del sprint">
           <button type="button" aria-pressed={soloEsteProyecto} onClick={() => cambiarAlcance(true)}>
             Solo {clave}
@@ -170,15 +191,20 @@ export function PanelSprint({
         </div>
       </header>
 
+      {formularioSprint !== null && (
+        <FormularioSprint documento={documento} clave={clave} hoy={hoy}
+          {...(formularioSprint === 'editar' && sprint !== undefined ? { sprint } : {})}
+          cerrar={() => setFormularioSprint(null)} />
+      )}
+
       {sprint === undefined ? (
         <div className="vacio">
-          <p className="vacio__titulo">No hay ningún sprint activo</p>
-          <p className="vacio__nota">
-            Los sprints cerrados siguen guardados y son inmutables: ningún comando los toca.
-            {planeado !== undefined
-              ? ` ${planeado.nombre} está planeado con ${cuenta(planeado.items.length, 'tarea', 'tareas')} dentro; actívalo para volver a comprometer.`
-              : ' No hay ninguno planeado todavía.'}
-          </p>
+          <p className="vacio__titulo">{planeado ? `${planeado.nombre} está planeado` : ultimoCerrado ? `El último sprint de ${clave} cerró el ${fechaCorta(ultimoCerrado.fin)}` : `${clave} no tiene ningún sprint todavía`}</p>
+          <p className="vacio__nota">{planeado
+            ? `${cuenta(planeado.items.length, 'tarea', 'tareas')} esperan el inicio de esta quincena.`
+            : ultimoCerrado
+              ? `${cuenta(enEspera, 'tarea', 'tareas')} pasaron al siguiente sprint y están esperando planeación.`
+              : `Un sprint es una quincena de compromisos de ${clave}: qué tareas se harán, quién las toma y para cuándo.`}</p>
           {/* Activar es un acto aparte de cerrar, y por eso está aquí y no encadenado al
               cierre. El botón dice a cuál y con cuánto dentro. */}
           {planeado !== undefined && editable && (
@@ -193,6 +219,11 @@ export function PanelSprint({
               }
             >
               Activar {planeado.nombre}
+            </button>
+          )}
+          {planeado === undefined && editable && (
+            <button type="button" className="boton-solido" onClick={() => setFormularioSprint('crear')}>
+              {ultimoCerrado ? 'Crear el siguiente sprint' : `Crear el primer sprint de ${clave}`}
             </button>
           )}
         </div>

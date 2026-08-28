@@ -26,7 +26,7 @@
  * mutación sobre un archivo de decenas de KB; es barato comparado con persistir basura.
  */
 
-import { diasEntre, fechaDe } from '../../compartido/dominio/clasificar';
+import { diasEntre, fechaDe, primerDiaHabil, sumarDias } from '../../compartido/dominio/clasificar';
 import type { Compromiso, Contenedor } from '../../compartido/dominio/derivar';
 import { compromisoEfectivo, tareasDe, tareasDeProyecto } from '../../compartido/dominio/derivar';
 import { validarDocumento } from '../../compartido/modelo/esquema';
@@ -134,7 +134,7 @@ function aplicar(
         // trabajo existen desde el principio (N9), ninguna es el caso raro.
         tareas: [],
         // Arranca en cero y de ahí solo sube (regla 15). Nunca se recalcula.
-        contadores: { epicas: 0, historias: 0, tareas: 0 },
+        contadores: { epicas: 0, historias: 0, tareas: 0, sprints: 0 },
         equipos: [],
         epicas: [],
         clave_externa: null,
@@ -317,6 +317,20 @@ function aplicar(
       if (cerrado !== null) return proyectoConHistoriaCerrada(proyecto, cerrado, tareas);
 
       quitarDeSprintsAbiertos(doc, tareas);
+
+      // Los sprints DEL proyecto se van con él. Desde que el sprint tiene `clave`, dejar
+      // los suyos atrás produce un documento inválido —apuntan a un proyecto que ya no
+      // existe— y la app arrancaría en solo lectura la próxima vez. Lo encontró la
+      // máquina de invariantes, no una prueba escrita a mano: es exactamente la clase de
+      // consecuencia que aparece al añadir una referencia nueva entre dos entidades.
+      //
+      // No hay conflicto con la regla 8: aquí ya se comprobó que ninguna tarea suya vive
+      // en un sprint CERRADO, así que lo que se borra son sprints de este proyecto que
+      // están abiertos o planeados. Un sprint cerrado suyo habría abortado el comando
+      // varias líneas más arriba.
+      const sprintsSuyos = doc.sprints.filter((sprint) => sprint.clave === proyecto.clave);
+      for (const sprint of sprintsSuyos) doc.sprints.splice(doc.sprints.indexOf(sprint), 1);
+
       doc.proyectos.splice(doc.proyectos.indexOf(proyecto), 1);
 
       return {
@@ -328,8 +342,8 @@ function aplicar(
           // línea habla de un proyecto que no está en el documento.
           proyecto_id: proyecto.clave,
           origen: rutaLegible([proyecto.clave]),
-          resumen: `Proyecto eliminado: ${proyecto.clave} — ${proyecto.nombre} (${proyecto.epicas.length} épicas, ${tareas.size} tareas)`,
-          detalle: { nombre: proyecto.nombre, tareas: [...tareas] },
+          resumen: `Proyecto eliminado: ${proyecto.clave} — ${proyecto.nombre} (${proyecto.epicas.length} épicas, ${tareas.size} tareas, ${sprintsSuyos.length} sprints)`,
+          detalle: { nombre: proyecto.nombre, tareas: [...tareas], sprints: sprintsSuyos.map((s) => s.id) },
         }),
       };
     }
@@ -964,6 +978,9 @@ function aplicar(
       const sprint = doc.sprints.find((s) => s.id === comando.sprintId);
       if (sprint === undefined) return falta(`el sprint "${comando.sprintId}"`);
       if (sprint.estado === 'cerrado') return sprintCerrado(sprint);
+      if (sprint.clave !== null && sprint.clave !== sitio.proyecto.clave) {
+        return invalido(`${sitio.tarea.id} pertenece a ${sitio.proyecto.clave} y no puede entrar en ${sprint.id}, que pertenece a ${sprint.clave}`);
+      }
 
       const existente = sprint.items.findIndex((i) => i.tarea_id === sitio.tarea.id);
       const destino = posicionValida(comando.posicion, sprint, existente >= 0);
@@ -1208,7 +1225,7 @@ function aplicar(
       }
       // Solo puede haber uno activo, y no lo resolvemos cerrando el otro por nuestra
       // cuenta: cerrar un sprint fija desenlaces y es irreversible. Que lo pida el usuario.
-      const otro = doc.sprints.find((s) => s.estado === 'activo');
+      const otro = doc.sprints.find((s) => s.estado === 'activo' && s.clave === sprint.clave);
       if (otro !== undefined) {
         return {
           ok: false,
@@ -1222,6 +1239,65 @@ function aplicar(
         documento: doc,
         evento: anotar({ sprint_id: sprint.id, resumen: `Sprint ${sprint.id} activado` }),
       };
+    }
+
+    case 'crearSprint': {
+      const proyecto = doc.proyectos.find((p) => p.clave === comando.clave);
+      if (proyecto === undefined) return falta(`el proyecto "${comando.clave}"`);
+      if (proyecto.cerrado_en !== null) return invalido(`${proyecto.clave} está cerrado`);
+      if (comando.fin < comando.inicio) return invalido('la fecha de fin no puede ser anterior al inicio');
+      const solapado = sprintSolapado(doc, comando.clave, comando.inicio, comando.fin);
+      if (solapado !== undefined) return invalido(`las fechas se solapan con ${solapado.nombre}`);
+      const emitido = siguienteId(proyecto.clave, proyecto.contadores, 'sprint');
+      proyecto.contadores = { ...emitido.contadores };
+      const anterior = [...doc.sprints].filter((s) => s.clave === proyecto.clave).at(-1);
+      const sprint: Sprint = {
+        id: emitido.id,
+        nombre: comando.nombre ?? (anterior ? siguienteDeLaSerie(anterior.nombre) ?? emitido.id : 'Sprint 1'),
+        inicio: comando.inicio,
+        fin: comando.fin,
+        estado: 'planeado',
+        clave: proyecto.clave,
+        items: [],
+      };
+      doc.sprints.push(sprint);
+      return { ok: true, documento: doc, evento: anotar({ proyecto_id: proyecto.clave, sprint_id: sprint.id, resumen: `Sprint creado: ${sprint.nombre}` }) };
+    }
+
+    case 'editarSprint': {
+      const sprint = doc.sprints.find((s) => s.id === comando.sprintId);
+      if (sprint === undefined) return falta(`el sprint "${comando.sprintId}"`);
+      if (sprint.estado === 'cerrado') return sprintCerrado(sprint);
+      if (comando.nombre === undefined && comando.inicio === undefined && comando.fin === undefined) return sinCambios();
+      // Se edita lo que describe el futuro del sprint, nunca lo que reescribe su pasado.
+      if (sprint.estado === 'activo' && comando.inicio !== undefined) return invalido(`no se puede cambiar el inicio de ${sprint.id} mientras está activo`);
+      const inicio = comando.inicio ?? sprint.inicio;
+      const fin = comando.fin ?? sprint.fin;
+      if (fin < inicio) return invalido('la fecha de fin no puede ser anterior al inicio');
+      const solapado = sprintSolapado(doc, sprint.clave, inicio, fin, sprint.id);
+      if (solapado !== undefined) return invalido(`las fechas se solapan con ${solapado.nombre}`);
+      if (comando.nombre !== undefined) sprint.nombre = comando.nombre;
+      if (comando.inicio !== undefined) sprint.inicio = comando.inicio;
+      if (comando.fin !== undefined) sprint.fin = comando.fin;
+      return { ok: true, documento: doc, evento: anotar({ proyecto_id: sprint.clave, sprint_id: sprint.id, resumen: `Sprint editado: ${sprint.nombre}` }) };
+    }
+
+    case 'eliminarSprint': {
+      const indice = doc.sprints.findIndex((s) => s.id === comando.sprintId);
+      const sprint = doc.sprints[indice];
+      if (sprint === undefined) return falta(`el sprint "${comando.sprintId}"`);
+      if (sprint.estado !== 'planeado') return invalido(`${sprint.id} no está planeado`);
+      if (sprint.items.length > 0) return invalido(`${sprint.id} tiene items y no se puede eliminar`);
+      doc.sprints.splice(indice, 1);
+      return { ok: true, documento: doc, evento: anotar({ proyecto_id: sprint.clave, sprint_id: sprint.id, resumen: `Sprint eliminado: ${sprint.nombre}` }) };
+    }
+
+    case 'desactivarSprint': {
+      const sprint = doc.sprints.find((s) => s.id === comando.sprintId);
+      if (sprint === undefined) return falta(`el sprint "${comando.sprintId}"`);
+      if (sprint.estado !== 'activo') return invalido(`${sprint.id} no está activo`);
+      sprint.estado = 'planeado';
+      return { ok: true, documento: doc, evento: anotar({ proyecto_id: sprint.clave, sprint_id: sprint.id, resumen: `Sprint desactivado: ${sprint.nombre}` }) };
     }
 
     // --- bloqueos -------------------------------------------------------
@@ -1756,17 +1832,20 @@ function resolverSprintSiguiente(
     if (existente !== undefined) {
       // Arrastrar a un sprint ya cerrado reescribiría lo que pasó (regla 8).
       if (existente.estado === 'cerrado') return sprintCerrado(existente);
+      if (existente.clave !== cerrando.clave) {
+        return invalido(`${existente.id} pertenece a ${existente.clave ?? 'la serie transversal'} y ${cerrando.id} a ${cerrando.clave ?? 'la serie transversal'}`);
+      }
       return { ok: true, destino: existente, creado: false };
     }
     return { ok: true, destino: crearSprintSiguiente(doc, cerrando, pedido), creado: true };
   }
 
   const yaPlaneado = doc.sprints
-    .filter((s) => s.id !== cerrando.id && s.estado === 'planeado')
+    .filter((s) => s.id !== cerrando.id && s.estado === 'planeado' && s.clave === cerrando.clave)
     .sort((a, b) => (a.inicio < b.inicio ? -1 : a.inicio > b.inicio ? 1 : 0))[0];
   if (yaPlaneado !== undefined) return { ok: true, destino: yaPlaneado, creado: false };
 
-  const nuevo = crearSprintSiguiente(doc, cerrando, idSprintLibre(doc, cerrando.id));
+  const nuevo = crearSprintSiguiente(doc, cerrando, idSprintNuevo(doc, cerrando));
   return { ok: true, destino: nuevo, creado: true };
 }
 
@@ -1791,14 +1870,36 @@ function crearSprintSiguiente(doc: Documento, anterior: Sprint, id: string): Spr
   return nuevo;
 }
 
-/** Id libre para el sprint siguiente, avanzando la serie del anterior: `S-2026-34` → `-35`. */
-function idSprintLibre(doc: Documento, base: string): string {
-  const usados = new Set(doc.sprints.map((s) => s.id));
-  let candidato = siguienteDeLaSerie(base) ?? `${base}-2`;
-  for (let intento = 0; usados.has(candidato) && intento < 1000; intento += 1) {
-    candidato = siguienteDeLaSerie(candidato) ?? `${candidato}-2`;
+/** Un solape importa solo dentro de la misma serie y mientras aún puede cambiar. */
+function sprintSolapado(
+  doc: Documento,
+  clave: string | null,
+  inicio: Fecha,
+  fin: Fecha,
+  excepto?: string,
+): Sprint | undefined {
+  return doc.sprints.find(
+    (sprint) =>
+      sprint.id !== excepto &&
+      sprint.clave === clave &&
+      sprint.estado !== 'cerrado' &&
+      inicio <= sprint.fin &&
+      fin >= sprint.inicio,
+  );
+}
+
+/** Emite desde el contador persistido; nunca inspecciona el máximo ni recicla historia. */
+function idSprintNuevo(doc: Documento, anterior: Sprint): string {
+  if (anterior.clave === null) {
+    // Solo los transversales legados carecen de proyecto raíz y, por tanto, de contador.
+    // Se conserva su serie histórica; los comandos nuevos nunca crean transversales.
+    return siguienteDeLaSerie(anterior.id) ?? `${anterior.id}-siguiente`;
   }
-  return candidato;
+  const proyecto = doc.proyectos.find((p) => p.clave === anterior.clave);
+  if (proyecto === undefined) return `${anterior.clave}-S1`;
+  const emitido = siguienteId(proyecto.clave, proyecto.contadores, 'sprint');
+  proyecto.contadores = { ...emitido.contadores };
+  return emitido.id;
 }
 
 /** `"Sprint 34"` → `"Sprint 35"`, `"S-2026-09"` → `"S-2026-10"`. `null` si no acaba en número. */
@@ -1808,28 +1909,6 @@ function siguienteDeLaSerie(texto: string): string | null {
   const [, prefijo, numero] = coincidencia;
   if (prefijo === undefined || numero === undefined) return null;
   return `${prefijo}${String(Number(numero) + 1).padStart(numero.length, '0')}`;
-}
-
-const MS_POR_DIA = 86_400_000;
-
-/** Aritmética de calendario sobre una fecha dada. No consulta el reloj: sigue siendo puro. */
-function sumarDias(fecha: Fecha, dias: number): Fecha {
-  const base = Date.parse(`${fecha}T00:00:00Z`);
-  if (Number.isNaN(base)) return fecha;
-  return new Date(base + dias * MS_POR_DIA).toISOString().slice(0, 10);
-}
-
-/**
- * Corre el arranque al lunes si cayó en fin de semana. Es la única heurística de
- * calendario de la app y se limita a esto: los sprints del usuario van de lunes a
- * viernes, y sin comando para editar fechas de sprint, un sprint que arranca en sábado
- * solo se corrige a mano en el JSON.
- */
-function primerDiaHabil(fecha: Fecha): Fecha {
-  const dia = new Date(`${fecha}T00:00:00Z`).getUTCDay();
-  if (dia === 6) return sumarDias(fecha, 2);
-  if (dia === 0) return sumarDias(fecha, 1);
-  return fecha;
 }
 
 // --- errores ----------------------------------------------------------------

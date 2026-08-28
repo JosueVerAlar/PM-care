@@ -53,7 +53,7 @@ export function VistaProyecto({
   const soloLectura = useSoloLectura();
   const dosPaneles = useDosPaneles();
 
-  const sprint = useMemo(() => sprintActivo(documento), [documento]);
+  const sprint = useMemo(() => sprintActivo(documento, proyecto.clave), [documento, proyecto.clave]);
   const avance = useMemo(() => avanceDeProyecto(proyecto), [proyecto]);
   const acciones = useAccionesSprint(sprint);
 

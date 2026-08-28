@@ -40,6 +40,21 @@ export function diasEntre(desde: Fecha, hasta: Fecha): number {
   return Math.round((b - a) / MS_POR_DIA);
 }
 
+/** Aritmética de calendario pura sobre una fecha dada. */
+export function sumarDias(fecha: Fecha, dias: number): Fecha {
+  const base = Date.parse(`${fecha}T00:00:00Z`);
+  if (Number.isNaN(base)) return fecha;
+  return new Date(base + dias * 86_400_000).toISOString().slice(0, 10);
+}
+
+/** Corre una fecha de fin de semana al lunes sin consultar festivos ni el reloj. */
+export function primerDiaHabil(fecha: Fecha): Fecha {
+  const dia = new Date(`${fecha}T00:00:00Z`).getUTCDay();
+  if (dia === 6) return sumarDias(fecha, 2);
+  if (dia === 0) return sumarDias(fecha, 1);
+  return fecha;
+}
+
 // --- predicados de tarea ----------------------------------------------------
 
 /** Está abierta: cuenta para la carga de alguien. Cancelada no cuenta para nada. */
@@ -221,7 +236,7 @@ export interface SenalesProyecto {
 export function senalesDeProyecto(doc: Documento, clave: string, hoy: Fecha): SenalesProyecto | null {
   const proyecto = doc.proyectos.find((p) => p.clave === clave);
   if (!proyecto) return null;
-  const activo = sprintActivo(doc);
+  const activo = sprintActivo(doc, clave);
 
   let bloqueadas = 0;
   let vencidas = 0;

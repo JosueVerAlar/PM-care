@@ -445,7 +445,11 @@ describe('invariantes del reloj sobre árboles generados', () => {
       (n, semilla) => n + resoluciones(unDocumentoAleatorio(prng(semilla), semilla)).length,
       0,
     );
-    expect(total, 'si sale 0, el generador dejó de producir tareas cerradas en sprint').toBeGreaterThan(100);
+    // El umbral bajó de 100 a 50 cuando el generador dejó de meter tareas de un proyecto
+    // en el sprint de otro: menos items por sprint, menos resoluciones. No es que se
+    // mida menos, es que antes se medía sobre documentos que el esquema hoy rechaza.
+    // Lo que la guarda vigila sigue siendo lo mismo: que no sea CERO.
+    expect(total, 'si sale 0, el generador dejó de producir tareas cerradas en sprint').toBeGreaterThan(50);
   });
 });
 

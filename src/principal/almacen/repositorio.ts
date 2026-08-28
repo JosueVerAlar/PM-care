@@ -104,6 +104,10 @@ const VERBO_DESHACER: Record<NombreComando, string> = {
   sacarDelSprint: 'sacar del sprint',
   cerrarSprint: 'cerrar el sprint',
   activarSprint: 'activar el sprint',
+  crearSprint: 'crear el sprint',
+  editarSprint: 'editar el sprint',
+  eliminarSprint: 'eliminar el sprint',
+  desactivarSprint: 'desactivar el sprint',
   bloquear: 'bloquear',
   desbloquear: 'desbloquear',
 };

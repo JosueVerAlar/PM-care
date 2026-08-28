@@ -28,7 +28,7 @@ import {
   mostrarProcedencia,
   paraVistaBloqueos,
 } from './clasificar';
-import { sprintActivo, type UbicacionTarea } from './derivar';
+import { sprintsActivos, type UbicacionTarea } from './derivar';
 
 /** Una tarea atorada, con todo lo que la fila muestra ya resuelto. */
 export interface FilaBloqueo {
@@ -78,7 +78,7 @@ export interface ResumenBloqueos {
  * llame a esto con un documento sin validar, no un caso esperado.
  */
 export function filasDeBloqueos(doc: Documento, hoy: Fecha): FilaBloqueo[] {
-  const activo = sprintActivo(doc);
+  const activo = sprintsActivos(doc)[0];
   const filas: FilaBloqueo[] = [];
 
   for (const ubicacion of paraVistaBloqueos(doc)) {

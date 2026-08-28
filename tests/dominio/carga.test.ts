@@ -444,7 +444,7 @@ describe('dispersionDelSprint', () => {
 
   it('cuenta proyectos distintos, no items', () => {
     const doc = documentoBase();
-    expect(dispersionDelSprint(doc, sprintActivo(doc))).toBe(2);
+    expect(dispersionDelSprint(doc, sprintActivo(doc, null))).toBe(2);
   });
 
   it('tres tareas del mismo proyecto siguen siendo un solo proyecto', () => {

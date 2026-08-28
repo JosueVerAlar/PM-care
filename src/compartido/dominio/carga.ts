@@ -22,7 +22,7 @@ import type { Documento, Fecha, PersonaId, Sprint } from '../modelo/tipos';
 import {
   compromisoEfectivo,
   indexarTareas,
-  sprintActivo,
+  sprintsActivos,
   sprintsCerrados,
   type UbicacionTarea,
   tareasDeProyecto,
@@ -175,7 +175,7 @@ export function cargaDe(doc: Documento, personaId: PersonaId, hoy: Fecha): Carga
   if (!persona) return null;
 
   const indice = indexarTareas(doc);
-  const activo = sprintActivo(doc);
+  const activo = sprintsActivos(doc)[0];
 
   const carga = cargaEnSprintDe(indice, activo, personaId, hoy);
 
@@ -301,7 +301,7 @@ export interface CargaSinAsignar {
 
 export function cargaSinAsignar(doc: Documento, hoy: Fecha): CargaSinAsignar {
   const indice = indexarTareas(doc);
-  const activo = sprintActivo(doc);
+  const activo = sprintsActivos(doc)[0];
   return {
     abiertas: repartoAbiertoDe(indice, activo, null),
     enSprint: cargaEnSprintDe(indice, activo, null, hoy),
@@ -468,7 +468,7 @@ export interface PersonaEnEquipos {
 
 export function personasEnEquipos(doc: Documento): PersonaEnEquipos[] {
   const indice = indexarTareas(doc);
-  const activo = sprintActivo(doc);
+  const activo = sprintsActivos(doc)[0];
 
   return doc.personas
     .map((persona) => ({

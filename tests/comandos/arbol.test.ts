@@ -78,7 +78,7 @@ describe('regla 15: los contadores solo suben y los ids no se reciclan', () => {
 
   it('los tres contadores son independientes: crear tareas no mueve el de épicas', () => {
     const { doc } = arbolConTareas(5);
-    expect(doc.proyectos[0]?.contadores).toEqual({ epicas: 1, historias: 1, tareas: 5 });
+    expect(doc.proyectos[0]?.contadores).toEqual({ epicas: 1, historias: 1, tareas: 5, sprints: 0 });
   });
 
   it('cada proyecto lleva su propio contador: los ids de uno no adelantan los del otro', () => {

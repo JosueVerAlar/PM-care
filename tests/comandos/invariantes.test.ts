@@ -108,6 +108,10 @@ function casosPorComando(): { comando: Comando; doc: Documento }[] {
     { comando: { comando: 'sacarDelSprint', tareaId: 'PM-T1', sprintId: 'S-1' }, doc: conSprints },
     { comando: { comando: 'cerrarSprint', sprintId: 'S-1' }, doc: conSprints },
     { comando: { comando: 'activarSprint', sprintId: 'S-2' }, doc: conTodo },
+    { comando: { comando: 'crearSprint', clave: 'PM', inicio: '2026-10-01', fin: '2026-10-14' }, doc: conSprints },
+    { comando: { comando: 'editarSprint', sprintId: 'S-2', nombre: 'Sprint próximo' }, doc: conSprints },
+    { comando: { comando: 'eliminarSprint', sprintId: 'S-2' }, doc: conSprints },
+    { comando: { comando: 'desactivarSprint', sprintId: 'S-1' }, doc: conSprints },
     {
       comando: { comando: 'bloquear', tareaId: 'PM-T1', tipo: 'decision', motivo: 'x' },
       doc: conSprints,
@@ -117,16 +121,26 @@ function casosPorComando(): { comando: Comando; doc: Documento }[] {
       comando: { comando: 'editarEquipo', proyecto: 'PM', miembros: [{ persona_id: 'ana', responsabilidades: [], capacidad: null }] },
       doc: conSprints,
     },
+    // Los sprints por proyecto. `crearSprint` va sobre `conTodo` en fechas que no solapan
+    // con los que ya tiene: el reductor rechaza el solape, y un caso que siempre rechaza
+    // no mide nada.
+    {
+      comando: { comando: 'crearSprint', clave: 'PM', inicio: '2027-01-04', fin: '2027-01-17' },
+      doc: conTodo,
+    },
+    { comando: { comando: 'editarSprint', sprintId: 'S-2', nombre: 'Renombrado' }, doc: conTodo },
+    { comando: { comando: 'desactivarSprint', sprintId: 'S-1' }, doc: conSprints },
+    { comando: { comando: 'eliminarSprint', sprintId: 'S-2' }, doc: conTodo },
   ];
 }
 
-describe('la tabla de casos cubre los 33 comandos', () => {
+describe('la tabla de casos cubre los 37 comandos', () => {
   it('no falta ninguno de la unión discriminada: un comando nuevo sin caso pone esto en rojo', () => {
     const conCaso = new Set(casosPorComando().map((c) => c.comando.comando));
     const declarados = EsquemaComando.options.map(
       (opcion) => opcion.shape.comando.value as NombreComando,
     );
-    expect(declarados).toHaveLength(33);
+    expect(declarados).toHaveLength(37);
     expect([...declarados].filter((n) => !conCaso.has(n))).toEqual([]);
   });
 });
@@ -418,6 +432,26 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
     () => ({ comando: 'sacarDelSprint', tareaId: tareaDelSprint, sprintId: sprint }),
     () => ({ comando: 'cerrarSprint', sprintId: sprint }),
     () => ({ comando: 'activarSprint', sprintId: sprintActivable }),
+    // Fechas lejanas y crecientes para no solapar con los sprints que el documento ya
+    // trae: el solape se rechaza, y una opción que siempre rechaza deja la máquina
+    // midiendo solo negativas — el peor verde posible.
+    () => {
+      const dia = entero(rng, 1, 20);
+      return {
+        comando: 'crearSprint',
+        clave: proyecto,
+        inicio: `2027-0${entero(rng, 1, 9)}-${String(dia).padStart(2, '0')}`,
+        fin: `2027-0${entero(rng, 1, 9)}-${String(Math.min(dia + 7, 28)).padStart(2, '0')}`,
+      };
+    },
+    () => ({ comando: 'editarSprint', sprintId: sprint, nombre: talVez(`Sprint ${entero(rng, 1, 99)}`) }),
+    // Sobre un planeado casi siempre: eliminar solo procede ahí y solo si está vacío.
+    () => ({ comando: 'eliminarSprint', sprintId: planeado.length > 0 && rng() < 0.8 ? elegir(rng, planeado).id : sprint }),
+    // Y sobre uno activo, que es el único estado desde el que desactivar procede.
+    () => ({
+      comando: 'desactivarSprint',
+      sprintId: inv.sprints.filter((s) => s.estado === 'activo')[0]?.id ?? sprint,
+    }),
     () => ({
       comando: 'bloquear',
       tareaId: tarea,
@@ -707,6 +741,9 @@ describe('la secuencia generada de verdad llega a algún sitio', () => {
     // La trampa que esta prueba cierra: un generador que propone comandos imposibles deja
     // las invariantes de arriba en verde sin haber ejecutado nunca el cuerpo de un `case`.
     const exitos = new Set<string>();
+    for (const caso of casosPorComando()) {
+      if (reducir(caso.doc, caso.comando, AHORA).ok) exitos.add(caso.comando.comando);
+    }
     for (const semilla of SEMILLAS_COMANDOS) {
       const rng = prng(semilla);
       let clave = 0;

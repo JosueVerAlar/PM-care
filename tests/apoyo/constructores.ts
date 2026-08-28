@@ -122,7 +122,7 @@ export function unProyecto(over: Partial<Proyecto> = {}): Proyecto {
     contadores: {
       ...maximosUsados({
         clave,
-        contadores: { epicas: 0, historias: 0, tareas: 0 },
+        contadores: { epicas: 0, historias: 0, tareas: 0, sprints: 0 },
         epicas,
         tareas: sueltas,
       }),

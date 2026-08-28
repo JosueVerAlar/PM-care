@@ -594,12 +594,12 @@ describe('compromisoEfectivo', () => {
 
 describe('sprintActivo y sprintsCerrados', () => {
   it('sin sprints no hay activo', () => {
-    expect(sprintActivo(unDocumento())).toBeUndefined();
+    expect(sprintActivo(unDocumento(), null)).toBeUndefined();
   });
 
   it('un sprint planeado no es el activo', () => {
     const doc = unDocumento({ sprints: [unSprint({ estado: 'planeado' })] });
-    expect(sprintActivo(doc)).toBeUndefined();
+    expect(sprintActivo(doc, null)).toBeUndefined();
   });
 
   it('encuentra el activo entre cerrados y planeados', () => {
@@ -610,7 +610,7 @@ describe('sprintActivo y sprintsCerrados', () => {
         unSprint({ id: 'S-3', estado: 'planeado', inicio: '2026-09-01', fin: '2026-09-14' }),
       ],
     });
-    expect(sprintActivo(doc)?.id).toBe('S-2');
+    expect(sprintActivo(doc, null)?.id).toBe('S-2');
   });
 
   it('los cerrados salen del más viejo al más nuevo aunque el array esté desordenado', () => {
@@ -857,7 +857,7 @@ describe('datos/ejemplo.json', () => {
   });
 
   it('el sprint activo del fixture es único y sus items apuntan a tareas que existen', () => {
-    const activo = sprintActivo(doc);
+    const activo = sprintActivo(doc, null);
     expect(activo).toBeDefined();
     expect(doc.sprints.filter((s) => s.estado === 'activo')).toHaveLength(1);
     const indice = indexarTareas(doc);

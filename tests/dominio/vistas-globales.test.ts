@@ -26,7 +26,7 @@ import {
   personasEnEquipos,
 } from '../../src/compartido/dominio/carga';
 import { estaAbierta, todasLasTareas } from '../../src/compartido/dominio/clasificar';
-import { MINIMO_TAREAS_PARA_PCT, mostrarPct, sprintActivo } from '../../src/compartido/dominio/derivar';
+import { MINIMO_TAREAS_PARA_PCT, mostrarPct, sprintsActivos } from '../../src/compartido/dominio/derivar';
 import { panorama, type OrdenPanorama } from '../../src/compartido/dominio/panorama';
 import {
   encabezadoDeSprint,
@@ -387,7 +387,7 @@ describe('Backlog sobre 300 documentos', () => {
     let comprometidas = 0;
     for (const semilla of SEMILLAS) {
       const doc = documento(semilla);
-      const activo = sprintActivo(doc);
+      const activo = sprintsActivos(doc)[0];
       if (!activo) continue;
       const { filas } = filasDeBacklog(doc, HOY, 'todas', '');
       for (const fila of filas) {
@@ -449,7 +449,7 @@ describe('Carga sobre 300 documentos', () => {
   it('las personas más la fila sin asignar suman TODOS los items del sprint activo', () => {
     for (const semilla of SEMILLAS) {
       const doc = documento(semilla);
-      const items = sprintActivo(doc)?.items.length ?? 0;
+      const items = sprintsActivos(doc)[0]?.items.length ?? 0;
       const dePersonas = cargaPorPersona(doc, HOY).reduce((acc, c) => acc + c.enSprint.total, 0);
       expect(dePersonas + cargaSinAsignar(doc, HOY).enSprint.total, `semilla ${semilla}`).toBe(items);
     }
@@ -459,7 +459,7 @@ describe('Carga sobre 300 documentos', () => {
     let reasignadas = 0;
     for (const semilla of SEMILLAS) {
       const doc = documento(semilla);
-      const activo = sprintActivo(doc);
+      const activo = sprintsActivos(doc)[0];
       if (!activo) continue;
       const porPersona = new Map(cargaPorPersona(doc, HOY).map((c) => [c.personaId, c]));
       for (const ubicacion of todasLasTareas(doc)) {

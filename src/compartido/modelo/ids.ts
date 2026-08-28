@@ -12,18 +12,20 @@
  * `esquema.ts` pueda usarlo sin crear un ciclo con los tipos que él mismo produce.
  */
 
-export type TipoItem = 'epica' | 'historia' | 'tarea';
+export type TipoItem = 'epica' | 'historia' | 'tarea' | 'sprint';
 
 export const PREFIJOS: Record<TipoItem, string> = {
   epica: 'E',
   historia: 'H',
   tarea: 'T',
+  sprint: 'S',
 };
 
 export interface Contadores {
   epicas: number;
   historias: number;
   tareas: number;
+  sprints?: number;
 }
 
 /** Campo de `Contadores` que corresponde a cada tipo. */
@@ -31,9 +33,10 @@ const CAMPO_CONTADOR: Record<TipoItem, keyof Contadores> = {
   epica: 'epicas',
   historia: 'historias',
   tarea: 'tareas',
+  sprint: 'sprints',
 };
 
-const POR_PREFIJO: Record<string, TipoItem> = { E: 'epica', H: 'historia', T: 'tarea' };
+const POR_PREFIJO: Record<string, TipoItem> = { E: 'epica', H: 'historia', T: 'tarea', S: 'sprint' };
 
 /**
  * Clave de proyecto: mayúsculas, dígitos y guiones internos (`SICOE`, `DGETI-WEB`).
@@ -46,7 +49,7 @@ export const PATRON_CLAVE_PROYECTO = /^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$/;
  * El prefijo de tipo y el número anclan al final, así que una clave con guiones
  * internos se parsea sin ambigüedad.
  */
-const PATRON_ID = /^([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*)-([EHT])([1-9]\d*)$/;
+const PATRON_ID = /^([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*)-([EHTS])([1-9]\d*)$/;
 
 export interface IdParseado {
   claveProyecto: string;
@@ -81,7 +84,7 @@ export function esIdDe(id: string, clave: string): boolean {
 
 export interface IdEmitido {
   id: string;
-  contadores: Contadores;
+  contadores: Required<Contadores>;
 }
 
 /**
@@ -110,10 +113,16 @@ export function siguienteId(
   tipo: TipoItem,
 ): IdEmitido {
   const campo = CAMPO_CONTADOR[tipo];
-  const numero = contadores[campo] + 1;
+  const numero = (contadores[campo] ?? 0) + 1;
   return {
     id: componerId(clave, tipo, numero),
-    contadores: { ...contadores, [campo]: numero },
+    contadores: {
+      epicas: contadores.epicas,
+      historias: contadores.historias,
+      tareas: contadores.tareas,
+      sprints: contadores.sprints ?? 0,
+      [campo]: numero,
+    },
   };
 }
 
@@ -136,9 +145,13 @@ export interface ArbolConIds {
   }[];
 }
 
+export interface SprintConId {
+  id: string;
+}
+
 /** Mayor número ya usado por tipo dentro del proyecto. Solo para verificar contadores. */
-export function maximosUsados(proyecto: ArbolConIds): Contadores {
-  const max: Contadores = { epicas: 0, historias: 0, tareas: 0 };
+export function maximosUsados(proyecto: ArbolConIds): Required<Contadores> {
+  const max: Required<Contadores> = { epicas: 0, historias: 0, tareas: 0, sprints: 0 };
   const anotar = (id: string, tipo: TipoItem) => {
     const parseado = parsearId(id);
     if (!parseado || parseado.tipo !== tipo) return;
@@ -168,13 +181,24 @@ export function maximosUsados(proyecto: ArbolConIds): Contadores {
  * tarea número 392 volvería a ser `SICOE-T500`, duplicando un id vivo. Devuelve la
  * lista de problemas; vacía = todo bien.
  */
-export function problemasDeContadores(proyecto: ArbolConIds): string[] {
+export function problemasDeContadores(
+  proyecto: ArbolConIds,
+  sprints: readonly SprintConId[] = [],
+): string[] {
   const max = maximosUsados(proyecto);
+  // Los sprints viven en la raíz del documento, no dentro del árbol. Quien llama filtra
+  // explícitamente los de esta clave para que el contador no ignore esa cuarta serie.
+  for (const sprint of sprints) {
+    const parseado = parsearId(sprint.id);
+    if (parseado?.tipo === 'sprint' && parseado.claveProyecto === proyecto.clave) {
+      max.sprints = Math.max(max.sprints, parseado.numero);
+    }
+  }
   const problemas: string[] = [];
-  for (const campo of ['epicas', 'historias', 'tareas'] as const) {
-    if (proyecto.contadores[campo] < max[campo]) {
+  for (const campo of ['epicas', 'historias', 'tareas', 'sprints'] as const) {
+    if ((proyecto.contadores[campo] ?? 0) < max[campo]) {
       problemas.push(
-        `contadores.${campo} = ${proyecto.contadores[campo]} pero ${proyecto.clave} ya usa el número ${max[campo]}`,
+        `contadores.${campo} = ${proyecto.contadores[campo] ?? 0} pero ${proyecto.clave} ya usa el número ${max[campo]}`,
       );
     }
   }

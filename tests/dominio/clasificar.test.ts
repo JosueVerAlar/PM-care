@@ -278,7 +278,7 @@ function documentoDePrueba() {
       }),
     ],
   });
-  return { doc, activo: sprintActivo(doc) };
+  return { doc, activo: sprintActivo(doc, null) };
 }
 
 describe('recorrido y pertenencia a sprint', () => {

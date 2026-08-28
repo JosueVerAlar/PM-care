@@ -326,9 +326,19 @@ export function compromisoEfectivo(item: ItemSprint, tarea: Tarea | undefined): 
   };
 }
 
-/** El sprint activo, o `undefined`. El esquema garantiza que hay a lo sumo uno. */
-export function sprintActivo(doc: Documento): Sprint | undefined {
-  return doc.sprints.find((sprint) => sprint.estado === 'activo');
+/** El sprint activo de una serie concreta; `null` nombra la serie transversal legada. */
+export function sprintActivo(doc: Documento, clave: string | null): Sprint | undefined {
+  const propio = doc.sprints.find((sprint) => sprint.estado === 'activo' && sprint.clave === clave);
+  // Un transversal legado sigue siendo visible desde cada proyecto mientras ese proyecto
+  // no tenga uno propio; ocultarlo rompería la lectura de documentos v1 ya migrados.
+  return propio ?? (clave === null
+    ? undefined
+    : doc.sprints.find((sprint) => sprint.estado === 'activo' && sprint.clave === null));
+}
+
+/** Todos los activos del documento para las vistas generales, sin fingir que son uno. */
+export function sprintsActivos(doc: Documento): Sprint[] {
+  return doc.sprints.filter((sprint) => sprint.estado === 'activo');
 }
 
 /** Sprints cerrados, del más viejo al más nuevo. */

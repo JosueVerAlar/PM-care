@@ -25,6 +25,7 @@ import {
   EsquemaEsfuerzo,
   EsquemaPrioridad,
   EsquemaProyecto,
+  EsquemaSprint,
   EsquemaTipoBloqueo,
 } from '../../compartido/modelo/esquema';
 
@@ -479,6 +480,25 @@ const CerrarSprint = z
 
 const ActivarSprint = z.object({ comando: z.literal('activarSprint'), sprintId: Id }).strict();
 
+const CrearSprint = z.object({
+  comando: z.literal('crearSprint'),
+  clave: Clave,
+  nombre: Titulo.optional(),
+  inicio: EsquemaSprint.shape.inicio,
+  fin: EsquemaSprint.shape.fin,
+}).strict();
+
+const EditarSprint = z.object({
+  comando: z.literal('editarSprint'),
+  sprintId: Id,
+  nombre: Titulo.optional(),
+  inicio: EsquemaSprint.shape.inicio.optional(),
+  fin: EsquemaSprint.shape.fin.optional(),
+}).strict();
+
+const EliminarSprint = z.object({ comando: z.literal('eliminarSprint'), sprintId: Id }).strict();
+const DesactivarSprint = z.object({ comando: z.literal('desactivarSprint'), sprintId: Id }).strict();
+
 // --- bloqueos ---------------------------------------------------------------
 
 const Bloquear = z
@@ -546,6 +566,10 @@ export const EsquemaComando = z.discriminatedUnion('comando', [
   SacarDelSprint,
   CerrarSprint,
   ActivarSprint,
+  CrearSprint,
+  EditarSprint,
+  EliminarSprint,
+  DesactivarSprint,
   Bloquear,
   Desbloquear,
   EditarEquipo,
@@ -577,6 +601,9 @@ const INMEDIATOS = new Set<NombreComando>([
   'eliminarTarea',
   'cerrarSprint',
   'activarSprint',
+  'crearSprint',
+  'eliminarSprint',
+  'desactivarSprint',
   // Altas, bajas y cambios de ciclo de vida: todas son acciones tras las que el usuario
   // da por hecho que quedó guardado y se va. `editarProyecto` y `editarPersona` no están
   // porque son tecleo de un nombre, igual que editar un título.

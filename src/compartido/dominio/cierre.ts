@@ -223,7 +223,7 @@ export function decisionesParaComando(bloques: BloquesCierre, destinos: MapaDest
  * inventarle un nombre que todavía no existe.
  */
 export function siguienteSprintPlaneado(doc: Documento, sprint: Sprint): Sprint | undefined {
-  return primerSprintPlaneado(doc, sprint.id);
+  return primerSprintPlaneado(doc, sprint.id, sprint.clave);
 }
 
 /**
@@ -234,9 +234,13 @@ export function siguienteSprintPlaneado(doc: Documento, sprint: Sprint): Sprint 
  * el que queda la app justo después de cerrar, y sin una forma de salir de él el usuario
  * se queda sin sprint y sin manera de empezar el siguiente.
  */
-export function primerSprintPlaneado(doc: Documento, excepto?: string): Sprint | undefined {
+export function primerSprintPlaneado(
+  doc: Documento,
+  excepto?: string,
+  clave?: string | null,
+): Sprint | undefined {
   return doc.sprints
-    .filter((s) => s.id !== excepto && s.estado === 'planeado')
+    .filter((s) => s.id !== excepto && s.estado === 'planeado' && (clave === undefined || s.clave === clave))
     .sort((a, b) => (a.inicio < b.inicio ? -1 : a.inicio > b.inicio ? 1 : 0))[0];
 }
 

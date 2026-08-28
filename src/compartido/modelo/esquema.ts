@@ -296,6 +296,7 @@ export const EsquemaContadores = z
     epicas: z.number().int().nonnegative().default(0),
     historias: z.number().int().nonnegative().default(0),
     tareas: z.number().int().nonnegative().default(0),
+    sprints: z.number().int().nonnegative().default(0),
   })
   .passthrough();
 
@@ -339,7 +340,7 @@ export const EsquemaProyecto = z
      * color simplemente no aparece: degradación segura.
      */
     planeacion_cerrada_en: EsquemaFecha.nullable().default(null),
-    contadores: EsquemaContadores.default({ epicas: 0, historias: 0, tareas: 0 }),
+    contadores: EsquemaContadores.default({ epicas: 0, historias: 0, tareas: 0, sprints: 0 }),
     equipos: z.array(EsquemaEquipo).default([]),
     epicas: z.array(EsquemaEpica).default([]),
     /**
@@ -389,6 +390,9 @@ export const EsquemaItemSprint = z
 
 export const EsquemaSprint = z
   .object({
+    // Los ids nuevos usan CLAVE-Sn, pero los antiguos ya están citados en historial.jsonl.
+    // Exigirles hoy el patrón nuevo reescribiría historia o mandaría datos válidos a solo
+    // lectura; esta asimetría deliberada conserva ids viejos y disciplina solo la emisión.
     id: z.string().min(1),
     nombre: z.string().min(1),
     inicio: EsquemaFecha,
@@ -474,6 +478,7 @@ function validacionesCruzadas(
   const claves = new Set<string>();
   const idsEquipo = new Set<string>();
   const idsDeTarea = new Set<string>();
+  const clavePorTarea = new Map<string, string>();
   const idsVistos = new Set<string>();
 
   doc.proyectos.forEach((proyecto, p) => {
@@ -524,6 +529,7 @@ function validacionesCruzadas(
         const rutaTarea = [...rutaContenedor, 'tareas', t];
         revisarId(tarea.id, [...rutaTarea, 'id']);
         idsDeTarea.add(tarea.id);
+        clavePorTarea.set(tarea.id, proyecto.clave);
         if (!personaConocida(tarea.responsable)) {
           anotar(
             [...rutaTarea, 'responsable'],
@@ -550,13 +556,16 @@ function validacionesCruzadas(
     });
 
     // Sin esto la app volvería a emitir un id que ya existe y machacaría datos vivos.
-    for (const problema of problemasDeContadores(proyecto)) {
+    for (const problema of problemasDeContadores(
+      proyecto,
+      doc.sprints.filter((sprint) => sprint.clave === proyecto.clave),
+    )) {
       anotar([...rutaProyecto, 'contadores'], problema);
     }
   });
 
   const idsSprint = new Set<string>();
-  const activosPorClave = new Map<string, number>();
+  const activosPorClave = new Map<string | null, number>();
   doc.sprints.forEach((sprint, s) => {
     const rutaSprint: (string | number)[] = ['sprints', s];
     if (idsSprint.has(sprint.id)) anotar([...rutaSprint, 'id'], `sprint duplicado: ${sprint.id}`);
@@ -564,7 +573,7 @@ function validacionesCruzadas(
     if (sprint.clave !== null && !claves.has(sprint.clave)) {
       anotar([...rutaSprint, 'clave'], `${sprint.id}: el proyecto "${sprint.clave}" no existe`);
     }
-    if (sprint.estado === 'activo' && sprint.clave !== null) {
+    if (sprint.estado === 'activo') {
       activosPorClave.set(sprint.clave, (activosPorClave.get(sprint.clave) ?? 0) + 1);
     }
 
@@ -573,6 +582,9 @@ function validacionesCruzadas(
       const ruta = [...rutaSprint, 'items', i, 'tarea_id'];
       if (!idsDeTarea.has(item.tarea_id)) {
         anotar(ruta, `${sprint.id}: la tarea "${item.tarea_id}" no existe en ningún proyecto`);
+      }
+      if (sprint.clave !== null && clavePorTarea.get(item.tarea_id) !== sprint.clave) {
+        anotar(ruta, `${sprint.id}: la tarea "${item.tarea_id}" no pertenece a ${sprint.clave}`);
       }
       if (enEsteSprint.has(item.tarea_id)) {
         anotar(ruta, `${sprint.id}: la tarea "${item.tarea_id}" está dos veces en el mismo sprint`);
@@ -589,7 +601,9 @@ function validacionesCruzadas(
 
   for (const [clave, activos] of activosPorClave) {
     if (activos > 1) {
-      anotar(['sprints'], `hay ${activos} sprints activos para ${clave}; solo puede haber uno por proyecto`);
+      anotar(['sprints'], clave === null
+        ? `hay ${activos} sprints transversales activos; solo puede haber uno`
+        : `hay ${activos} sprints activos para ${clave}; solo puede haber uno por proyecto`);
     }
   }
 }

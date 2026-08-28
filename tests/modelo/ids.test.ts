@@ -21,13 +21,16 @@ import {
   siguienteId,
 } from '../../src/compartido/modelo/ids';
 
-const EN_CERO: Contadores = { epicas: 0, historias: 0, tareas: 0 };
+const EN_CERO: Contadores = { epicas: 0, historias: 0, tareas: 0, sprints: 0 };
 
 // --- forma del id -----------------------------------------------------------
 
 describe('componerId y PREFIJOS', () => {
-  it('cada tipo tiene su letra: E, H, T', () => {
-    expect(PREFIJOS).toEqual({ epica: 'E', historia: 'H', tarea: 'T' });
+  it('cada tipo tiene su letra: E, H, T, S', () => {
+    // `S` entró con los sprints por proyecto: `idSprintLibre` derivaba el id del anterior
+    // y comprobaba colisiones contra los que existían — MAX+1 disfrazado, que la regla 15
+    // prohíbe porque `historial.jsonl` ya guarda `sprint_id` y el número se reciclaría.
+    expect(PREFIJOS).toEqual({ epica: 'E', historia: 'H', tarea: 'T', sprint: 'S' });
   });
 
   it('compone la forma CLAVE-LetraNúmero', () => {
@@ -128,15 +131,19 @@ describe('siguienteId', () => {
   it('desde cero emite el número 1, no el 0', () => {
     expect(siguienteId('SICOE', EN_CERO, 'tarea')).toEqual({
       id: 'SICOE-T1',
-      contadores: { epicas: 0, historias: 0, tareas: 1 },
+      contadores: { epicas: 0, historias: 0, tareas: 1, sprints: 0 },
     });
   });
 
   it('cada tipo mueve solo su propio contador', () => {
-    const contadores = { epicas: 4, historias: 9, tareas: 108 };
-    expect(siguienteId('SICOE', contadores, 'epica').contadores).toEqual({ epicas: 5, historias: 9, tareas: 108 });
-    expect(siguienteId('SICOE', contadores, 'historia').contadores).toEqual({ epicas: 4, historias: 10, tareas: 108 });
-    expect(siguienteId('SICOE', contadores, 'tarea').contadores).toEqual({ epicas: 4, historias: 9, tareas: 109 });
+    const contadores = { epicas: 4, historias: 9, tareas: 108, sprints: 3 };
+    const base = { ...contadores };
+    expect(siguienteId('SICOE', contadores, 'epica').contadores).toEqual({ ...base, epicas: 5 });
+    expect(siguienteId('SICOE', contadores, 'historia').contadores).toEqual({ ...base, historias: 10 });
+    expect(siguienteId('SICOE', contadores, 'tarea').contadores).toEqual({ ...base, tareas: 109 });
+    // El cuarto contador se comporta como los otros tres: es lo que hace que un sprint
+    // borrado no recicle su número, que es el motivo entero de que exista.
+    expect(siguienteId('SICOE', contadores, 'sprint').contadores).toEqual({ ...base, sprints: 4 });
   });
 
   it('es puro: no muta los contadores que recibe', () => {
@@ -199,14 +206,14 @@ describe('maximosUsados', () => {
       { epica: 'SICOE-E3', historias: [{ id: 'SICOE-H7', tareas: ['SICOE-T50', 'SICOE-T2'] }] },
       { epica: 'SICOE-E1', historias: [{ id: 'SICOE-H2', tareas: ['SICOE-T9'] }] },
     ]);
-    expect(maximosUsados(proyecto)).toEqual({ epicas: 3, historias: 7, tareas: 50 });
+    expect(maximosUsados(proyecto)).toEqual({ epicas: 3, historias: 7, tareas: 50, sprints: 0 });
   });
 
   it('ignora los ids ilegibles en vez de reventar', () => {
     const proyecto = arbol('SICOE', EN_CERO, [
       { epica: 'basura', historias: [{ id: 'SICOE-H1', tareas: ['tampoco'] }] },
     ]);
-    expect(maximosUsados(proyecto)).toEqual({ epicas: 0, historias: 1, tareas: 0 });
+    expect(maximosUsados(proyecto)).toEqual({ epicas: 0, historias: 1, tareas: 0, sprints: 0 });
   });
 
   it('no confunde tipos: una tarea colocada donde va una épica no sube el contador de épicas', () => {
