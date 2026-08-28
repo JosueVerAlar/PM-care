@@ -49,7 +49,12 @@ import {
   useInterfaz,
   type SeccionAdmin,
 } from './estado/interfaz';
-import { usePuedeDeshacer, useMutar, useSoloLectura } from './estado/mutaciones';
+import {
+  useEtiquetaDeshacer,
+  usePuedeDeshacer,
+  useMutar,
+  useSoloLectura,
+} from './estado/mutaciones';
 
 import { Cargando, FalloDelPuente, SinProyectos, SinPuente } from './pantallas/Avisos';
 import { SoloLectura } from './pantallas/SoloLectura';
@@ -130,22 +135,6 @@ function cuentaTareas(n: number): string {
   return n === 1 ? '1 tarea' : `${n} tareas`;
 }
 
-/**
- * Cómo se llama, en el menú, lo que se va a deshacer.
- *
- * [HIG] pide «Deshacer capturar SICOE-T14» y no «Deshacer»: sin el objeto, el ítem no
- * deja predecir qué va a pasar. El texto sale del `contexto` con el que se mandó el
- * comando —«Capturar historia», «Eliminar SICOE-T14»—, en minúscula porque va detrás del
- * verbo. Sin etiqueta el ítem se queda con su nombre corto: la pila del proceso principal
- * manda sobre si está habilitado, y esto solo lo NOMBRA.
- */
-function etiquetaDeshacer(pila: readonly string[], puede: boolean): string | null {
-  if (!puede) return null;
-  const ultima = pila[pila.length - 1];
-  if (ultima === undefined || ultima === '') return null;
-  return ultima.charAt(0).toLowerCase() + ultima.slice(1);
-}
-
 function Aplicacion({
 
   documento,
@@ -157,14 +146,14 @@ function Aplicacion({
   /** No nulo solo en conflicto externo: el documento vale, pero no se escribe. */
   diagnostico: Diagnostico | null;
 }) {
-  const { vista, lateralColapsada, aviso, confirmacion, pilaDeshacer } = useInterfaz();
-  const { alternarLateral, avisar, confirmar, desapilarDeshacer, vaciarDeshacer } =
-    useAccionesInterfaz();
+  const { vista, lateralColapsada, aviso, confirmacion } = useInterfaz();
+  const { alternarLateral, avisar, confirmar } = useAccionesInterfaz();
   const { deshacer } = useAccionesAlmacen();
   const soloLectura = useSoloLectura();
   // Con el archivo en conflicto no se escribe nada, tampoco al revés: el ítem del menú va
   // en gris igual que iba el botón que ocupaba la barra hasta E13.
   const puedeDeshacer = usePuedeDeshacer() && !soloLectura;
+  const etiquetaViva = useEtiquetaDeshacer();
   const mutar = useMutar();
 
 
@@ -210,10 +199,10 @@ function Aplicacion({
         return;
       }
       avisar(null);
-      // Ese paso ya no está en la pila del proceso principal: su nombre tampoco.
-      desapilarDeshacer();
+      // La instantánea que vuelve ya trae la etiqueta del paso de ABAJO: no hay nada que
+      // desapilar de este lado.
     })();
-  }, [avisar, desapilarDeshacer, deshacer]);
+  }, [avisar, deshacer]);
 
 
   useEffect(() => {
@@ -241,17 +230,17 @@ function Aplicacion({
    */
   useEffect(() => puente()?.alPedirDeshacer(alDeshacer), [alDeshacer]);
 
-  /** Qué dice el ítem y si está vivo. La pila del proceso principal es la que manda. */
-  const etiqueta = etiquetaDeshacer(pilaDeshacer, puedeDeshacer);
+  /**
+   * Qué dice el ítem del menú y si está vivo. Las dos cosas salen de la misma instantánea,
+   * que es lo que impide que se separen: [HIG] pide «Deshacer capturar SICOE-T14» y no
+   * «Deshacer» a secas, pero un nombre que no corresponde al paso que se va a revertir es
+   * peor que no dar nombre. Con el archivo en conflicto no se escribe, así que tampoco se
+   * revierte: el ítem va en gris y sin nombre.
+   */
+  const etiqueta = puedeDeshacer ? etiquetaViva : null;
   useEffect(() => {
     puente()?.publicarDeshacer({ puede: puedeDeshacer, etiqueta });
   }, [etiqueta, puedeDeshacer]);
-
-  // La pila de allá se vacía sola ante un cambio externo del archivo (regla 16). Cuando
-  // eso pasa, los nombres de aquí ya no describen nada que se pueda revertir.
-  useEffect(() => {
-    if (!puedeDeshacer) vaciarDeshacer();
-  }, [puedeDeshacer, vaciarDeshacer]);
 
 
   return (

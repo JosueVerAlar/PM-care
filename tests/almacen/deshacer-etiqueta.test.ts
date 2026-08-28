@@ -2,16 +2,16 @@
  * Quién sabe CÓMO SE LLAMABA el paso que `⌘Z` va a revertir (E13 · punto 1.6).
  *
  * El menú Edición de macOS no dice «Deshacer» a secas: dice «Deshacer capturar SICOE-T14».
- * La pila real vive aquí y guarda **documentos**, no nombres, así que el nombre hay que
- * sacarlo de algún sitio. La implementación en curso lo apunta en una SEGUNDA pila, del
- * lado del renderer, alimentada desde `useAplicar`.
+ * La pila real vive aquí y guarda **documentos**, así que el nombre hay que sacarlo de
+ * algún sitio. La primera implementación lo apuntaba en una SEGUNDA pila, del lado del
+ * renderer, alimentada desde `useAplicar`; el primer bloque de este archivo es la medida
+ * que demostró que esas dos pilas se separan, y por la que esa segunda pila se borró.
  *
- * Estas pruebas existen para medir si esas dos pilas pueden separarse. Miden el
- * comportamiento del repositorio, no el de la interfaz, así que siguen valiendo se
- * implemente el menú como se implemente — y contestan la pregunta de diseño con un hecho
- * en vez de con una opinión.
+ * Hoy el nombre sale de `estado().etiquetaDeshacer`, de la misma pila que lo produce. El
+ * segundo bloque fija ese invariante. Todo esto mide el repositorio, no la interfaz, así
+ * que sigue valiendo se pinte el menú como se pinte.
  *
- * **Lo que encuentran:** el repositorio apila el documento anterior ANTES de intentar
+ * **Lo que encuentra el primer bloque:** el repositorio apila el documento anterior ANTES de intentar
  * guardar, y un fallo de escritura devuelve `ok: false` sin desapilar. Quien esté del otro
  * lado del IPC ve un fracaso y no apunta ninguna etiqueta; la pila de aquí, en cambio,
  * creció. A partir de ese instante las dos pilas van corridas un paso y el menú ofrece
@@ -83,7 +83,7 @@ describe('la pila de deshacer del repositorio', () => {
     const { repo, historiaId } = await repositorioListo();
     expect(repo.estado().puedeDeshacer).toBe(false);
 
-    const ok = await repo.ejecutar({ comando: 'crearTarea', historiaId, titulo: 'Uno' });
+    const ok = await repo.ejecutar({ comando: 'crearTarea', contenedorId: historiaId, titulo: 'Uno' });
     expect(ok.ok).toBe(true);
     expect(repo.estado().puedeDeshacer).toBe(true);
 
@@ -106,7 +106,7 @@ describe('la pila de deshacer del repositorio', () => {
     // Sin permiso de escritura en el directorio no se puede respaldar ni renombrar el
     // temporal: es el fallo de disco real, no un doble.
     await fs.chmod(dir, 0o555);
-    const fallo = await repo.ejecutar({ comando: 'crearTarea', historiaId, titulo: 'Dos' });
+    const fallo = await repo.ejecutar({ comando: 'crearTarea', contenedorId: historiaId, titulo: 'Dos' });
     await fs.chmod(dir, 0o755);
 
     expect(fallo.ok, 'el guardado tenía que fallar; si pasa, la prueba no midió nada').toBe(false);
@@ -127,7 +127,7 @@ describe('la pila de deshacer del repositorio', () => {
     const { dir, repo, historiaId } = await repositorioListo();
 
     await fs.chmod(dir, 0o555);
-    await repo.ejecutar({ comando: 'crearTarea', historiaId, titulo: 'Dos' });
+    await repo.ejecutar({ comando: 'crearTarea', contenedorId: historiaId, titulo: 'Dos' });
     await fs.chmod(dir, 0o755);
 
     const deshecho = await repo.deshacer();
@@ -135,5 +135,82 @@ describe('la pila de deshacer del repositorio', () => {
     // Vuelve a cero tareas: lo que se deshizo fue el comando «fallido».
     expect(repo.estado().documento?.proyectos[0]?.epicas[0]?.historias[0]?.tareas).toHaveLength(0);
     expect(repo.estado().puedeDeshacer).toBe(false);
+  });
+});
+
+/**
+ * La corrección, fijada como invariante.
+ *
+ * Después de lo de arriba, la etiqueta dejó de apuntarse en el renderer: sale de
+ * `estado().etiquetaDeshacer`, derivada del mismo evento que apiló el documento. Estas
+ * pruebas dicen qué tiene que seguir siendo cierto para que el menú no vuelva a mentir:
+ * **el nombre que se ofrece y el paso que `deshacer()` revierte son siempre el mismo**.
+ */
+describe('la etiqueta nombra el paso que deshacer va a revertir', () => {
+  /** El id de la única tarea del documento, para no clavar «PM-T1» en la prueba. */
+  function idDeLaTarea(repo: Repositorio): string | undefined {
+    return repo.estado().documento?.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.id;
+  }
+
+  it('sin nada apilado no hay nombre que ofrecer', async () => {
+    const { repo } = await repositorioListo();
+    expect(repo.estado().puedeDeshacer).toBe(false);
+    expect(repo.estado().etiquetaDeshacer).toBeNull();
+  });
+
+  it('un comando guardado deja su propio nombre arriba', async () => {
+    const { repo, historiaId } = await repositorioListo();
+    await repo.ejecutar({ comando: 'crearTarea', contenedorId: historiaId, titulo: 'Uno' });
+
+    expect(repo.estado().etiquetaDeshacer).toBe(`capturar ${idDeLaTarea(repo)}`);
+  });
+
+  /**
+   * **El caso que rompía el espejo del renderer.** El guardado falla, el IPC contesta
+   * `ok: false` y el paso queda apilado igual. La etiqueta tiene que seguir al paso, no a
+   * la respuesta: si nombrara la respuesta, aquí se quedaría una atrás para siempre.
+   */
+  it('un guardado fallido apila el paso Y su nombre, sin quedarse corrido', async () => {
+    const { dir, repo, historiaId } = await repositorioListo();
+
+    await fs.chmod(dir, 0o555);
+    const fallo = await repo.ejecutar({ comando: 'crearTarea', contenedorId: historiaId, titulo: 'Dos' });
+    await fs.chmod(dir, 0o755);
+
+    expect(fallo.ok, 'el guardado tenía que fallar; si pasa, la prueba no midió nada').toBe(false);
+    expect(repo.estado().etiquetaDeshacer).toBe(`capturar ${idDeLaTarea(repo)}`);
+  });
+
+  it('deshacer un paso deja arriba el nombre del anterior, no el que se acaba de revertir', async () => {
+    const { repo, historiaId } = await repositorioListo();
+    await repo.ejecutar({ comando: 'crearTarea', contenedorId: historiaId, titulo: 'Uno' });
+    const primera = idDeLaTarea(repo);
+    await repo.ejecutar({ comando: 'crearTarea', contenedorId: historiaId, titulo: 'Dos' });
+
+    // Arriba está la segunda; la primera espera debajo.
+    expect(repo.estado().etiquetaDeshacer).not.toBe(`capturar ${primera}`);
+
+    await repo.deshacer();
+    expect(repo.estado().etiquetaDeshacer).toBe(`capturar ${primera}`);
+
+    await repo.deshacer();
+    expect(repo.estado().puedeDeshacer).toBe(false);
+    expect(repo.estado().etiquetaDeshacer).toBeNull();
+  });
+
+  /**
+   * Cada comando trae su verbo, no un «Deshacer cambio» genérico: el ítem del menú tiene
+   * que dejar predecir qué va a pasar antes de pulsarlo.
+   */
+  it('el verbo cambia con el comando', async () => {
+    const { repo, historiaId } = await repositorioListo();
+    await repo.ejecutar({ comando: 'crearTarea', contenedorId: historiaId, titulo: 'Uno' });
+    const tareaId = idDeLaTarea(repo) ?? '';
+
+    await repo.ejecutar({ comando: 'cambiarEstado', id: tareaId, estado: 'en_curso' });
+    expect(repo.estado().etiquetaDeshacer).toBe(`cambiar el estado de ${tareaId}`);
+
+    await repo.ejecutar({ comando: 'eliminarTarea', id: tareaId });
+    expect(repo.estado().etiquetaDeshacer).toBe(`eliminar ${tareaId}`);
   });
 });

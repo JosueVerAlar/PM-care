@@ -36,6 +36,20 @@ export function usePuedeDeshacer(): boolean {
 }
 
 /**
+ * Cómo se llama lo que revertiría el siguiente «Deshacer» («capturar SICOE-T14»).
+ *
+ * Sale de la MISMA instantánea que `puedeDeshacer`, y del mismo evento que apiló el
+ * documento anterior. El renderer no lleva cuenta propia a propósito: dos pilas que se
+ * mueven por su lado acaban descuadradas —una escritura que falla no crece la de allá—, y
+ * un menú que nombra un paso y revierte otro es peor que un menú que solo dice
+ * «Deshacer».
+ */
+export function useEtiquetaDeshacer(): string | null {
+  const estado = useAlmacen();
+  return estado.fase === 'cargado' ? estado.instantanea.etiquetaDeshacer : null;
+}
+
+/**
  * Aplica un comando. Devuelve `true` si se aplicó.
  *
  * `contexto` es lo que el usuario creía estar haciendo («Mover SICOE-T14 al sprint»), y
@@ -81,7 +95,7 @@ export type Aplicar = (
 
 export function useAplicar(): Aplicar {
   const { aplicar } = useAccionesAlmacen();
-  const { avisar, apilarDeshacer } = useAccionesInterfaz();
+  const { avisar } = useAccionesInterfaz();
   const soloLectura = useSoloLectura();
 
   return useCallback(
@@ -93,10 +107,9 @@ export function useAplicar(): Aplicar {
       const respuesta = await aplicar(comando);
       if (respuesta.ok) {
         avisar(null);
-        // El proceso principal acaba de apilar el documento anterior; aquí se apunta CÓMO
-        // se llamaba, que es lo único que le falta al menú Edición para poder decir
-        // «Deshacer capturar SICOE-T14» en vez de «Deshacer» a secas.
-        apilarDeshacer(contexto);
+        // El nombre de este paso no se apunta aquí: viene ya hecho en la instantánea
+        // (`etiquetaDeshacer`), derivado del evento que el proceso principal acaba de
+        // apilar. `contexto` solo sirve para explicar un FALLO, más abajo.
         return respuesta.instantanea.documento;
       }
 
@@ -107,7 +120,7 @@ export function useAplicar(): Aplicar {
       avisar(`${contexto}: ${respuesta.mensaje}${detalle}`);
       return null;
     },
-    [apilarDeshacer, aplicar, avisar, soloLectura],
+    [aplicar, avisar, soloLectura],
   );
 
 }
