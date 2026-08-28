@@ -375,6 +375,68 @@ puntos u horas · adjuntos y comentarios en las tareas.
 
 ## Bitácora
 
+**2026-08-27 · N11 a N18 · las decisiones de la ronda de mejora.**
+
+Todas del usuario, todas cerradas. El detalle y su costo están en `docs/PLAN-MEJORA.md`; aquí
+queda lo que se decidió, que es lo que no se vuelve a discutir.
+
+- **N11 · Equipo es una entidad de tres niveles**: proyecto → equipos → personas con
+  responsabilidades. Un proyecto tiene varios equipos, cada uno dedicado a un área
+  («Frontend», «Backend»). Muere el atajo «equipo ≡ proyecto». `proyecto.equipo[]` migra a un
+  equipo «General» por proyecto: partirlo automáticamente por el rol sería una migración que
+  adivina, y con 4 proyectos y 4 personas partirlo a mano son minutos.
+  **`tarea.equipo_id` explícito**, no derivado del responsable: derivarlo falla justo en los
+  dos casos que importan —una tarea sin responsable no tendría equipo, y una persona en dos
+  equipos del mismo proyecto lo vuelve ambiguo—.
+- **N12 · Cinco estados más `cancelada`**: `pendiente → iniciado → en_pruebas → terminado →
+  done`. `testing` y `qa` son un solo paso. `terminado` y `done` los marcan **dos personas
+  distintas** y no son sinónimos. **El avance se mide contra `done`.**
+- **N13 · Un bug es TRABAJO** y nace como tarea; se distingue con un `tipo`. Un bloqueo NO es
+  trabajo: es la bandera que ya existe, con su motivo. La columna «Bloqueada» del tablero se
+  DERIVA de la bandera y el enum de estado no crece.
+- **N14 · El reloj se pausa.** Tramos de trabajo en la tarea, no `fin − inicio`. Ver regla 21.
+- **N15 · El sprint general es DERIVADO**, no una entidad: existe mientras haya al menos un
+  sprint de proyecto activo o planeado, y desaparece cuando todos cierran. Sin fechas propias.
+- **N16 · Se admite la SEGUNDA confirmación de la app**: sacar del sprint. Tiene una
+  consecuencia invisible sobre datos que el usuario tecleó a mano.
+- **N17 · Los sprints van en la raíz con `clave` de proyecto.** Cada proyecto gestiona el suyo;
+  no todos arrancan a la vez.
+- **N18 · Criterios de aceptación en texto libre.** Capacidad en puntos, con el conteo de
+  tareas al lado y **siempre con su cobertura**: hoy 0 de 2 tareas están estimadas, y un «va
+  al 120 % de su capacidad» sobre eso sería el número inventado que la regla 23 prohíbe.
+
+**`CLAUDE.md` corregido en los cinco puntos donde contradecía al producto** (M0): los estados,
+la regla 4 del verde, el techo del menú de la regla 19, la regla 21 entera, el contenido de la
+vista de Equipos, y la afirmación de que solo había una confirmación.
+*Por qué esto va antes que el código:* la bitácora ya registra que un `CLAUDE.md` con dos
+reglas contradictorias hizo chocar a dos agentes antes de que nadie lo detectara. Un error en
+el documento de reglas se propaga a todos a la vez.
+
+**2026-08-27 · M1 · la evidencia congelada antes de tocar el esquema.**
+
+Copia fechada de los datos reales del usuario en `~/respaldo-pmcare-2026-08-27/`: `datos.json`,
+`historial.jsonl` y `respaldos/`, **fuera del repositorio y fuera de la carpeta de la app**.
+
+**La restauración se PROBÓ, no se supuso.** Se copió el respaldo a un directorio limpio, se
+abrió la app apuntada ahí con `PMCARE_DIRECTORIO_DATOS` y arrancó sin un error en el log,
+sin reescribir el documento restaurado. Una reversión que nunca se corrió no es una reversión.
+
+**Los conteos de hoy, que son la línea base de todo lo que viene:**
+
+| | |
+|---|---|
+| Proyectos | 4 |
+| Tareas | 2 |
+| Sprints | 0 |
+| Personas | 4 |
+| Tareas estimadas | 0 |
+| Tamaño | 5 010 bytes |
+
+Es la razón por la que el cambio de esquema va primero y por la que el usuario **no debe
+capturar los 11 proyectos todavía**: hoy la migración es casi gratis y encarece cada día.
+
+`tests/modelo/oro-documento-real.test.ts` en verde antes de tocar nada.
+
 **2026-08-27 · 3.4 cerrado y la app con ícono propio. El rediseño no deja pendientes.**
 
 - **Cerrar y eliminar un proyecto se piden desde el `⋯` de la lista lateral**, donde el

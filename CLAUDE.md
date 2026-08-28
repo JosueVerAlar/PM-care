@@ -68,7 +68,8 @@ en un solo lugar.
 3. **Ningún porcentaje se muestra sin su conteo crudo al lado** (`60% · 3 de 5`). Con menos
    de 5 tareas se omite el porcentaje y solo va el conteo. *Verificable:* revisión de vista;
    no hay `%` sin conteo hermano en el DOM.
-4. **Verde solo si `estado === 'hecha'`.** Jamás porque el porcentaje redondee a 100.
+4. **Verde solo si `estado === 'done'`.** Jamás porque el porcentaje redondee a 100, y
+   jamás con `terminado`: eso es «entregado, sin aceptar todavía».
    *Verificable:* fixture 199/200 en progreso → no verde.
 5. **El porcentaje de un padre no es el promedio de sus hijos**: se calcula sobre el
    agregado de sus hojas. *Verificable:* tres historias de 1 tarea con 1 hecha suman 99%,
@@ -135,7 +136,10 @@ en un solo lugar.
       contadores; no existe una variante por padre.
 
 19. **Cada acción de una fila vive en su menú `⋯`, con su tecla al lado.** Techo duro de
-    OCHO ítems: el noveno significa que se añadió una función que nadie pidió. Su nombre
+    OCHO ítems: el noveno significa que se añadió una función que nadie pidió. **Con cinco
+    estados el pipeline ya no cabe en la fila**: el menú conserva un solo `Avanzar`
+    (Espacio, sin ciclo), y elegir un estado concreto vive en el tablero por equipo y en el
+    detalle de la tarea — que es justamente lo que le da al tablero su razón de ser. Su nombre
     accesible es específico («Acciones de SICOE-104», nunca «Más»), lo destructivo va al
     fondo y en su propio grupo, y los verbos nombran lo que va a pasar («Marcar en curso»,
     no «Cambiar estado»). **El menú y el teclado comparten implementación**: no hay dos
@@ -143,22 +147,31 @@ en un solo lugar.
 20. **Ningún control que ejecuta una acción se esconde tras el hover.** El menú puede estar
     cerrado; su puerta, no. Lo que sí puede aparecer al pasar el ratón es lo que solo se
     LEE (la clave de la fila), porque no hay nada que descubrir.
-21. **El reloj de resolución corre desde que arranca el sprint** hasta `hecha_en`.
-    Decisión del usuario, no negociable. Con un solo tope, y por día de calendario: una
-    tarea metida DÍAS después empieza a contar el día que entró (`comprometida_en`); una
-    comprometida a las nueve del primer día cuenta desde el arranque, no desde las nueve.
-    - Una tarea cerrada **fuera de todo sprint** no tiene duración: `null`, jamás `0`. Va
-      a pasar seguido, y por eso **todo promedio dice sobre cuántas se calculó y cuántas
-      quedaron sin medir**.
-    - Una arrastrada se mide contra el sprint **en que cerró**, no contra el primero.
-      El arrastre se cuenta aparte, en sprints.
+21. **El reloj de resolución son TRAMOS de trabajo, no `fin − inicio`.** La tarea guarda
+    `trabajo: { desde, hasta | null, estado }[]`, mismo patrón que `bloqueos[]`. Corre
+    mientras la tarea está en marcha, **se detiene al llegar a `terminado`**, y **se reanuda
+    si vuelve a desarrollo** — puede pasar varias veces. La duración es la SUMA de los
+    tramos, nunca la resta de dos fechas.
+    - **El tramo guarda su estado** para no tener que decidir hoy si el reloj corre en
+      `en_pruebas`: con el dato dentro, las dos lecturas se derivan y no hace falta migrar
+      el día que se decida.
+    - **Un tramo abierto que nadie cierra crece para siempre.** Una tarea olvidada en
+      `iniciado` tres meses diría «tres meses de trabajo», que es la misma mentira de
+      calendario que todo esto existe para evitar. Por encima del umbral no entra a ningún
+      promedio: se muestra «corriendo desde hace 12 días».
+    - Se llama **«tiempo en desarrollo»**, nunca «horas trabajadas». En días con un decimal.
+    - **La duración ya NO depende del sprint.** Con eso mueren los tres defectos que ese
+      anclaje produjo, y una tarea cerrada fuera de todo sprint **sí** tiene duración.
     - **Ningún promedio de menos de 5 tareas se muestra** (`MINIMO_TAREAS_PARA_PROMEDIO`).
       Ahí va el conteo crudo y nada más.
-    - El huso sale de los DATOS, nunca de la máquina: `sprint.inicio` es una fecha suelta y
-      resolverla con la zona local hacía durar distinto la misma tarea según dónde se
-      abriera la app. *Verificable:* `tests/dominio/duracion.test.ts`, «el huso sale de los
-      datos».
-22. **`esfuerzo` es Fibonacci `1·2·3·5·8` o `null`, y `null` es lo NORMAL.** Ninguna suma
+    - `aceptada_en` marca el `done`. `terminada_en` NO existe como campo: es el `hasta` del
+      último tramo cerrado, y un campo que puede contradecir a los tramos es un campo que
+      algún día los contradice.
+22. **Hay DOS confirmaciones en la app, y solo dos.** Borrar un contenedor con hijos, y
+    **sacar una tarea del sprint**. La segunda se admite porque tiene una consecuencia
+    invisible sobre datos que el usuario tecleó a mano —responsable, fecha, descripción— y
+    porque el propio usuario la pidió. Una tercera exige la misma discusión que costó esta.
+23. **`esfuerzo` es Fibonacci `1·2·3·5·8` o `null`, y `null` es lo NORMAL.** Ninguna suma
     de esfuerzo se muestra sin cuántas tareas la componen y cuántas no están estimadas:
     «34 pts · 12 de 18 tareas», nunca «34 pts». Es la misma mentira que el `0%`.
     Prohibido convertir esto en pronóstico: describe lo que pasó, no promete fechas.
@@ -173,22 +186,30 @@ en un solo lugar.
 - **El mismo esquema valida el archivo y los payloads de IPC.**
 - Zod vive en `src/compartido/` y `electron/`. El renderer no importa dependencias nuevas.
 - `src/compartido/dominio/derivar.ts` es puro: sin `fs`, sin `ipc`, sin React. Se prueba solo.
-- Estados de tarea: `pendiente` · `en_curso` · `hecha` · `cancelada`.
+- Estados de tarea: `pendiente` · `iniciado` · `en_pruebas` · `terminado` · `done` ·
+  `cancelada`. **Cinco del flujo más `cancelada`, que no es un paso sino salirse de él.**
+  `terminado` y `done` NO son sinónimos: los marcan dos personas distintas — `terminado` es
+  «lo entregué», `done` es «lo revisé y lo acepto». **El avance se mide contra `done`**: un
+  porcentaje que sube cuando el ejecutor dice que acabó, y no cuando quien acepta lo acepta,
+  es el número inflado que esta app existe para no dar.
   **`bloqueada` NO es un estado**: es una bandera con historial (`bloqueos[]`) sobre la
   tarea, que conserva su estado propio. Las canceladas se excluyen de todo denominador.
-  Estados derivados: `sin_desglosar` · `pendiente` · `en_movimiento` · `hecha`.
-  Etiquetas en pantalla de ESTADO: Pendiente · En curso · Hecha · Cancelada ·
-  Sin desglosar · En movimiento.
+  Estados derivados de un CONTENEDOR: `sin_desglosar` · `pendiente` · `en_movimiento` ·
+  `hecha`. Son cuatro y siguen siendo cuatro: describen una épica o una historia, no el
+  pipeline de una tarea.
+  Etiquetas en pantalla de ESTADO: Pendiente · Iniciado · En pruebas · Terminado · Done ·
+  Cancelada · Sin desglosar · En movimiento.
   «Bloqueada» es una etiqueta de BANDERA, no de estado: se muestra **junto** al glifo de
-  estado (que sigue diciendo Pendiente o En curso), nunca en su lugar. Una tarea bloqueada
+  estado (que sigue diciendo el suyo), nunca en su lugar. En el tablero por equipo la
+  columna «Bloqueada» se DERIVA de la bandera; el enum de estado no crece por ella. Una tarea bloqueada
   conserva su avance propio; si el bloqueo reemplazara el estado, al desbloquear no se
   sabría a qué volver.
 - Definición ejecutable de **en movimiento**:
-  `hojas > 0 && (hechas + en_curso) > 0 && (hechas < hojas || contenedoresSinDesglosar > 0)`.
-  El segundo término es la regla 2: 6 de 6 hechas con una historia sin abrir sigue en
-  movimiento. Los cuatro estados derivados no cambian — no hay un quinto para «terminada
-  hasta donde está planeada», porque el conteo lo dice mejor que un color y añadirlo
-  obligaría a rehacer la validación de contraste y daltonismo de la paleta.
+  `hojas > 0 && enMarcha > 0 && (aceptadas < hojas || contenedoresSinDesglosar > 0)`, donde
+  `enMarcha` es todo lo que salió de `pendiente` sin cancelarse. El segundo término es la
+  regla 2: 6 de 6 aceptadas con una historia sin abrir sigue en movimiento. Los cuatro
+  estados derivados no cambian — no hay un quinto para «terminada hasta donde está
+  planeada», porque el conteo lo dice mejor que un color.
 - Botón de captura: **«Capturar»**, no «Agregar».
 - Mensajes de commit con la decisión dentro:
   `feat: E3 — escritura atómica con respaldos rotativos (regla 6)`.
