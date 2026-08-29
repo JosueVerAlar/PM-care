@@ -11,6 +11,8 @@
  * habría abierto el proyecto y visto una épica vacía.
  */
 
+import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 
 import { construirFilas } from '../../src/renderer/vistas/proyecto/filas';
@@ -31,6 +33,14 @@ const niveles = (filas: ReturnType<typeof construirFilas>) =>
 
 /** Todo abierto: lo que importa aquí es la forma del árbol, no el plegado. */
 const TODO = (...ids: string[]) => new Set(ids);
+
+it('el panel de proyecto no ofrece cambiar al sprint de otros proyectos', () => {
+  const fuente = readFileSync(
+    new URL('../../src/renderer/vistas/proyecto/PanelSprint.tsx', import.meta.url),
+    'utf8',
+  );
+  expect(fuente).not.toMatch(/soloEsteProyecto|Solo este proyecto|Todo el sprint/);
+});
 
 describe('construirFilas · el árbol clásico de tres niveles', () => {
   const tarea = unaTarea({ clave: CLAVE, id: 'PM-T1' });

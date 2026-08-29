@@ -20,7 +20,12 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { avanceDeProyecto, sprintActivo, tareasDe } from '../../../compartido/dominio/derivar';
+import {
+  avanceDeProyecto,
+  indexarTareas,
+  sprintActivo,
+  tareasDe,
+} from '../../../compartido/dominio/derivar';
 import { estaHecha } from '../../../compartido/dominio/clasificar';
 import type { Documento, Fecha, Proyecto } from '../../../compartido/modelo/tipos';
 import { Mas } from '../../componentes/iconos';
@@ -32,6 +37,7 @@ import { useSoloLectura } from '../../estado/mutaciones';
 import { esArrastreDeTarea, TIPO_TAREA } from '../../util/arrastre';
 import { useDosPaneles } from '../../util/medios';
 import { Arbol } from './Arbol';
+import { HojaDetalle } from './HojaDetalle';
 import { Leyenda } from './Leyenda';
 import { PanelAyuda } from './PanelAyuda';
 import { PanelSprint } from './PanelSprint';
@@ -46,15 +52,29 @@ export function VistaProyecto({
   proyecto: Proyecto;
   hoy: Fecha;
 }) {
-  const { expandidos, pestana, soloEsteProyecto, arrastre } = useInterfaz();
-  const { expandir, colapsarTodo, cambiarPestana, cambiarAlcanceSprint, arrastrar, redactar } =
-    useAccionesInterfaz();
+  const { expandidos, pestana, arrastre, detalle } = useInterfaz();
+  const {
+    expandir,
+    colapsarTodo,
+    cambiarPestana,
+    arrastrar,
+    redactar,
+    verDetalle,
+    irANodo,
+  } = useAccionesInterfaz();
 
   const soloLectura = useSoloLectura();
   const dosPaneles = useDosPaneles();
 
   const sprint = useMemo(() => sprintActivo(documento, proyecto.clave), [documento, proyecto.clave]);
   const avance = useMemo(() => avanceDeProyecto(proyecto), [proyecto]);
+  /**
+   * El índice de tareas del documento, para que la hoja resuelva un id sin recorrer los
+   * once proyectos. Se calcula aquí y no dentro de la hoja porque la hoja se monta y se
+   * desmonta con cada apertura, y rehacer el índice en cada una lo pagaría el usuario en
+   * el clic.
+   */
+  const indice = useMemo(() => indexarTareas(documento), [documento]);
   const acciones = useAccionesSprint(sprint);
 
   /** Ids de todo lo que se puede abrir. Sirve para el botón «Expandir todo». */
@@ -220,12 +240,38 @@ export function VistaProyecto({
         documento={documento}
         sprint={sprint}
         clave={proyecto.clave}
-        soloEsteProyecto={soloEsteProyecto}
-        cambiarAlcance={cambiarAlcanceSprint}
         hoy={hoy}
         editable={!soloLectura}
         dosPaneles={dosPaneles}
       />
+
+      {/* La hoja va DESPUÉS del panel del sprint y ocupa su misma celda de la rejilla:
+          se apila encima sin sacarlo del árbol de nodos, así que cerrar la hoja no
+          vuelve a montar el sprint ni pierde el desplazamiento de su lista. */}
+      {detalle !== null && (
+        <HojaDetalle
+          // Remontar al cambiar de nodo. Sin la `key`, React reutiliza la instancia y con
+          // ella el `useState` local del editor de descripción: abrir la tarea B después
+          // de haber empezado a escribir en la A enseñaría el texto de la A dentro de la
+          // B, y guardarlo lo escribiría en la B. Es la vía más corta a perder una nota.
+          key={detalle.id}
+          documento={documento}
+          proyecto={proyecto}
+          sprint={sprint}
+          hoy={hoy}
+          detalle={detalle}
+          indice={indice}
+          // Se LEE también en «Terminadas» y en solo lectura; lo que se apaga ahí es
+          // escribir el título y la descripción.
+          editable={editable}
+          cerrar={() => {
+            verDetalle(null);
+            // El foco vuelve a la fila de la que salió: sin esto se queda en el `body` y
+            // la siguiente flecha no tiene sobre qué actuar.
+            irANodo(detalle.id);
+          }}
+        />
+      )}
     </>
   );
 }

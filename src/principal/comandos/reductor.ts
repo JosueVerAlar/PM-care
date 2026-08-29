@@ -29,11 +29,13 @@
 import { diasEntre, fechaDe, primerDiaHabil, sumarDias } from '../../compartido/dominio/clasificar';
 import type { Compromiso, Contenedor } from '../../compartido/dominio/derivar';
 import { compromisoEfectivo, tareasDe, tareasDeProyecto } from '../../compartido/dominio/derivar';
+import { esTrabajo } from '../../compartido/dominio/duracion';
 import { validarDocumento } from '../../compartido/modelo/esquema';
 import { parsearId, siguienteId } from '../../compartido/modelo/ids';
 import type {
   Documento,
   Epica,
+  EstadoTarea,
   Fecha,
   Historia,
   Instante,
@@ -959,6 +961,7 @@ function aplicar(
       tarea.aceptada_en = comando.estado === 'done' ? ahora : null;
       // El estado y el bloqueo son ortogonales: terminar una tarea bloqueada no cierra el
       // bloqueo solo. Lo cierra `desbloquear`, y así queda su registro histórico.
+      moverElReloj(tarea, comando.estado, ahora);
 
       return {
         ok: true,
@@ -1163,6 +1166,11 @@ function aplicar(
               // reversible con `cambiarEstado`; el desenlace `descartada` conserva que la
               // decisión se tomó en este cierre.
               tarea.estado = 'cancelada';
+              // Y se para el reloj por el mismo sitio que lo para `cambiarEstado`: es la
+              // otra transición de estado que existe en el reductor, y sin esto una tarea
+              // descartada con el tramo abierto seguiría «corriendo» para siempre sobre
+              // trabajo que el usuario acaba de declarar que ya no va a hacerse.
+              moverElReloj(tarea, 'cancelada', ahora);
             }
           }
         }
@@ -1638,6 +1646,36 @@ function contarTareas(proyecto: Proyecto, cumple: (tarea: Tarea) => boolean): nu
   let total = 0;
   for (const tarea of tareasDeProyecto(proyecto)) if (cumple(tarea)) total += 1;
   return total;
+}
+
+// --- el reloj de tramos (regla 21) ------------------------------------------
+
+/**
+ * El ÚNICO sitio de toda la app que escribe `tarea.trabajo`. Dos movimientos, en orden:
+ *
+ * 1. se cierra el tramo abierto, si lo hay;
+ * 2. se abre uno nuevo si el estado al que se llega es trabajo (`esTrabajo`).
+ *
+ * De esas dos líneas sale todo lo demás. `iniciado → terminado → iniciado → terminado`
+ * deja **dos** tramos y la duración es su SUMA, no `fin − inicio`. `iniciado → en_pruebas`
+ * parte el tramo en dos, y eso es lo que hace derivable el desglose desarrollo/pruebas sin
+ * migrar nada el día que se decida si el reloj corre en pruebas. `→ cancelada` y
+ * `→ done` detienen el reloj en vez de dejarlo creciendo sobre trabajo que ya no se hace.
+ *
+ * **No hace falta nada para deshacer.** `reducir` trabaja sobre una copia profunda y ⌘Z
+ * devuelve el documento anterior entero, con sus tramos exactamente como estaban: abrir o
+ * cerrar un tramo no puede quedarse a medias porque no es un paso aparte del comando.
+ *
+ * Si el tramo abierto arrancara DESPUÉS de `ahora` —solo pasa con un archivo editado a
+ * mano en desorden— el esquema rechaza el resultado y el comando entero falla sin
+ * escribir. Es lo correcto: taparlo pediría inventar un final, y un final inventado se
+ * suma al promedio sin que nadie lo note.
+ */
+function moverElReloj(tarea: Tarea, estado: EstadoTarea, ahora: Instante): void {
+  // El esquema no admite dos tramos abiertos a la vez, así que como mucho hay uno.
+  const abierto = tarea.trabajo.find((tramo) => tramo.hasta === null);
+  if (abierto !== undefined) abierto.hasta = ahora;
+  if (esTrabajo(estado)) tarea.trabajo.push({ desde: ahora, hasta: null, estado });
 }
 
 // --- personas ---------------------------------------------------------------

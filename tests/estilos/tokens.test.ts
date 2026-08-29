@@ -177,3 +177,70 @@ describe('el color vive en un solo archivo', () => {
     expect(culpables).toEqual([]);
   });
 });
+
+// --- 4 · el canal de estado no se colapsa (MB) -------------------------------
+
+/**
+ * Las dos de abajo cierran el defecto de MB, y son estructurales por la misma razón que
+ * las tres de arriba: **el fallo no revienta, se apaga**.
+ *
+ * Hasta MB, `presentacion.ts` mandaba `iniciado`, `en_pruebas` y `terminado` a la misma
+ * silueta `'curso'`. El dominio los distinguía, los tipos compilaban, la app funcionaba y
+ * las tres tareas salían en pantalla con el mismo círculo medio relleno. No hay prueba de
+ * interfaz que atrape eso: el DOM era correcto, solo era mentira.
+ *
+ * Se leen los fuentes en vez de importarlos porque lo que se afirma es una propiedad del
+ * ARCHIVO —la tabla escrita a mano— y no del valor en tiempo de ejecución. Mismo criterio
+ * que `tests/modelo/acceso-tareas.test.ts`.
+ */
+const RENDERER = path.resolve(__dirname, '../../src/renderer');
+
+/** El cuerpo de un `Record<...> = { ... }` con ese nombre. */
+function cuerpoDeTabla(fuente: string, nombre: string): string {
+  const inicio = fuente.indexOf(`const ${nombre}`);
+  if (inicio < 0) return '';
+  const abre = fuente.indexOf('{', inicio);
+  return fuente.slice(abre + 1, fuente.indexOf('};', abre));
+}
+
+describe('el canal de estado no se colapsa', () => {
+  /**
+   * Seis estados de tarea, seis siluetas DISTINTAS. Si alguna vez vuelven a compartir
+   * forma, el porcentaje seguirá siendo honesto y la pantalla volverá a mentir.
+   */
+  it('ningún par de estados de tarea comparte forma', () => {
+    const fuente = readFileSync(path.join(RENDERER, 'util/presentacion.ts'), 'utf8');
+    const cuerpo = cuerpoDeTabla(fuente, 'FORMA_TAREA');
+    const pares = [...cuerpo.matchAll(/(\w+)\s*:\s*'([a-z]+)'/g)].map((m) => [m[1], m[2]] as const);
+
+    // Control de cobertura: sin esto, un renombre deja la lista vacía y la prueba pasa sola.
+    expect(pares.map(([estado]) => estado)).toEqual([
+      'pendiente',
+      'iniciado',
+      'en_pruebas',
+      'terminado',
+      'done',
+      'cancelada',
+    ]);
+
+    const formas = pares.map(([, forma]) => forma);
+    const repetidas = formas.filter((f, i) => formas.indexOf(f) !== i);
+    expect(repetidas, `estados de tarea que comparten silueta: ${repetidas.join(', ')}`).toEqual([]);
+  });
+
+  /**
+   * Y cada silueta con su regla de color. Una forma nueva sin `.glifo--x` no falla: hereda
+   * el color del texto de la fila y se pinta igual que el título, que es otra manera de
+   * desaparecer del canal sin avisar.
+   */
+  it('cada forma del glifo tiene su regla de color en las hojas', () => {
+    const iconos = readFileSync(path.join(RENDERER, 'componentes/iconos.tsx'), 'utf8');
+    const union = /export type FormaEstado\s*=([^;]+);/.exec(iconos)?.[1] ?? '';
+    const formas = [...union.matchAll(/'([a-z]+)'/g)].map((m) => m[1] as string);
+    expect(formas.length).toBe(7);
+
+    const css = HOJAS.map((h) => leer(h)).join('\n');
+    const sinRegla = formas.filter((f) => !new RegExp(`\\.glifo--${f}\\s*\\{`).test(css));
+    expect(sinRegla, `siluetas sin color propio: ${sinRegla.join(', ')}`).toEqual([]);
+  });
+});

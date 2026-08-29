@@ -219,6 +219,18 @@ button:disabled { cursor: default; opacity: .5; }
 .cuerpo--global { grid-template-columns: var(--ancho-lateral) 1fr; }
 .app--rail .cuerpo--global { grid-template-columns: var(--ancho-rail) 1fr; }
 
+/**
+ * Los dos paneles de la vista de proyecto se colocan a mano, no por autoflujo.
+ *
+ * La hoja de detalle (`.panel--detalle`) ocupa la MISMA celda que el sprint para apilarse
+ * encima. Un elemento con posición definida se coloca antes que los automáticos, así que
+ * si el árbol y el sprint siguieran en autoflujo, el sprint encontraría su celda ocupada
+ * y caería a una segunda fila —la ventana se partiría en dos—. Diciendo dónde va cada uno
+ * eso no puede pasar, y la hoja se superpone porque comparte celda, no porque flote.
+ */
+.panel--arbol { grid-column: 2; grid-row: 1; }
+.panel--sprint { grid-column: 3; grid-row: 1; }
+
 /* Separación entre paneles: hairline de 1 px. Sin tarjetas flotantes, sin sombras. */
 .panel {
   min-width: 0; min-height: 0;
@@ -383,4 +395,6 @@ button:disabled { cursor: default; opacity: .5; }
   .cuerpo--global,
   .app--rail .cuerpo--global { grid-template-columns: var(--ancho-rail) 1fr; }
   .panel--sprint { display: none; }
+  /* Sin el sprint solo quedan rail y árbol: la hoja de detalle se muda a la columna del
+     árbol, y esa colocación vive junto a la del árbol en `detalle.css`. */
 }

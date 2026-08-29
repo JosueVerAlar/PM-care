@@ -50,15 +50,23 @@ import { SEMILLAS, prng, unDocumentoAleatorio, unProyectoAleatorio } from '../ap
 describe('contarTareas', () => {
   it('reparte cada estado en su casilla y no inventa ninguna', () => {
     const avance = contarTareas(
-      tareasConEstados(['done', 'done', 'iniciado', 'pendiente', 'cancelada']),
+      tareasConEstados([
+        'done',
+        'done',
+        'iniciado',
+        'en_pruebas',
+        'terminado',
+        'pendiente',
+        'cancelada',
+      ]),
     );
     expect(avance).toEqual({
-      hojas: 4,
+      hojas: 6,
       hechas: 2,
-      enCurso: 1,
+      enCurso: 3,
       pendientes: 1,
       canceladas: 1,
-      pct: 50,
+      pct: 33,
       // Una lista suelta de tareas no tiene contenedores debajo: nada que desglosar.
       contenedoresSinDesglosar: 0,
     });
@@ -93,13 +101,22 @@ describe('contarTareas', () => {
     expect(String(avance.pct)).not.toBe('NaN');
   });
 
-  it('un estado desconocido no se cuenta en ninguna casilla y desaparece del denominador', () => {
-    // El esquema rechaza este documento; solo llega aquí quien llame sin validar. Se deja
-    // escrito para que el día que alguien lo vea en pantalla sepa por qué la tarea "no está".
+  it('un estado desconocido no puede desaparecer del denominador en silencio', () => {
+    // El esquema lo rechaza y el `never` rompe la compilación al ampliar el enum. Este
+    // caso conserva además una defensa explícita para quien eluda el tipo y la validación.
     const rara = unaTarea({ estado: 'zombie' as never });
-    const avance = contarTareas([unaTarea({ estado: 'done' }), rara]);
-    expect(avance.hojas).toBe(1);
-    expect(avance.hechas + avance.enCurso + avance.pendientes + avance.canceladas).toBe(1);
+    expect(() => contarTareas([unaTarea({ estado: 'done' }), rara])).toThrow(
+      'Estado de tarea no contado: zombie',
+    );
+  });
+
+  it('cuatro tareas del defecto dan una aceptada de cuatro, no una de dos', () => {
+    const avance = contarTareas(
+      tareasConEstados(['done', 'pendiente', 'en_pruebas', 'terminado']),
+    );
+    expect(avance.hojas).toBe(4);
+    expect(avance.enCurso).toBe(2);
+    expect(avance.pct).toBe(25);
   });
 });
 
@@ -140,6 +157,11 @@ describe('contenedores sin tareas (regla 2)', () => {
 // --- el 100% y el verde -----------------------------------------------------
 
 describe('regla 4: verde solo si el estado es hecha, jamás por redondeo', () => {
+  it('terminado sigue esperando aceptación: no es verde ni sube el porcentaje', () => {
+    const avance = contarTareas(tareasConEstados(['done', 'terminado']));
+    expect(avance.pct).toBe(50);
+    expect(estadoDerivado(avance)).toBe('en_movimiento');
+  });
   it('199 de 200 hechas: el porcentaje se topa en 99 aunque redondee a 100', () => {
     const avance = contarTareas(
       tareasConEstados([...repetir('done', 199), ...repetir('iniciado', 1)]),

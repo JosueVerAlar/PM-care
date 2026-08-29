@@ -55,7 +55,13 @@ export function BarraLateral({
   const porGrupo = (grupo: GrupoLateral) => GLOBALES.filter((entrada) => entrada.grupo === grupo);
 
   const bloqueosTotales = useMemo(() => paraVistaBloqueos(documento).length, [documento]);
-  const activo = useMemo(() => sprintsActivos(documento)[0], [documento]);
+  /**
+   * El ítem «Sprint» toma el nombre del sprint activo, pero solo si hay UNO. Con una
+   * quincena abierta por proyecto, poner el nombre del primero convertía la lateral en un
+   * cartel que decía «Sprint 2» mientras la vista enseñaba tres sprints distintos.
+   */
+  const activos = useMemo(() => sprintsActivos(documento), [documento]);
+  const activo = activos.length === 1 ? activos[0] : undefined;
 
   /** Un solo recorrido por proyecto: `senalesDeProyecto` ya trae lo que la lista pinta. */
   const proyectos = useMemo(

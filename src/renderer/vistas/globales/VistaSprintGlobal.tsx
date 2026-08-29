@@ -1,9 +1,20 @@
 /**
- * E12a — el Sprint global: el sprint activo entero, con los once proyectos mezclados.
+ * E12a — el Sprint global: TODO lo comprometido ahora mismo, con los proyectos mezclados.
  *
  * Es la vista que faltaba. El sprint de este usuario es transversal por diseño —una sola
  * quincena que cruza todos los proyectos—, así que verlo únicamente filtrado dentro de
  * cada proyecto es exactamente lo contrario de lo que el sprint significa.
+ *
+ * ## Son VARIOS sprints, y la vista lo dice
+ *
+ * Desde «sprints por proyecto» cada proyecto abre y cierra su propia quincena. Esta vista
+ * tomaba `sprintsActivos(doc)[0]` y pintaba solo ese: con sprint abierto en SICOE,
+ * EVENTOS y ENCUESTA, el usuario veía únicamente SICOE y lo demás no parecía «sin
+ * comprometer», parecía inexistente. Ahora se agregan todos, y las cosas que solo tienen
+ * sentido sobre UNO —el día X de Y, cerrar el sprint— solo aparecen cuando hay uno.
+ *
+ * Cada fila sabe de qué sprint sale (`fila.sprint`), y eso es lo que permite sacar una
+ * tarjeta de EVENTOS sin mandarle el id del sprint de SICOE.
  *
  * ## El conmutador «Solo lo mío», activo por omisión
  *
@@ -28,11 +39,10 @@
 
 import { useMemo } from 'react';
 
-import { primerSprintPlaneado } from '../../../compartido/dominio/cierre';
 import { sprintsActivos } from '../../../compartido/dominio/derivar';
 import {
   filasDePersona,
-  filasDeSprint,
+  filasDeSprints,
   personaPorOmision,
   progresoDelSprint,
   resumirSprint,
@@ -42,7 +52,7 @@ import { Medidor } from '../../componentes/Medidor';
 import { TarjetaSprint } from '../../componentes/TarjetaSprint';
 import { useAccionesSprint } from '../../estado/acciones-sprint';
 import { useAccionesInterfaz, useInterfaz } from '../../estado/interfaz';
-import { useMutar, useSoloLectura } from '../../estado/mutaciones';
+import { useSoloLectura } from '../../estado/mutaciones';
 import { cuenta, fechaCorta } from '../../util/presentacion';
 import { FormularioCompromiso } from '../proyecto/FormularioCompromiso';
 import { CapturaEnSprint } from './CapturaEnSprint';
@@ -53,12 +63,20 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
   const { soloMio, yo, redaccion } = useInterfaz();
   const { cambiarAlcanceMio, elegirYo, redactar, verCierre } = useAccionesInterfaz();
   const soloLectura = useSoloLectura();
-  const mutar = useMutar();
 
-  const sprint = useMemo(() => sprintsActivos(documento)[0], [documento]);
-  const acciones = useAccionesSprint(sprint);
+  const sprints = useMemo(() => sprintsActivos(documento), [documento]);
+  /**
+   * El sprint, cuando hay UNO y solo uno. Es lo que hace falta para las cosas que no
+   * tienen sentido sobre varios: el nombre en la cabecera, el «día 4 de 14» y el botón de
+   * cerrar. Con tres quincenas abiertas no existe «el» sprint, y fingir que sí —tomando
+   * el primero— es justo el defecto que esta vista tenía.
+   */
+  const unico = sprints.length === 1 ? sprints[0] : undefined;
+  // Solo se usa `sacarDe`, que no depende de ningún sprint concreto: cada tarjeta pasa el
+  // suyo. Por eso el hook recibe `undefined` y no un sprint elegido al azar.
+  const acciones = useAccionesSprint(undefined);
 
-  const todas = useMemo(() => filasDeSprint(documento, sprint, hoy), [documento, sprint, hoy]);
+  const todas = useMemo(() => filasDeSprints(documento, sprints, hoy), [documento, sprints, hoy]);
 
   // Quién soy: lo que el usuario eligió, y si no eligió nada, lo que se deduce del
   // documento vigente. Mismo criterio que el proyecto seleccionado.
@@ -73,17 +91,20 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
   const filtrando = soloMio && yoEfectivo !== null;
   const filas = filtrando ? mias : todas;
   const resumen = useMemo(() => resumirSprint(filas), [filas]);
-  const progreso = useMemo(() => (sprint ? progresoDelSprint(sprint, hoy) : null), [sprint, hoy]);
+  const progreso = useMemo(() => (unico ? progresoDelSprint(unico, hoy) : null), [unico, hoy]);
 
-  const editable = !soloLectura && sprint !== undefined && sprint.estado !== 'cerrado';
+  const editable = !soloLectura && sprints.length > 0;
   const capturando = redaccion?.tipo === 'capturaSprint';
 
-  const planeado = useMemo(
-    () => (sprint === undefined ? primerSprintPlaneado(documento) : undefined),
-    [documento, sprint],
-  );
+  /** El rango que cubren todas las quincenas abiertas. Con una, es la suya. */
+  const rango = useMemo(() => {
+    if (sprints.length === 0) return null;
+    const inicio = sprints.reduce((min, s) => (s.inicio < min ? s.inicio : min), sprints[0]!.inicio);
+    const fin = sprints.reduce((max, s) => (s.fin > max ? s.fin : max), sprints[0]!.fin);
+    return { inicio, fin };
+  }, [sprints]);
 
-  if (sprint === undefined) {
+  if (sprints.length === 0) {
     return (
       <PanelGlobal etiqueta="Sprint">
         <header className="cab">
@@ -92,32 +113,11 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
         <VacioGlobal
           titulo="No hay ningún sprint activo"
           queHacer={
-            planeado !== undefined ? (
-              <>
-                {planeado.nombre} está planeado con {cuenta(planeado.items.length, 'tarea', 'tareas')}{' '}
-                dentro. Actívalo para volver a comprometer; los sprints cerrados siguen
-                guardados y son inmutables.
-              </>
-            ) : (
-              <>
-                Los sprints cerrados siguen guardados y son inmutables. No hay ninguno
-                planeado todavía: se crea solo al cerrar el activo, con lo que quede
-                pendiente.
-              </>
-            )
+            <>
+              Los sprints cerrados siguen guardados y son inmutables. Cada proyecto abre
+              el suyo desde su propio panel.
+            </>
           }
-          {...(planeado !== undefined && !soloLectura
-            ? {
-                accion: {
-                  texto: `Activar ${planeado.nombre}`,
-                  alPulsar: () =>
-                    void mutar(
-                      { comando: 'activarSprint', sprintId: planeado.id },
-                      `Activar ${planeado.nombre}`,
-                    ),
-                },
-              }
-            : {})}
         />
       </PanelGlobal>
     );
@@ -127,7 +127,9 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
     <PanelGlobal etiqueta="Sprint">
       <header className="cab">
         <h2 className="cab__titulo">
-          {sprint.nombre} · {fechaCorta(sprint.inicio)}–{fechaCorta(sprint.fin)}
+          {unico
+            ? `${unico.nombre} · ${fechaCorta(unico.inicio)}–${fechaCorta(unico.fin)}`
+            : `${cuenta(sprints.length, 'sprint activo', 'sprints activos')} · ${fechaCorta(rango!.inicio)}–${fechaCorta(rango!.fin)}`}
           {progreso !== null && (
             <span className="cab__nota tabular">
               {' '}
@@ -136,6 +138,13 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
             </span>
           )}
         </h2>
+        {/* Con varias quincenas abiertas se nombran, o «3 sprints activos» no dice de qué
+            proyectos. Cada una lleva su clave porque el sprint es de un proyecto. */}
+        {unico === undefined && (
+          <span className="cab__nota" title={sprints.map((s) => s.nombre).join(' · ')}>
+            {sprints.map((s) => s.clave ?? s.nombre).join(' · ')}
+          </span>
+        )}
         <span className="crece" />
 
         <div className="alternador" role="group" aria-label="Alcance del sprint">
@@ -167,8 +176,11 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
             Capturar en el sprint
           </button>
         )}
-        {editable && (
-          <button type="button" className="cab__accion" onClick={() => verCierre(sprint.id)}>
+        {/* Cerrar solo cuando hay uno: con tres abiertos, «Cerrar sprint» tendría que
+            elegir por el usuario. Cada proyecto cierra el suyo desde su propio panel, que
+            es donde se ve lo que ese cierre se lleva por delante. */}
+        {editable && unico !== undefined && (
+          <button type="button" className="cab__accion" onClick={() => verCierre(unico.id)}>
             Cerrar sprint
           </button>
         )}
@@ -181,8 +193,8 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
               app en vez de lo que es: que a esta persona no le tocó nada. */}
           {filas.length === 0 ? (
             <span className="tabular">
-              Ninguna de las {cuenta(todas.length, 'tarea', 'tareas')} de {sprint.nombre} es de
-              esta persona.
+              Ninguna de las {cuenta(todas.length, 'tarea comprometida', 'tareas comprometidas')} es
+              de esta persona.
             </span>
           ) : (
             <>
@@ -230,7 +242,7 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
       {capturando && (
         <CapturaEnSprint
           documento={documento}
-          sprint={sprint}
+          sprints={sprints}
           hoy={hoy}
           cerrar={(tareaId) => {
             // Al terminar se abre el compromiso de la tarea recién creada: capturar y
@@ -245,7 +257,9 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
       <Lienzo>
         {todas.length === 0 ? (
           <VacioGlobal
-            titulo={`${sprint.nombre} está vacío`}
+            titulo={
+              unico ? `${unico.nombre} está vacío` : 'Ningún sprint activo tiene nada dentro'
+            }
             queHacer={
               <>
                 Todavía no hay nada comprometido esta quincena. Arrastra tareas al sprint desde
@@ -263,7 +277,7 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
           />
         ) : filas.length === 0 ? (
           <VacioGlobal
-            titulo={`Nada tuyo en ${sprint.nombre}`}
+            titulo="Nada tuyo en los sprints abiertos"
             queHacer={
               <>
                 {nombreYo ?? 'La persona seleccionada'} no es responsable de ninguna de las{' '}
@@ -283,7 +297,10 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
                   redaccion?.tipo === 'compromiso' && redaccion.tareaId === tarea.id;
                 return (
                   <TarjetaSprint
-                    key={fila.item.tarea_id}
+                    // La clave lleva el sprint: la misma tarea puede estar en dos sprints
+                    // activos si alguien la comprometió en dos proyectos distintos, y con
+                    // `tarea_id` a secas React vería dos hijos con la misma clave.
+                    key={`${fila.sprint.id}·${fila.item.tarea_id}`}
                     fila={fila}
                     mostrarProyecto
                     arrastrando={false}
@@ -291,7 +308,10 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
                       editable
                         ? {
                             editar: () => redactar({ tipo: 'compromiso', tareaId: tarea.id }),
-                            sacar: () => void acciones.sacar(tarea.id),
+                            // El sprint sale de la FILA, no de la vista: sacar una tarjeta
+                            // de EVENTOS con el id del sprint de SICOE fallaba en el
+                            // reductor, y en silencio para quien miraba.
+                            sacar: () => void acciones.sacarDe(tarea.id, fila.sprint.id),
                           }
                         : null
                     }
@@ -301,7 +321,7 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
                           tarea={tarea}
                           item={fila.item}
                           personas={documento.personas}
-                          finDeSprint={sprint.fin}
+                          finDeSprint={fila.sprint.fin}
                           hoy={hoy}
                           // Aquí no hay árbol al que devolver el foco: esta vista no lo
                           // tiene montado. Cerrar solo cierra.
@@ -319,10 +339,7 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
                 lleva a comprometer de más. */}
             {filtrando && todas.length > mias.length && (
               <button type="button" className="corte" onClick={() => cambiarAlcanceMio(false)}>
-                <b>
-                  {cuenta(todas.length - mias.length, 'tarea más', 'tareas más')} en{' '}
-                  {sprint.nombre}
-                </b>
+                <b>{cuenta(todas.length - mias.length, 'tarea más', 'tareas más')} comprometidas</b>
                 , de otras personas
                 <span className="crece" />
                 Ver todo el sprint

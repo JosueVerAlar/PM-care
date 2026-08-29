@@ -23,10 +23,23 @@
 import { ChipNeutro } from '../../componentes/Chips';
 import { CuadroBloqueo, Glifo, type FormaEstado } from '../../componentes/iconos';
 
+/**
+ * Los cinco pasos del pipeline EN ORDEN, y después los dos que no son pasos.
+ *
+ * MB: mientras las siluetas eran cinco, listar solo los extremos habría bastado. Con el
+ * anillo de relleno progresivo el orden ES la información —cada entrada enseña un
+ * cuadrante más—, y una leyenda que se saltara ¼ y ¾ enseñaría a leer mal justo la parte
+ * que dejó de ser autoevidente. Se lee de izquierda a derecha como avanza el trabajo.
+ */
 const ESTADOS: { forma: FormaEstado; etiqueta: string }[] = [
   { forma: 'pendiente', etiqueta: 'Pendiente' },
-  { forma: 'curso', etiqueta: 'En curso' },
-  { forma: 'hecha', etiqueta: 'Hecha' },
+  { forma: 'iniciado', etiqueta: 'Iniciado' },
+  // El medio anillo es la única silueta que dice dos cosas —el paso de una tarea y la
+  // marcha de un contenedor—, así que el glosario tiene que nombrar las dos. En la fila el
+  // nombre accesible sigue siendo el específico, nunca este par.
+  { forma: 'curso', etiqueta: 'En pruebas · en movimiento' },
+  { forma: 'terminado', etiqueta: 'Terminado' },
+  { forma: 'hecha', etiqueta: 'Done' },
   { forma: 'cancelada', etiqueta: 'Cancelada' },
   { forma: 'sindesglosar', etiqueta: 'Sin desglosar' },
 ];

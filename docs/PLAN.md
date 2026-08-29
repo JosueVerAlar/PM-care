@@ -5,6 +5,17 @@ una línea en Bitácora. No borres etapas terminadas.
 
 Estados: `⬜ pendiente` · `🟡 en curso` · `✅ terminada`
 
+**Marca de texto superado:** un párrafo que una decisión posterior dejó falso **no se
+borra**, se marca. La marca es `**[SUPERADO — …]**` al principio del párrafo, y dice quién
+lo enmendó. Borrarlo perdería por qué se pensó así; dejarlo sin marca lo deja compitiendo
+con lo vigente, que es lo que pasó hasta el 2026-08-28.
+
+**«Vista transversal» quiere decir una cosa y solo una:** una de las vistas globales del
+registro, las que recorren los 11 proyectos. **Son SIETE** —Panorama · Sprint · Bloqueos ·
+Terminadas · Backlog del área · Carga por persona · Tiempos— y el número es verificable:
+`src/renderer/vistas/globales/registro.ts:38-80` tiene exactamente siete entradas.
+Equipos y Personas viven en `vistas/administracion/` y no cuentan.
+
 **Objetivo del proyecto:** que el usuario abra una app propia y vea, sin capturar nada dos
 veces, a cuál de sus ~11 proyectos le tiene que meter mano hoy.
 
@@ -12,22 +23,26 @@ veces, a cuál de sus ~11 proyectos le tiene que meter mano hoy.
 
 ## Resumen
 
-| # | Etapa | Agente | Depende de | Tamaño | Estado |
-|---|---|---|---|---|---|
-| E0 | Maqueta estática | `diseno` | — | Pequeño | ⬜ |
-| E1 | Andamio + app de humo | `infra` | — | Pequeño | ⬜ |
-| E2 | Modelo de datos | `arquitecto` + `backend` | E1 | Mediano | ⬜ |
-| E3 | Almacén e integridad | `backend` | E2 | Grande | ⬜ |
-| E4 | Cálculo derivado | `backend` + `qa` | E2 | Mediano | ⬜ |
-| E5 | Puente IPC | `backend` + `seguridad` | E3, E4 | Mediano | ⬜ |
-| E6 | **Árbol y sprint en solo lectura (HITO)** | `frontend` | E5, E0 | Grande | ⬜ |
-| E7 | Arrastre, captura y edición | `frontend` | E6 | Grande | ⬜ |
-| E8 | Cierre de sprint | `backend` + `frontend` | E7 | Mediano | ⬜ |
-| E9 | Bloqueos | `backend` + `frontend` | E7 | Mediano | ⬜ |
-| E10 | Terminadas, Panorama y Backlog del área | `frontend` + `data` | E7 | Grande | ⬜ |
-| E11 | Carga por persona y Equipos | `frontend` + `data` | E7 | Mediano | ⬜ |
-| E12 | Empaquetado | `infra` | E8–E11 | Mediano | ✅ |
-| E13 | Uso real | usuario + `pm` | E12 | — | ⬜ |
+Puesta al día el **2026-08-28**. La casilla se había quedado en `⬜` para once etapas que la
+bitácora de este mismo archivo daba por terminadas; ahora cada casilla lleva **la evidencia
+que la sostiene**, y sin evidencia la casilla dice «sin verificar», no `⬜`.
+
+| # | Etapa | Agente | Depende de | Tamaño | Estado | Evidencia |
+|---|---|---|---|---|---|---|
+| E0 | Maqueta estática | `diseno` | — | Pequeño | ✅ | Bitácora 2026-08-26 · «E0 maqueta con datos reales, 30 pares evaluados» |
+| E1 | Andamio + app de humo | `infra` | — | Pequeño | ✅ | Bitácora 2026-08-26 · «E1 andamio», proceso principal en CommonJS |
+| E2 | Modelo de datos | `arquitecto` + `backend` | E1 | Mediano | ✅ | Bitácora 2026-08-26 · «E2 modelo, 25 nodos sin un solo `NaN`» |
+| E3 | Almacén e integridad | `backend` | E2 | Grande | ✅ | Bitácora 2026-08-26 · «50 muertes del proceso → 50/50 archivos legibles» |
+| E4 | Cálculo derivado | `backend` + `qa` | E2 | Mediano | ✅ | Bitácora 2026-08-26 · «258 pruebas, 11 mutaciones, 11 muertas» |
+| E5 | Puente IPC | `backend` + `seguridad` | E3, E4 | Mediano | ✅ | Bitácora 2026-08-26 · «puente IPC ya escrito y conectado»; `src/principal/comandos/` con `tipos.ts` y `reductor.ts` |
+| E6 | **Árbol y sprint en solo lectura (HITO)** | `frontend` | E5, E0 | Grande | ✅ | Bitácora 2026-08-27 · «El árbol pinta las tres formas»; `filas.ts` con sus doce pruebas |
+| E7 | Arrastre, captura y edición | `frontend` | E6 | Grande | ✅ | Bitácora 2026-08-27 · «⌘Z», menú `⋯` y franja de deshacer; commit `6029ab1` |
+| E8 | Cierre de sprint | `backend` + `frontend` | E7 | Mediano | ✅ | `src/renderer/vistas/cierre/`, `estado/acciones-cierre.ts`; commit `9d6e8f8` |
+| E9 | Bloqueos | `backend` + `frontend` | E7 | Mediano | ✅ | `dominio/bloqueos.ts`, `VistaBloqueos.tsx`; commit `0b8839e` «E9-E11» |
+| E10 | Terminadas, Panorama y Backlog del área | `frontend` + `data` | E7 | Grande | ✅ | `VistaTerminadas` · `VistaPanorama` · `VistaBacklog`; commit `0b8839e` |
+| E11 | Carga por persona y Equipos | `frontend` + `data` | E7 | Mediano | ✅ | `VistaCarga.tsx`, `vistas/administracion/SeccionEquipos.tsx`; commit `0b8839e` |
+| E12 | Empaquetado | `infra` | E8–E11 | Mediano | ✅ | Bitácora 2026-08-27 · CSP estricta leída del `.app` en ejecución |
+| E13 | Uso real | usuario + `pm` | E12 | — | ⬜ | No empezada. Ver la ficha: su bloqueo por M2 quedó levantado el 2026-08-28 |
 
 **Camino crítico:** E1 → E2 → E3 → E5 → E6 → E7 → E8 → E12 → E13.
 Todo retraso ahí retrasa el proyecto. E2 es el cuello de botella: cinco etapas la esperan.
@@ -127,7 +142,7 @@ las hojas.
 ---
 
 ## E5 · Puente IPC
-**Estado:** ⬜ pendiente · **Agente:** `backend` + `seguridad` · **Depende de:** E3, E4 · **Tamaño:** mediano
+**Estado:** ✅ terminada (2026-08-28, por evidencia) · **Agente:** `backend` + `seguridad` · **Depende de:** E3, E4 · **Tamaño:** mediano
 
 **Entrega:** `electron/comandos/` con una función por mutación (`capturar`, `moverAlSprint`,
 `cerrarSprint`, `bloquear`, `desbloquear`, `cambiarEstado`, `mover`…) y el preload exponiendo
@@ -138,10 +153,15 @@ almacén y anota en la bitácora.
 `seguridad`); un payload inválido se rechaza con mensaje útil y sin escribir; el preload no
 expone ninguna operación de sistema de archivos; cada comando deja su línea de historial.
 
+**Evidencia del cierre:** la bitácora del 2026-08-26 ya decía «E5 (puente IPC ya escrito y
+conectado; falta la interfaz que lo consuma)», y esa interfaz existe desde E6. Los comandos
+viven en `src/principal/comandos/` —no en `electron/comandos/`, la carpeta se movió—, con
+`tipos.ts` validando cada payload con Zod y `reductor.ts` como única puerta de mutación.
+
 ---
 
 ## E6 · Árbol y sprint en solo lectura — **HITO**
-**Estado:** ⬜ pendiente · **Agente:** `frontend` · **Depende de:** E5, E0 · **Tamaño:** grande
+**Estado:** ✅ terminada (2026-08-28, por evidencia) · **Agente:** `frontend` · **Depende de:** E5, E0 · **Tamaño:** grande
 
 **Entrega:** la vista de proyecto con sus dos paneles y datos reales en pantalla. Un solo
 componente `Arbol` con predicado por panel, nunca tres árboles copiados. Selector de proyecto.
@@ -152,10 +172,15 @@ reales, los estados derivados correctos, cada porcentaje con su conteo al lado, 
 sin desglosar diciendo «sin desglosar». Es la primera etapa que el usuario puede juzgar de
 verdad — **aquí se para y se revisa antes de seguir.**
 
+**Evidencia del cierre:** bitácora del 2026-08-27, «El árbol pinta las tres formas. N9
+cerrado de punta a punta»: `construirFilas` salió a `filas.ts` con doce pruebas, y una
+prueba de interfaz vigila en pantalla la regla 2 —una épica vacía dice «sin desglosar» y no
+aparece ni un `0%` ni un `NaN` en el DOM—.
+
 ---
 
 ## E7 · Arrastre, captura y edición
-**Estado:** ⬜ pendiente · **Agente:** `frontend` · **Depende de:** E6 · **Tamaño:** grande
+**Estado:** ✅ terminada (2026-08-28, por evidencia) · **Agente:** `frontend` · **Depende de:** E6 · **Tamaño:** grande
 
 **Entrega:** mover tareas al sprint y fuera con arrastre, capturar tareas nuevas, cambiar
 estado, editar título. Solo tareas se arrastran.
@@ -165,12 +190,18 @@ intentar arrastrar una épica no hace nada; capturar después de «cerrar planea
 marca la tarea como no planeada sin que el usuario haga nada; el teclado hace todo lo que hace
 el ratón.
 
-**Aquí se decide la librería de arrastre.** Ver decisión D3.
+**Aquí se decide la librería de arrastre.** Ver decisión D3 — que sigue **sin escribirse**
+aunque la etapa cerró: el arrastre funciona y nadie dejó anotado con qué. Ver «Decisiones
+vencidas».
+
+**Evidencia del cierre:** bitácora del 2026-08-27, niveles 2 y 3 del rediseño —menú `⋯` por
+fila, `⌘Z` con su franja de deshacer, «Al sprint» fuera del hover—; commit `6029ab1`
+(reordenar el árbol, cerrar planeación) y `4049ec7`.
 
 ---
 
 ## E8 · Cierre de sprint
-**Estado:** ⬜ pendiente · **Agente:** `backend` + `frontend` · **Depende de:** E7 · **Tamaño:** mediano
+**Estado:** ✅ terminada (2026-08-28, por evidencia) · **Agente:** `backend` + `frontend` · **Depende de:** E7 · **Tamaño:** mediano
 
 **Entrega:** abrir sprint, cerrarlo, arrastrar lo no terminado al siguiente. La tarea guarda
 `sprints: []` (array), no un sprint único.
@@ -179,10 +210,16 @@ el ratón.
 intenta y falla); una tarea que pasó por dos sprints los conserva ambos; el cierre queda en la
 bitácora.
 
+**Evidencia del cierre:** `src/renderer/vistas/cierre/` con `ResumenCierre.tsx`,
+`src/renderer/estado/acciones-cierre.ts`, `src/compartido/dominio/cierre.ts`; commit
+`9d6e8f8` «sprints por proyecto — crear, editar, cerrar y activar el siguiente».
+La inmutabilidad del sprint cerrado está probada en
+`tests/comandos/sprints-por-proyecto.test.ts:176`.
+
 ---
 
 ## E9 · Bloqueos
-**Estado:** ⬜ pendiente · **Agente:** `backend` + `frontend` · **Depende de:** E7 · **Tamaño:** mediano
+**Estado:** ✅ terminada (2026-08-28, por evidencia) · **Agente:** `backend` + `frontend` · **Depende de:** E7 · **Tamaño:** mediano
 
 **Entrega:** lista `bloqueos[]` en la tarea con tipo, motivo, `bloqueada_en`, `desbloqueada_en`.
 Vista global de Bloqueos.
@@ -191,10 +228,17 @@ Vista global de Bloqueos.
 siendo `en_curso`); desbloquear no borra el bloqueo anterior, lo cierra; la vista ordena por
 días bloqueada descendente.
 
+**[SUPERADO — N12 renombró los estados]** el ejemplo dice `en_curso`; hoy ese estado se
+llama `iniciado`. La regla no cambió: una tarea bloqueada conserva el suyo.
+
+**Evidencia del cierre:** `src/compartido/dominio/bloqueos.ts`,
+`src/renderer/vistas/globales/VistaBloqueos.tsx`, `tests/dominio/bloqueos.test.ts`;
+commit `0b8839e` «E9-E11».
+
 ---
 
 ## E10 · Terminadas, Panorama y Backlog del área
-**Estado:** ⬜ pendiente · **Agente:** `frontend` + `data` · **Depende de:** E7 · **Tamaño:** grande
+**Estado:** ✅ terminada (2026-08-28, por evidencia) · **Agente:** `frontend` + `data` · **Depende de:** E7 · **Tamaño:** grande
 
 **Entrega:** pestaña Terminadas en la vista de proyecto, vista global Terminadas, Panorama con
 los 11 proyectos ordenados por atención, y Backlog del área.
@@ -204,20 +248,37 @@ proyecto con menos de 5 tareas muestra porcentaje; la pantalla dice explícitame
 sostiene («esto muestra qué está quieto, no qué es importante»). Sin gráficas: no hay librería
 para eso y no la va a haber.
 
+**Evidencia del cierre:** `VistaTerminadas.tsx`, `VistaPanorama.tsx`, `VistaBacklog.tsx` y
+`dominio/panorama.ts` · `terminadas.ts` · `backlog.ts`; commit `0b8839e`.
+**Lo que la etapa cerró sin decidir:** D6 (prioridad manual) y D7 (archivar proyectos)
+vencían aquí y siguen abiertas. Ver «Decisiones vencidas».
+
 ---
 
 ## E11 · Carga por persona y Equipos
-**Estado:** ⬜ pendiente · **Agente:** `frontend` + `data` · **Depende de:** E7 · **Tamaño:** mediano
+**Estado:** ✅ terminada (2026-08-28, por evidencia) · **Agente:** `frontend` + `data` · **Depende de:** E7 · **Tamaño:** mediano
 
 **Entrega:** vistas de Carga por persona y Equipos, con las personas reales del Jira.
 
 **Terminado cuando:** las cuatro personas de los datos reales aparecen con su conteo por
 estado; una tarea sin responsable no desaparece, cae en «sin asignar».
 
+**Evidencia del cierre:** `VistaCarga.tsx`, `dominio/carga.ts`,
+`vistas/administracion/SeccionEquipos.tsx` (Equipos existe una sola vez y muestra y edita,
+bitácora del 2026-08-27); commit `0b8839e`.
+**Ojo:** el contenido de Equipos lo reabre N11 —proyecto → equipos → personas— y eso es M6
+en `docs/PLAN-MEJORA.md`, no una reapertura de E11.
+
 ---
 
 ## E12 · Empaquetado
 **Estado:** ✅ terminada · **Agente:** `infra` · **Depende de:** E8–E11 · **Tamaño:** mediano
+
+**Sobre la dependencia:** hasta el 2026-08-28 esta ficha decía «terminada» con E8–E11 en
+`⬜`, que es la contradicción que `CLAUDE.md` prohíbe («no empieces una etapa sin que su
+predecesora esté marcada como terminada»). La contradicción era **de la casilla, no de los
+hechos**: E8–E11 estaban construidas y sin marcar. Al ponerlas en `✅` el orden queda
+respetado y no hubo que reabrir nada.
 
 **Entrega:** `.app` para arm64, ícono, primer arranque limpio.
 
@@ -233,6 +294,16 @@ explica cualquier permiso que macOS pida.
 
 **Entrega:** dos semanas usándola de verdad, con los 11 proyectos capturados.
 
+**Estuvo bloqueada por M2, y el bloqueo se levantó el 2026-08-28.**
+`docs/PLAN-MEJORA.md:31` y `:685` prohibían capturar los 11 proyectos hasta cerrar M2 —«hoy
+la migración mueve dos tareas; en dos semanas movería cientos»—. M2 está cerrada
+(`src/compartido/modelo/version.ts:10` con `ESQUEMA_VERSION = 2` y
+`src/principal/migraciones/index.ts:34-60` con la migración 1→2), así que **capturar ya no
+es prematuro por esa razón.**
+*Lo que sí queda como aviso, y no es lo mismo:* M4 todavía no existe en el dominio, así que
+una tarea capturada en `en_pruebas` o `terminado` desaparece hoy del denominador. Ver la
+entrada de bitácora del 2026-08-28.
+
 **Terminado cuando:** el usuario llega a un lunes y abre PM-care antes que Jira. Si no pasa,
 el hallazgo es más valioso que cualquier etapa nueva: se revisa qué vista sobra y cuál falta.
 
@@ -245,6 +316,10 @@ Sí entra en la v1, acotado: pila de snapshots del documento **en el proceso pri
 tope **20**, solo para mutaciones de datos (no filtros, no selección, no colapsar). Un
 cambio externo del archivo **vacía la pila**. Única confirmación de toda la app: borrar un
 contenedor que tiene hijos, con el conteo en el texto ("Borrar E3 y sus 12 tareas").
+**[SUPERADO — N16 admitió la segunda confirmación]** «única confirmación de toda la app» dejó
+de ser cierto: **son dos**, y la segunda es sacar una tarea del sprint. Lo demás de D1 sigue
+vigente y sigue sin reabrirse. `CLAUDE.md` regla 22 ya está en dos; esta línea era la última
+que decía «una».
 *Por qué no se pospone:* el diseño de interacción se apoya en no confirmar nada, y añadirlo
 después obliga a reescribir el reductor entero para que sea puro y serializable. Hacerlo en
 E7 cuesta poco; hacerlo en la v2 cuesta el reductor completo.
@@ -259,28 +334,28 @@ manual; **no se ofrece como configuración en la interfaz**.
 *Lo que se pierde:* versionar el archivo con git desde su sitio. Se sustituye por copiar la
 carpeta a mano (`README.md`, sección de respaldos).
 
-**D3 · Librería de arrastre — decidir en E7.**
+**D3 · Librería de arrastre — VENCIDA: E7 cerró sin escribirla.**
 Única excepción admitida a la regla de cero dependencias. HTML5 nativo es gratis pero
 inaccesible por teclado y feo en macOS; `dnd-kit` son ~30KB y resuelve teclado y lectores.
 *Recomendación:* **empezar nativo**; si el arrastre por teclado no sale en un día, `dnd-kit`
 con la justificación escrita en el commit.
 
-**D4 · Botón «Cerrar planeación inicial» — decidir antes de E7.**
+**D4 · Botón «Cerrar planeación inicial» — VENCIDA: E7 cerró sin escribirla.**
 Es la única forma de que lo no planeado se marque solo: antes de esa fecha lo capturado es
 planeado, después no. Si nunca se pulsa, nada es amarillo y el color no aparece — degrada
 seguro. La alternativa es marcarlo a mano cada vez, y se va a olvidar.
 *Recomendación:* **sí**, exactamente como lo propuso `ux`.
 
-**D5 · «Emergente» o «No planeado» — decidir antes de E0.**
+**D5 · «Emergente» o «No planeado» — VENCIDA: E0 cerró sin escribirla.**
 *Recomendación:* **«No planeado»** en etiqueta larga, chip **«Nuevo»**. La pregunta de fin de
 mes es «cuánto de lo que hice no estaba planeado», no «cuánto fue emergente».
 
-**D6 · Prioridad y fecha objetivo manuales — decidir antes de E10.**
+**D6 · Prioridad y fecha objetivo manuales — VENCIDA: E10 cerró sin escribirla.**
 No son calculables. Sin ellas, «abandonado» y «de baja prioridad» se ven idénticos, y no
 existe «atrasado», solo «quieto».
 *Recomendación:* **prioridad manual sí** (tres niveles, un clic), **fecha objetivo no** en v1.
 
-**D7 · Archivar proyectos — decidir antes de E10.**
+**D7 · Archivar proyectos — VENCIDA: E10 cerró sin escribirla.**
 Sin archivar, la rejilla de Panorama crece para siempre.
 *Recomendación:* un campo `archivado` desde E2 (cuesta una línea) y el filtro en E10.
 
@@ -288,6 +363,45 @@ Sin archivar, la rejilla de Panorama crece para siempre.
 Hay MCP de Atlassian conectado. Capturar 11 proyectos a mano es la barrera real de adopción.
 *Recomendación:* **una importación única y manual, fuera de la app** — un JSON generado por un
 agente, no código de red dentro de PM-care. La regla `connect-src 'none'` no se toca.
+
+### Decisiones vencidas — cinco, y todas cerraron su etapa sin respuesta escrita
+
+Anotado el **2026-08-28**. D3, D4, D5, D6 y D7 tenían etapa límite y **las cinco etapas
+están cerradas**. Puede que la decisión se tomara al construir; **no está escrita en ningún
+sitio**, que para este tablero es lo mismo que no haberse tomado: el próximo agente que
+toque el arrastre o el archivado no tiene dónde leerla.
+
+No las cierro yo — son del usuario. Lo que corresponde es una de dos por cada una:
+**escribir lo que ya se decidió al construir**, o decidirla ahora.
+
+| | Qué falta | Cómo averiguarlo barato |
+|---|---|---|
+| **D3** | Con qué se implementó el arrastre. Si fue HTML5 nativo, la recomendación se cumplió y basta anotarlo; si entró `dnd-kit`, `package.json` lo delata y falta la justificación escrita que la regla de dependencias exige | Mirar `package.json` y el commit del arrastre |
+| **D4** | Si «Cerrar planeación inicial» existe. Los comandos `cerrarPlaneacion` y `reabrirPlaneacion` están en `src/principal/comandos/tipos.ts:143,156`, o sea que **se construyó**; falta declarar la decisión cerrada | Ya está: la decisión es «sí», solo hay que escribirlo |
+| **D5** | Qué etiqueta quedó en pantalla, «Emergente» o «No planeado» | Leer la vista y anotarlo |
+| **D6** | Prioridad manual: `FilaBacklog` ordena por fecha límite y hay `prioridad` en el volcado del compromiso, pero nadie declaró si la de tres niveles entró | Decisión del usuario |
+| **D7** | Archivar proyectos: existen `cerrarProyecto` y `reabrirProyecto` (`tipos.ts:98,100`), que es archivar con otro nombre. Falta decir si eso **es** D7 cerrada o si falta el filtro de Panorama | Decisión del usuario |
+
+### Decisiones nuevas, abiertas y con dueño — las dos bloquean etapas de `PLAN-MEJORA.md`
+
+**G1 · La ceremonia de once cierres de sprint. Bloquea M7.**
+`docs/PLAN-MEJORA.md:663-668` la llama «la razón número uno por la que dejarías de usar la
+app» y dice «decídelo antes de M7». **Sigue sin etapa asignada.** La disyuntiva, en una
+línea: **cierre en lote desde una sola pantalla** —una pantalla que cierra los once, más
+trabajo de interfaz y una sola ceremonia— **o cadencia por proyecto** —duración y día de
+inicio guardados por proyecto, y el siguiente sprint nace solo, menos interfaz pero un
+campo nuevo en el esquema y un automatismo que hay que poder apagar—.
+
+**G2 · La retrospectiva ya está construida y ninguna etapa la reclama.**
+Esto **no** es una decisión sobre si construirla: `escribirRetrospectiva` existe
+(`src/principal/comandos/tipos.ts:513`, `reductor.ts:1318`), se ofrece al cerrar
+(`vistas/cierre/ResumenCierre.tsx:130`) y se lee en Terminadas
+(`VistaTerminadas.tsx:176`), con pruebas en `tests/interfaz/retrospectiva.test.tsx` y
+`tests/comandos/sprints-por-proyecto.test.ts:127-190`. Commits `2176c4f` y `6c21435`.
+Lo que falta decidir es **dónde queda registrada**: se le abre una ficha propia con
+retroactivo, se anexa a M7 —que es la etapa del sprint por proyecto—, o se declara
+entrega fuera de plan y solo se anota en bitácora. Mi recomendación, y es la barata:
+**anexarla a M7**, porque cerrar un sprint y escribir su retro son la misma pantalla.
 
 **D9 · Proyectos sin épicas («Infraestructura», «DGETI web») — CERRADA (2026-08-27). Ver N9.**
 Si son trabajo continuo, el modelo de 3 niveles no les queda.
@@ -368,12 +482,99 @@ firma.
 
 Sincronización con Jira en vivo · multiusuario, cuentas y red · burndown, velocidad, fecha
 estimada de término e índice de salud 0-100 · gráficas de cualquier tipo en v1 · merge
-automático ante cambio externo · undo/redo ilimitado o por operación inversa · Windows y Linux · estimaciones en
-puntos u horas · adjuntos y comentarios en las tareas.
+automático ante cambio externo · undo/redo ilimitado o por operación inversa · Windows y Linux ·
+adjuntos y comentarios en las tareas.
+
+**[SUPERADO — N18 y la regla 23 metieron la estimación]** de esta lista salió «estimaciones
+en puntos u horas» el 2026-08-28. Lo sustituye una versión acotada, que es la que rige:
+**`esfuerzo` en Fibonacci `1·2·3·5·8` o `null`, y `null` es lo normal** (bitácora del
+2026-08-27, `CLAUDE.md` regla 23). Lo que sigue fuera de alcance es lo que la lista
+protegía de verdad: **el pronóstico** —burndown, velocidad, fecha estimada de término,
+índice de salud— y las **horas**. Un punto describe lo que pasó; no promete una fecha.
 
 ---
 
 ## Bitácora
+
+<!-- Entradas nuevas arriba. Formato: **FECHA · etapa · qué pasó**, y el cuerpo debajo. -->
+
+**2026-08-28 · Reconciliación de los dos planes con el código. Ninguna línea de `src/` tocada.**
+
+Los dos planes se habían quedado atrás respecto al repositorio, y no por poco: **once etapas
+E y cuatro etapas M estaban construidas con la casilla sin mover.** El tablero había dejado
+de decir el estado, que es lo único para lo que existe.
+
+**Lo que se corrigió, y era sincronización de hechos, no decisión de producto:**
+
+- **E5 a E11 pasan a `✅`**, cada una con la evidencia que la sostiene en la tabla de
+  Resumen. La bitácora de este mismo archivo ya las describía hechas mientras la tabla las
+  daba pendientes.
+- **E12 dependía de E8–E11 y estaba `✅` con las cuatro en `⬜`.** La contradicción era de la
+  casilla; al marcar E8–E11 desaparece sola.
+- **Las dos secciones «## Bitácora» son una.** Había entradas del mismo día repartidas entre
+  las dos y un marcador de formato en mitad del archivo, seguido de «Ninguna etapa
+  iniciada», que llevaba semanas siendo falso. Esa línea se fue.
+- **`docs/PLAN-MEJORA.md` recibe estado y evidencia por etapa.** No tenía ninguno: quince
+  etapas sin una casilla.
+- **N11–N18 vuelven a significar lo mismo en los dos documentos.** `PLAN-MEJORA.md` conservaba
+  la numeración vieja —su N12 era el N17 de aquí y su N13 el N12—, y M11 citaba «criterios de
+  aceptación (N17)» apuntando al número equivocado. Manda la de este archivo. «Un bug es
+  TRABAJO» no tenía número allí y ahora es N13 en los dos.
+- **Texto superado, marcado y no borrado**, con una marca única declarada en la cabecera:
+  D1 («única confirmación», enmendada por N16), el reloj anclado al sprint (enmendado por
+  N14), y el párrafo que declaraba pendiente cerrar/eliminar proyecto cuando otra entrada
+  del mismo día lo daba hecho.
+- **Una sola cifra para el `.app`: 298 MB**, la medida sobre `empaquetado/mac-arm64/PM-care.app`.
+  Este archivo decía 298 y 299 para la misma verificación.
+- **«Vista transversal» queda definida una vez y son SIETE**, verificable en
+  `src/renderer/vistas/globales/registro.ts:38-80`. El archivo llegó a decir cuatro, siete y
+  ocho para tres cosas distintas; «las cuatro» eran secciones del archivo de oro, no vistas.
+- **«Estimaciones en puntos u horas» sale de Fuera de alcance.** La contradecía el propio
+  archivo: el esfuerzo Fibonacci se implementó y la regla 23 lo norma. Lo que sigue fuera es
+  el pronóstico y las horas.
+- **E13 deja de estar bloqueada por M2**, porque M2 cerró.
+
+**El hallazgo de código que lo motivó, y es el que importa:**
+
+**El enum de seis estados entró en el modelo y el dominio sigue contando cuatro.** M2
+puso `en_pruebas` y `terminado` en `EsquemaEstadoTarea` (`esquema.ts:66-72`) y
+`cambiarEstado` los acepta (`tipos.ts:417`). Pero `contarTareas` tiene un `switch` de cuatro
+casos sin `default` (`derivar.ts:98-111`) y `hojas = hechas + enCurso + pendientes`
+(`derivar.ts:114`): **una tarea en `en_pruebas` o en `terminado` se cae del denominador sin
+fallar y sin avisar.** Corrido contra el dominio real, cuatro tareas —una `done`, una
+`pendiente`, una `en_pruebas`, una `terminado`— devuelven `hojas: 2` y **`pct: 50`**. El
+número honesto sería 1 de 4. Es la misma mentira que el `0%` que la regla 2 existe para
+matar, y ahora es alcanzable porque el modelo ya admite esos estados.
+Lo mismo en `estaAbierta` (`clasificar.ts:61-63`), que devuelve `false` para los dos —así
+que desaparecen del backlog y de la carga— y en `ORDEN_ESTADO` (`backlog.ts:54`), que
+todavía lista cuatro. **Es exactamente el alcance de M4, y M4 no ha empezado.** Mientras no
+cierre, no conviene mover ninguna tarea a `en_pruebas` ni a `terminado`.
+
+**Segundo hallazgo, el del reloj:** el campo `tarea.trabajo[]` existe, se valida
+(`esquema.ts:239-245`), se calcula (`duracion.ts`) y se pinta, pero **ningún comando lo
+escribe**. Las dos únicas escrituras del campo en todo `src/` lo inicializan a `[]`
+(`reductor.ts:831` y `migraciones/index.ts:104`), y `cambiarEstado` (`reductor.ts:946-972`)
+solo toca `estado` y `aceptada_en`: no abre ni cierra un tramo con ningún estado. La
+consecuencia es que Tiempos dice «Sin tramos cerrados» a perpetuidad, comprobado también
+sobre el documento real del usuario y sobre `datos/ejemplo.json` y `datos/semilla.json`.
+La migración dejó el campo esperando a un productor que no llegó. Es el alcance de M5.
+
+**Entregas que ningún plan registra.** La **retrospectiva del sprint** está construida de
+punta a punta —comando, invariante de la regla 8, pantalla de cierre, lectura en Terminadas
+y pruebas— en los commits `2176c4f` y `6c21435`, y no aparece en ninguna etapa E0–E13 ni
+M0–M12. Se anota aquí como entregada; dónde queda registrada es la decisión G2.
+
+**Lo que quedó abierto y es del usuario, no mío:** G1 (la ceremonia de once cierres, que
+bloquea M7), G2 (dónde se registra la retrospectiva), y las cinco decisiones vencidas
+D3–D7, todas con su etapa límite cerrada sin respuesta escrita. Están en «Decisiones
+pendientes».
+
+**Nota de higiene:** al momento de escribir esto el árbol de trabajo tiene 15 archivos
+modificados y 3 sin seguimiento —entre ellos `HojaDetalle.tsx`, nuevo— sin commitear. Hay
+trabajo entregado que no está ni en un commit ni en un plan. `VistaSprintGlobal.tsx`
+ofrecía «Activar {sprint}» de cualquier proyecto justo bajo el texto que dice que cada
+proyecto abre el suyo; otro agente lo corrigió el mismo día y no se tocó desde aquí.
+
 
 **2026-08-27 · N11 a N18 · las decisiones de la ronda de mejora.**
 
@@ -478,6 +679,12 @@ capturar los 11 proyectos todavía**: hoy la migración es casi gratis y encarec
 
 981 → 994 pruebas. La app corre con la semilla sin un solo error en el log.
 
+**[SUPERADO — la entrada de más arriba, del mismo 2026-08-27, lo cerró]** lo que este
+párrafo declara pendiente ya se hizo: cerrar y eliminar se piden desde el `⋯` de la lista
+lateral, con la ceremonia en `DialogoProyecto` y 12 pruebas sobre la ruta destructiva. Se
+conserva porque explica **por qué se partió en dos** y por qué la mitad cara se dejó para
+después; leerlo como estado vigente es lo que hacía que el documento se contradijera solo.
+
 **Lo que queda del 3.4, y por qué no se hizo:** el `＋` de dar de alta un proyecto sí está,
 en la cabecera del grupo Proyectos. **Mover cerrar y eliminar al `⋯` de la fila lateral no
 se hizo:** su flujo de confirmación —el que exige escribir la clave a mano— vive dentro de
@@ -511,6 +718,15 @@ captura en la fila (N5), y el ícono propio, que el usuario bajó al último lug
 
 **2026-08-27 · Esfuerzo por tarea y tiempo de resolución.**
 
+**[SUPERADO EN SU MITAD DEL RELOJ — N14 reescribió la regla 21]** el modelo que describe
+esta entrada —el reloj anclado a `sprint.inicio`, `comprometida_en` como ancla, el tope por
+día de calendario— **está abandonado**. Lo sustituyen los TRAMOS de trabajo
+(`tarea.trabajo[]`), que corren y se pausan con el estado y no dependen del sprint: la
+versión vigente de la regla 21 es la de `CLAUDE.md`, y su justificación larga está en
+`docs/PLAN-MEJORA.md` («La regla 21 se reescribe»). La mitad del **esfuerzo** —Fibonacci
+`1·2·3·5·8`— sigue vigente entera. Se conserva el texto porque los tres defectos que
+describe son la razón por la que el ancla del sprint se abandonó.
+
 Dos decisiones del usuario, implementadas tal cual: **esfuerzo en Fibonacci `1·2·3·5·8`** y
 **el reloj corre desde que arranca el sprint hasta que él marca la tarea completada.**
 
@@ -522,7 +738,8 @@ Dos decisiones del usuario, implementadas tal cual: **esfuerzo en Fibonacci `1·
 - `compartido/dominio/duracion.ts`, puro: resolución por tarea, promedios por persona,
   equipo y proyecto, suma de esfuerzo y días por punto. 33 pruebas, 5 de ellas invariantes
   sobre los 300 árboles generados.
-- **Vista global «Tiempos»**, la octava. Sin semáforos, sin pista de fondo en la barra y sin
+- **Vista global «Tiempos»**, la **séptima** —ver la definición de «vista transversal» en la
+  cabecera; `registro.ts` tiene siete entradas—. Sin semáforos, sin pista de fondo en la barra y sin
   una sola proyección: no existe un «bien» ni un «mal» de días por tarea, y un promedio
   describe lo que pasó — convertirlo en pronóstico sería el índice de salud 0-100 que está
   fuera de alcance desde el primer día.
@@ -643,8 +860,11 @@ significado importar dos veces, la segunda con migración de datos vivos encima.
   emitir ese número.
 - **Que no rompe nada está medido, no afirmado.** `tests/modelo/oro-documento-real.test.ts`
   congeló ANTES del cambio la salida completa del dominio sobre `datos/ejemplo.json` —1037
-  líneas: avance y estado de cada nodo, la ruta de cada tarea, las cuatro vistas
-  transversales y la carga por persona— y sigue pasando idéntica.
+  líneas: avance y estado de cada nodo, la ruta de cada tarea, **cuatro secciones de vistas
+  transversales** y la carga por persona— y sigue pasando idéntica. *(«Cuatro» aquí cuenta
+  secciones del archivo de oro, no vistas: las vistas transversales son siete. Se aclara el
+  2026-08-28 porque este archivo llegó a decir cuatro, siete y ocho para tres cosas
+  distintas.)*
 - El generador de árboles aleatorios ahora produce las tres formas, así que las 300
   semillas de las invariantes ejercitan N9 de verdad. 895 → 901 pruebas.
 - **Lo que queda fuera y hay que decir en voz alta:** el árbol del renderer todavía no
@@ -653,17 +873,9 @@ significado importar dos veces, la segunda con migración de datos vivos encima.
   **si se importara Infraestructura hoy, la vista de proyecto se vería vacía.** Va con el
   `＋` de la fila (N2 · punto 1.4), después de las pruebas de renderer (N3).
 
-<!-- Una línea por cambio de estado. Entradas nuevas arriba. Formato: FECHA · etapa · qué pasó -->
-
-- 2026-08-26 · Plan creado. Ninguna etapa iniciada.
-
----
-
-## Bitácora
-
 **2026-08-27 · E12 empaquetado, verificada sobre el `.app` y no sobre el build.**
 
-- El `.app` pesa **299 MB** y abre por doble clic desde una sesión limpia; carga
+- El `.app` pesa **298 MB** y abre por doble clic desde una sesión limpia; carga
   `datos/ejemplo.json` copiado a un directorio temporal, pinta el árbol y un cambio
   hecho dentro **sobrevive a cerrar y reabrir** (documento, `historial.jsonl` y dos
   respaldos en disco).
@@ -720,3 +932,5 @@ documento de reglas se propaga a todos a la vez: revisarlo con más cuidado que 
 
 **Siguiente:** E5 (puente IPC ya escrito y conectado; falta la interfaz que lo consuma)
 y E6, el hito donde el árbol y el sprint se ven con datos reales.
+**[SUPERADO — las dos cerraron]** esta línea es de 2026-08-26 y es la que da la evidencia
+de que E5 ya estaba escrita entonces. E5 y E6 quedaron marcadas `✅` el 2026-08-28.

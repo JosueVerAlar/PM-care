@@ -5,7 +5,7 @@
  * `compartido/dominio/` y esta capa solo le pone etiqueta en español.
  *
  * Las etiquetas están fijadas por CLAUDE.md y no se improvisan:
- *   estado de tarea      Pendiente · En curso · Hecha · Cancelada
+ *   estado de tarea      Pendiente · Iniciado · En pruebas · Terminado · Done · Cancelada
  *   estado derivado      Sin desglosar · Pendiente · En movimiento · Hecha
  *   bandera (no estado)  Bloqueada
  */
@@ -14,11 +14,22 @@ import type { EstadoDerivado } from '../../compartido/dominio/derivar';
 import type { EstadoTarea, Fecha, Instante, TipoBloqueo } from '../../compartido/modelo/tipos';
 import type { FormaEstado } from '../componentes/iconos';
 
+/**
+ * Estado de tarea → silueta. **Inyectiva: seis estados, seis formas.**
+ *
+ * Hasta MB los tres del medio —`iniciado`, `en_pruebas`, `terminado`— apuntaban los tres a
+ * `'curso'`: el dominio los distinguía y la pantalla no, así que la única forma de saber si
+ * algo estaba empezado o entregado era abrir el detalle. Los cinco pasos del pipeline son
+ * ahora los cinco niveles del anillo (vacío, ¼, ½, ¾, lleno), en orden.
+ *
+ * `tests/estilos/tokens.test.ts` vigila la inyectividad: dos estados con la misma forma
+ * ponen la suite en rojo. Es el defecto exacto que MB vino a cerrar y no se repara dos veces.
+ */
 const FORMA_TAREA: Record<EstadoTarea, FormaEstado> = {
   pendiente: 'pendiente',
-  iniciado: 'curso',
+  iniciado: 'iniciado',
   en_pruebas: 'curso',
-  terminado: 'curso',
+  terminado: 'terminado',
   done: 'hecha',
   cancelada: 'cancelada',
 };
@@ -36,6 +47,10 @@ const ETIQUETA_TAREA: Record<EstadoTarea, string> = {
  * Un contenedor reusa las formas de la tarea pero con otros nombres: la misma silueta de
  * «en curso» significa «en movimiento» cuando la lleva una épica. No hay una quinta
  * forma para contenedores porque no hay un quinto estado.
+ *
+ * Y **no usa los cuadrantes**: ¼ y ¾ dicen en qué paso del pipeline va una tarea, y una
+ * épica no tiene pipeline. Su avance se dice con el conteo crudo al lado («6/6 · 1 sin
+ * desglosar», regla 3), que es más honesto que un cuarto de anillo derivado de un promedio.
  */
 const FORMA_DERIVADA: Record<EstadoDerivado, FormaEstado> = {
   sin_desglosar: 'sindesglosar',

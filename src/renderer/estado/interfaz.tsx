@@ -106,6 +106,22 @@ export type Redaccion =
   | { tipo: 'capturaSprint' };
 
 /**
+ * Qué nodo tiene abierta su hoja de detalle, y de qué clase es.
+ *
+ * Se guarda la CLASE junto al id porque los tres niveles se pintan distinto y buscar «a
+ * ver de cuál de las tres listas es este id» en cada render recorrería el proyecto entero
+ * tres veces. Es el mismo criterio que `Redaccion`, que también lleva su `clase`.
+ *
+ * Vive aquí y no en `VistaProyecto` porque lo comparten los dos paneles hermanos: la hoja
+ * se abre desde el árbol y se pinta encima del sprint. Y no se persiste: qué estabas
+ * mirando anoche no es un hecho del proyecto.
+ */
+export interface Detalle {
+  id: string;
+  clase: ClaseNodo;
+}
+
+/**
  * Un arrastre en curso. Se guarda además del `dataTransfer` del navegador porque el
  * payload de `dataTransfer` **no se puede leer durante `dragover`** (solo en `drop`), y
  * sin saber qué se arrastra no se puede decidir si una zona se ilumina o no.
@@ -129,8 +145,6 @@ export interface EstadoInterfaz {
   /** Ids de épica e historia abiertos. Colapsado por omisión: solo se ven las épicas. */
   expandidos: ReadonlySet<string>;
   pestana: PestanaArbol;
-  /** Conmutador del panel derecho: «Solo este proyecto» contra «Todo el sprint». */
-  soloEsteProyecto: boolean;
   lateralColapsada: boolean;
 
   // --- E12 · Sprint global ---------------------------------------------
@@ -169,6 +183,8 @@ export interface EstadoInterfaz {
    */
   siguienteArbol: number;
   redaccion: Redaccion | null;
+  /** La hoja de detalle abierta. `null` = ninguna; es lo normal. */
+  detalle: Detalle | null;
   arrastre: Arrastre | null;
   confirmacion: Confirmacion | null;
   /** Último fallo de un comando. Se avisa y se puede reintentar; nunca se revierte nada. */
@@ -222,12 +238,12 @@ type AccionInterfaz =
   | { tipo: 'expandir'; ids: readonly string[] }
   | { tipo: 'colapsarTodo' }
   | { tipo: 'pestana'; pestana: PestanaArbol }
-  | { tipo: 'alcanceSprint'; soloEsteProyecto: boolean }
   | { tipo: 'alternarLateral' }
   | { tipo: 'enfocarNodo'; id: string }
   | { tipo: 'irANodo'; id: string }
   | { tipo: 'irASiguiente' }
   | { tipo: 'redactar'; redaccion: Redaccion | null }
+  | { tipo: 'verDetalle'; detalle: Detalle | null }
   | { tipo: 'arrastrar'; arrastre: Arrastre | null }
   | { tipo: 'confirmar'; confirmacion: Confirmacion | null }
   | { tipo: 'avisar'; aviso: string | null }
@@ -240,7 +256,6 @@ const INICIAL: EstadoInterfaz = {
   vista: null,
   expandidos: new Set(),
   pestana: 'backlog',
-  soloEsteProyecto: true,
   lateralColapsada: false,
   soloMio: true,
   yo: null,
@@ -248,6 +263,7 @@ const INICIAL: EstadoInterfaz = {
   focoArbol: 0,
   siguienteArbol: 0,
   redaccion: null,
+  detalle: null,
   arrastre: null,
   confirmacion: null,
   aviso: null,
@@ -272,6 +288,7 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
         pestana: 'backlog',
         nodoActivo: null,
         redaccion: null,
+        detalle: null,
         arrastre: null,
       };
     }
@@ -298,12 +315,19 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
         // teclado tiene que aterrizar en la fila, no en el principio del árbol.
         focoArbol: estado.focoArbol + 1,
         redaccion: null,
+        detalle: null,
         arrastre: null,
       };
 
     case 'verGlobal':
       if (estado.vista?.tipo === 'global' && estado.vista.id === accion.id) return estado;
-      return { ...estado, vista: { tipo: 'global', id: accion.id }, redaccion: null, arrastre: null };
+      return {
+        ...estado,
+        vista: { tipo: 'global', id: accion.id },
+        redaccion: null,
+        detalle: null,
+        arrastre: null,
+      };
 
     case 'verAdmin':
       if (estado.vista?.tipo === 'admin' && estado.vista.seccion === accion.seccion) return estado;
@@ -313,6 +337,7 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
         ...estado,
         vista: { tipo: 'admin', seccion: accion.seccion },
         redaccion: null,
+        detalle: null,
         arrastre: null,
       };
 
@@ -332,6 +357,7 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
         ...estado,
         vista: { tipo: 'cierre', sprintId: accion.sprintId, regreso },
         redaccion: null,
+        detalle: null,
         arrastre: null,
       };
     }
@@ -354,11 +380,7 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
       // cambiar evita un formulario colgado sobre una fila que ya no se pinta.
       return estado.pestana === accion.pestana
         ? estado
-        : { ...estado, pestana: accion.pestana, redaccion: null, arrastre: null };
-    case 'alcanceSprint':
-      return estado.soloEsteProyecto === accion.soloEsteProyecto
-        ? estado
-        : { ...estado, soloEsteProyecto: accion.soloEsteProyecto };
+        : { ...estado, pestana: accion.pestana, redaccion: null, detalle: null, arrastre: null };
     case 'alternarLateral':
       return { ...estado, lateralColapsada: !estado.lateralColapsada };
 
@@ -373,8 +395,17 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
 
     case 'redactar':
       return { ...estado, redaccion: accion.redaccion };
+    case 'verDetalle':
+      return { ...estado, detalle: accion.detalle };
     case 'arrastrar':
-      return { ...estado, arrastre: accion.arrastre };
+      // Empezar a arrastrar CIERRA la hoja: se pinta encima del panel del sprint, que es
+      // la zona donde hay que soltar. Una hoja abierta durante el arrastre taparía
+      // justamente el destino del gesto.
+      return {
+        ...estado,
+        arrastre: accion.arrastre,
+        detalle: accion.arrastre === null ? estado.detalle : null,
+      };
     case 'confirmar':
       return { ...estado, confirmacion: accion.confirmacion };
     case 'avisar':
@@ -411,7 +442,6 @@ export interface AccionesInterfaz {
   expandir(ids: readonly string[]): void;
   colapsarTodo(): void;
   cambiarPestana(pestana: PestanaArbol): void;
-  cambiarAlcanceSprint(soloEsteProyecto: boolean): void;
   alternarLateral(): void;
   /** El DOM ya movió el foco aquí. Solo se anota. */
   enfocarNodo(id: string): void;
@@ -420,6 +450,8 @@ export interface AccionesInterfaz {
   /** Pide al árbol que baje una fila desde la activa. */
   irASiguiente(): void;
   redactar(redaccion: Redaccion | null): void;
+  /** Abre la hoja de detalle de un nodo del árbol. `null` la cierra. */
+  verDetalle(detalle: Detalle | null): void;
   arrastrar(arrastre: Arrastre | null): void;
   confirmar(confirmacion: Confirmacion | null): void;
   avisar(aviso: string | null): void;
@@ -451,13 +483,12 @@ export function ProveedorInterfaz({ children }: { children: ReactNode }) {
       expandir: (ids) => despachar({ tipo: 'expandir', ids }),
       colapsarTodo: () => despachar({ tipo: 'colapsarTodo' }),
       cambiarPestana: (pestana) => despachar({ tipo: 'pestana', pestana }),
-      cambiarAlcanceSprint: (soloEsteProyecto) =>
-        despachar({ tipo: 'alcanceSprint', soloEsteProyecto }),
       alternarLateral: () => despachar({ tipo: 'alternarLateral' }),
       enfocarNodo: (id) => despachar({ tipo: 'enfocarNodo', id }),
       irANodo: (id) => despachar({ tipo: 'irANodo', id }),
       irASiguiente: () => despachar({ tipo: 'irASiguiente' }),
       redactar: (redaccion) => despachar({ tipo: 'redactar', redaccion }),
+      verDetalle: (detalle) => despachar({ tipo: 'verDetalle', detalle }),
       arrastrar: (arrastre) => despachar({ tipo: 'arrastrar', arrastre }),
       confirmar: (confirmacion) => despachar({ tipo: 'confirmar', confirmacion }),
       avisar: (aviso) => despachar({ tipo: 'avisar', aviso }),

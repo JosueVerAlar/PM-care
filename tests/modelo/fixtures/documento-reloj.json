@@ -1,0 +1,723 @@
+{
+  "esquema_version": 2,
+  "usuario": "ana-lopez",
+  "personas": [
+    {
+      "id": "ana-lopez",
+      "nombre": "Ana López",
+      "activa": true,
+      "clave_externa": null
+    },
+    {
+      "id": "beto-ruiz",
+      "nombre": "Beto Ruiz",
+      "activa": true,
+      "clave_externa": null
+    },
+    {
+      "id": "caro-diaz",
+      "nombre": "Caro Díaz",
+      "activa": true,
+      "clave_externa": null
+    }
+  ],
+  "proyectos": [
+    {
+      "clave": "RELOJ",
+      "nombre": "Reloj de tramos",
+      "descripcion": "Documento sintético: existe para ejercitar lo que datos/ejemplo.json no tiene.",
+      "prioridad": "alta",
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 2,
+        "historias": 2,
+        "tareas": 15,
+        "sprints": 3
+      },
+      "equipos": [
+        {
+          "id": "reloj-nucleo",
+          "nombre": "Núcleo",
+          "miembros": [
+            {
+              "persona_id": "ana-lopez",
+              "responsabilidades": [
+                "desarrollo"
+              ],
+              "capacidad": null
+            },
+            {
+              "persona_id": "beto-ruiz",
+              "responsabilidades": [],
+              "capacidad": null
+            }
+          ]
+        }
+      ],
+      "epicas": [
+        {
+          "id": "RELOJ-E1",
+          "titulo": "Reloj de tramos",
+          "descripcion": null,
+          "planeada": true,
+          "clave_externa": null,
+          "historias": [
+            {
+              "id": "RELOJ-H1",
+              "titulo": "Medidas que salen de los tramos",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "RELOJ-T1",
+                  "titulo": "Un solo tramo cerrado",
+                  "descripcion": null,
+                  "estado": "done",
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "planeada": true,
+                  "responsable": "ana-lopez",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "esfuerzo": 3,
+                  "creada_en": null,
+                  "comprometida_en": null,
+                  "aceptada_en": "2026-08-05T09:00-06:00",
+                  "trabajo": [
+                    {
+                      "desde": "2026-08-03T09:00-06:00",
+                      "hasta": "2026-08-05T09:00-06:00",
+                      "estado": "iniciado"
+                    }
+                  ],
+                  "bloqueos": [],
+                  "clave_externa": null
+                },
+                {
+                  "id": "RELOJ-T2",
+                  "titulo": "Desarrollo y pruebas en dos tramos",
+                  "descripcion": null,
+                  "estado": "done",
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "planeada": true,
+                  "responsable": "beto-ruiz",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "esfuerzo": 5,
+                  "creada_en": null,
+                  "comprometida_en": null,
+                  "aceptada_en": "2026-08-11T09:00-06:00",
+                  "trabajo": [
+                    {
+                      "desde": "2026-08-03T09:00-06:00",
+                      "hasta": "2026-08-06T09:00-06:00",
+                      "estado": "iniciado"
+                    },
+                    {
+                      "desde": "2026-08-10T09:00-06:00",
+                      "hasta": "2026-08-11T09:00-06:00",
+                      "estado": "en_pruebas"
+                    }
+                  ],
+                  "bloqueos": [],
+                  "clave_externa": null
+                },
+                {
+                  "id": "RELOJ-T3",
+                  "titulo": "Retomada dos veces y arrastrada entre sprints",
+                  "descripcion": null,
+                  "estado": "done",
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "planeada": true,
+                  "responsable": "ana-lopez",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "esfuerzo": 2,
+                  "creada_en": null,
+                  "comprometida_en": null,
+                  "aceptada_en": "2026-08-13T08:00-06:00",
+                  "trabajo": [
+                    {
+                      "desde": "2026-08-04T08:00-06:00",
+                      "hasta": "2026-08-04T16:00-06:00",
+                      "estado": "iniciado"
+                    },
+                    {
+                      "desde": "2026-08-07T08:00-06:00",
+                      "hasta": "2026-08-07T12:00-06:00",
+                      "estado": "en_pruebas"
+                    },
+                    {
+                      "desde": "2026-08-12T08:00-06:00",
+                      "hasta": "2026-08-13T08:00-06:00",
+                      "estado": "iniciado"
+                    }
+                  ],
+                  "bloqueos": [],
+                  "clave_externa": null
+                },
+                {
+                  "id": "RELOJ-T4",
+                  "titulo": "Dos medias jornadas: la suma se redondea UNA vez",
+                  "descripcion": null,
+                  "estado": "done",
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "planeada": true,
+                  "responsable": "ana-lopez",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "esfuerzo": 1,
+                  "creada_en": null,
+                  "comprometida_en": null,
+                  "aceptada_en": "2026-08-06T13:00-06:00",
+                  "trabajo": [
+                    {
+                      "desde": "2026-08-05T09:00-06:00",
+                      "hasta": "2026-08-05T13:00-06:00",
+                      "estado": "iniciado"
+                    },
+                    {
+                      "desde": "2026-08-06T09:00-06:00",
+                      "hasta": "2026-08-06T13:00-06:00",
+                      "estado": "iniciado"
+                    }
+                  ],
+                  "bloqueos": [],
+                  "clave_externa": null
+                },
+                {
+                  "id": "RELOJ-T5",
+                  "titulo": "El desglose difiere del total en una décima",
+                  "descripcion": null,
+                  "estado": "done",
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "planeada": true,
+                  "responsable": "ana-lopez",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "esfuerzo": 3,
+                  "creada_en": null,
+                  "comprometida_en": null,
+                  "aceptada_en": "2026-08-08T15:00-06:00",
+                  "trabajo": [
+                    {
+                      "desde": "2026-08-07T09:00-06:00",
+                      "hasta": "2026-08-07T15:00-06:00",
+                      "estado": "iniciado"
+                    },
+                    {
+                      "desde": "2026-08-08T09:00-06:00",
+                      "hasta": "2026-08-08T15:00-06:00",
+                      "estado": "en_pruebas"
+                    }
+                  ],
+                  "bloqueos": [],
+                  "clave_externa": null
+                },
+                {
+                  "id": "RELOJ-T6",
+                  "titulo": "Aceptada sin un solo tramo que medir",
+                  "descripcion": null,
+                  "estado": "done",
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "planeada": true,
+                  "responsable": "ana-lopez",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "esfuerzo": null,
+                  "creada_en": null,
+                  "comprometida_en": null,
+                  "aceptada_en": "2026-08-14T09:00-06:00",
+                  "trabajo": [],
+                  "bloqueos": [],
+                  "clave_externa": null
+                }
+              ]
+            },
+            {
+              "id": "RELOJ-H2",
+              "titulo": "Lo que sigue en marcha",
+              "descripcion": null,
+              "planeada": true,
+              "clave_externa": null,
+              "tareas": [
+                {
+                  "id": "RELOJ-T11",
+                  "titulo": "En pruebas, con el reloj corriendo",
+                  "descripcion": null,
+                  "estado": "en_pruebas",
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "planeada": true,
+                  "responsable": "beto-ruiz",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "esfuerzo": null,
+                  "creada_en": null,
+                  "comprometida_en": null,
+                  "aceptada_en": null,
+                  "trabajo": [
+                    {
+                      "desde": "2026-08-22T09:00-06:00",
+                      "hasta": "2026-08-24T09:00-06:00",
+                      "estado": "iniciado"
+                    },
+                    {
+                      "desde": "2026-08-24T09:00-06:00",
+                      "hasta": null,
+                      "estado": "en_pruebas"
+                    }
+                  ],
+                  "bloqueos": [],
+                  "clave_externa": null
+                },
+                {
+                  "id": "RELOJ-T13",
+                  "titulo": "Aceptada con un tramo que nadie cerró",
+                  "descripcion": null,
+                  "estado": "done",
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "planeada": true,
+                  "responsable": "beto-ruiz",
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "esfuerzo": 5,
+                  "creada_en": null,
+                  "comprometida_en": null,
+                  "aceptada_en": "2026-08-16T09:00-06:00",
+                  "trabajo": [
+                    {
+                      "desde": "2026-08-15T09:00-06:00",
+                      "hasta": "2026-08-16T09:00-06:00",
+                      "estado": "iniciado"
+                    },
+                    {
+                      "desde": "2026-08-26T09:00-06:00",
+                      "hasta": null,
+                      "estado": "iniciado"
+                    }
+                  ],
+                  "bloqueos": [],
+                  "clave_externa": null
+                },
+                {
+                  "id": "RELOJ-T14",
+                  "titulo": "Cancelada: fuera de todo denominador",
+                  "descripcion": null,
+                  "estado": "cancelada",
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "planeada": true,
+                  "responsable": null,
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "esfuerzo": null,
+                  "creada_en": null,
+                  "comprometida_en": null,
+                  "aceptada_en": null,
+                  "trabajo": [],
+                  "bloqueos": [],
+                  "clave_externa": null
+                },
+                {
+                  "id": "RELOJ-T15",
+                  "titulo": "Pendiente",
+                  "descripcion": null,
+                  "estado": "pendiente",
+                  "tipo": "trabajo",
+                  "equipo_id": null,
+                  "criterios": null,
+                  "planeada": true,
+                  "responsable": null,
+                  "fecha_limite": null,
+                  "prioridad": null,
+                  "esfuerzo": null,
+                  "creada_en": null,
+                  "comprometida_en": null,
+                  "aceptada_en": null,
+                  "trabajo": [],
+                  "bloqueos": [],
+                  "clave_externa": null
+                }
+              ]
+            }
+          ],
+          "tareas": [
+            {
+              "id": "RELOJ-T7",
+              "titulo": "Cerrada fuera de todo sprint",
+              "descripcion": null,
+              "estado": "done",
+              "tipo": "trabajo",
+              "equipo_id": null,
+              "criterios": null,
+              "planeada": true,
+              "responsable": "ana-lopez",
+              "fecha_limite": null,
+              "prioridad": null,
+              "esfuerzo": 2,
+              "creada_en": null,
+              "comprometida_en": null,
+              "aceptada_en": "2026-08-17T09:00-06:00",
+              "trabajo": [
+                {
+                  "desde": "2026-08-14T09:00-06:00",
+                  "hasta": "2026-08-17T09:00-06:00",
+                  "estado": "iniciado"
+                }
+              ],
+              "bloqueos": [],
+              "clave_externa": null
+            },
+            {
+              "id": "RELOJ-T8",
+              "titulo": "Tramos en desorden dentro del arreglo",
+              "descripcion": null,
+              "estado": "done",
+              "tipo": "trabajo",
+              "equipo_id": null,
+              "criterios": null,
+              "planeada": true,
+              "responsable": "beto-ruiz",
+              "fecha_limite": null,
+              "prioridad": null,
+              "esfuerzo": null,
+              "creada_en": null,
+              "comprometida_en": null,
+              "aceptada_en": "2026-08-21T09:00-06:00",
+              "trabajo": [
+                {
+                  "desde": "2026-08-20T09:00-06:00",
+                  "hasta": "2026-08-21T09:00-06:00",
+                  "estado": "iniciado"
+                },
+                {
+                  "desde": "2026-08-18T09:00-06:00",
+                  "hasta": "2026-08-19T09:00-06:00",
+                  "estado": "iniciado"
+                }
+              ],
+              "bloqueos": [],
+              "clave_externa": null
+            }
+          ]
+        },
+        {
+          "id": "RELOJ-E2",
+          "titulo": "Declarada y sin desglosar",
+          "descripcion": null,
+          "planeada": true,
+          "clave_externa": null,
+          "historias": [],
+          "tareas": []
+        }
+      ],
+      "tareas": [
+        {
+          "id": "RELOJ-T9",
+          "titulo": "Corriendo desde hace dos días",
+          "descripcion": null,
+          "estado": "iniciado",
+          "tipo": "trabajo",
+          "equipo_id": null,
+          "criterios": null,
+          "planeada": true,
+          "responsable": "ana-lopez",
+          "fecha_limite": null,
+          "prioridad": null,
+          "esfuerzo": null,
+          "creada_en": null,
+          "comprometida_en": null,
+          "aceptada_en": null,
+          "trabajo": [
+            {
+              "desde": "2026-08-25T09:00-06:00",
+              "hasta": null,
+              "estado": "iniciado"
+            }
+          ],
+          "bloqueos": [],
+          "clave_externa": null
+        },
+        {
+          "id": "RELOJ-T10",
+          "titulo": "Olvidada en iniciado por encima del umbral",
+          "descripcion": null,
+          "estado": "iniciado",
+          "tipo": "trabajo",
+          "equipo_id": null,
+          "criterios": null,
+          "planeada": true,
+          "responsable": "beto-ruiz",
+          "fecha_limite": null,
+          "prioridad": null,
+          "esfuerzo": null,
+          "creada_en": null,
+          "comprometida_en": null,
+          "aceptada_en": null,
+          "trabajo": [
+            {
+              "desde": "2026-08-10T09:00-06:00",
+              "hasta": null,
+              "estado": "iniciado"
+            }
+          ],
+          "bloqueos": [],
+          "clave_externa": null
+        },
+        {
+          "id": "RELOJ-T12",
+          "titulo": "Terminado: entregado, sin aceptar todavía",
+          "descripcion": null,
+          "estado": "terminado",
+          "tipo": "trabajo",
+          "equipo_id": null,
+          "criterios": null,
+          "planeada": true,
+          "responsable": "ana-lopez",
+          "fecha_limite": null,
+          "prioridad": null,
+          "esfuerzo": null,
+          "creada_en": null,
+          "comprometida_en": null,
+          "aceptada_en": null,
+          "trabajo": [
+            {
+              "desde": "2026-08-20T09:00-06:00",
+              "hasta": "2026-08-23T09:00-06:00",
+              "estado": "iniciado"
+            }
+          ],
+          "bloqueos": [],
+          "clave_externa": null
+        }
+      ],
+      "clave_externa": null
+    },
+    {
+      "clave": "POCO",
+      "nombre": "Dos medidas y nada más",
+      "descripcion": null,
+      "prioridad": null,
+      "archivado": false,
+      "cerrado_en": null,
+      "planeacion_cerrada_en": null,
+      "contadores": {
+        "epicas": 0,
+        "historias": 0,
+        "tareas": 3,
+        "sprints": 0
+      },
+      "equipos": [],
+      "epicas": [],
+      "tareas": [
+        {
+          "id": "POCO-T1",
+          "titulo": "Medible",
+          "descripcion": null,
+          "estado": "done",
+          "tipo": "trabajo",
+          "equipo_id": null,
+          "criterios": null,
+          "planeada": true,
+          "responsable": "caro-diaz",
+          "fecha_limite": null,
+          "prioridad": null,
+          "esfuerzo": null,
+          "creada_en": null,
+          "comprometida_en": null,
+          "aceptada_en": "2026-08-02T09:00-06:00",
+          "trabajo": [
+            {
+              "desde": "2026-08-01T09:00-06:00",
+              "hasta": "2026-08-02T09:00-06:00",
+              "estado": "iniciado"
+            }
+          ],
+          "bloqueos": [],
+          "clave_externa": null
+        },
+        {
+          "id": "POCO-T2",
+          "titulo": "Medible",
+          "descripcion": null,
+          "estado": "done",
+          "tipo": "trabajo",
+          "equipo_id": null,
+          "criterios": null,
+          "planeada": true,
+          "responsable": "caro-diaz",
+          "fecha_limite": null,
+          "prioridad": null,
+          "esfuerzo": null,
+          "creada_en": null,
+          "comprometida_en": null,
+          "aceptada_en": "2026-08-05T09:00-06:00",
+          "trabajo": [
+            {
+              "desde": "2026-08-03T09:00-06:00",
+              "hasta": "2026-08-05T09:00-06:00",
+              "estado": "iniciado"
+            }
+          ],
+          "bloqueos": [],
+          "clave_externa": null
+        },
+        {
+          "id": "POCO-T3",
+          "titulo": "Pendiente",
+          "descripcion": null,
+          "estado": "pendiente",
+          "tipo": "trabajo",
+          "equipo_id": null,
+          "criterios": null,
+          "planeada": true,
+          "responsable": null,
+          "fecha_limite": null,
+          "prioridad": null,
+          "esfuerzo": null,
+          "creada_en": null,
+          "comprometida_en": null,
+          "aceptada_en": null,
+          "trabajo": [],
+          "bloqueos": [],
+          "clave_externa": null
+        }
+      ],
+      "clave_externa": null
+    }
+  ],
+  "sprints": [
+    {
+      "id": "RELOJ-S1",
+      "nombre": "Sprint 1",
+      "inicio": "2026-08-03",
+      "fin": "2026-08-09",
+      "estado": "cerrado",
+      "clave": "RELOJ",
+      "retrospectiva": null,
+      "items": [
+        {
+          "tarea_id": "RELOJ-T1",
+          "responsable": null,
+          "fecha_limite": null,
+          "prioridad": null,
+          "comprometida_en": null,
+          "desenlace": "completada"
+        },
+        {
+          "tarea_id": "RELOJ-T2",
+          "responsable": "ana-lopez",
+          "fecha_limite": null,
+          "prioridad": null,
+          "comprometida_en": null,
+          "desenlace": "completada"
+        },
+        {
+          "tarea_id": "RELOJ-T3",
+          "responsable": null,
+          "fecha_limite": null,
+          "prioridad": null,
+          "comprometida_en": null,
+          "desenlace": "arrastrada"
+        }
+      ]
+    },
+    {
+      "id": "RELOJ-S2",
+      "nombre": "Sprint 2",
+      "inicio": "2026-08-10",
+      "fin": "2026-08-16",
+      "estado": "cerrado",
+      "clave": "RELOJ",
+      "retrospectiva": "Se midió por primera vez con tramos.",
+      "items": [
+        {
+          "tarea_id": "RELOJ-T3",
+          "responsable": null,
+          "fecha_limite": null,
+          "prioridad": null,
+          "comprometida_en": null,
+          "desenlace": "completada"
+        },
+        {
+          "tarea_id": "RELOJ-T4",
+          "responsable": null,
+          "fecha_limite": null,
+          "prioridad": null,
+          "comprometida_en": null,
+          "desenlace": "completada"
+        },
+        {
+          "tarea_id": "RELOJ-T6",
+          "responsable": "beto-ruiz",
+          "fecha_limite": null,
+          "prioridad": null,
+          "comprometida_en": null,
+          "desenlace": "completada"
+        }
+      ]
+    },
+    {
+      "id": "RELOJ-S3",
+      "nombre": "Sprint 3",
+      "inicio": "2026-08-24",
+      "fin": "2026-08-30",
+      "estado": "activo",
+      "clave": "RELOJ",
+      "retrospectiva": null,
+      "items": [
+        {
+          "tarea_id": "RELOJ-T9",
+          "responsable": null,
+          "fecha_limite": null,
+          "prioridad": null,
+          "comprometida_en": null,
+          "desenlace": null
+        },
+        {
+          "tarea_id": "RELOJ-T11",
+          "responsable": null,
+          "fecha_limite": null,
+          "prioridad": null,
+          "comprometida_en": null,
+          "desenlace": null
+        },
+        {
+          "tarea_id": "RELOJ-T12",
+          "responsable": null,
+          "fecha_limite": null,
+          "prioridad": null,
+          "comprometida_en": null,
+          "desenlace": null
+        },
+        {
+          "tarea_id": "RELOJ-T13",
+          "responsable": null,
+          "fecha_limite": null,
+          "prioridad": null,
+          "comprometida_en": null,
+          "desenlace": null
+        }
+      ]
+    }
+  ]
+}

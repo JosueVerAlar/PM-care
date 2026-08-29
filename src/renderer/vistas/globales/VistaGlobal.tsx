@@ -41,6 +41,8 @@ export function VistaGlobal({
     case 'carga':
       return <VistaCarga documento={documento} hoy={hoy} />;
     case 'tiempos':
-      return <VistaTiempos documento={documento} />;
+      // `hoy` porque un tramo abierto no tiene final: la única forma de decir desde hace
+      // cuánto corre es contra el día de quien mira, y ese día entra como dato.
+      return <VistaTiempos documento={documento} hoy={hoy} />;
   }
 }

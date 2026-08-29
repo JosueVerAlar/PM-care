@@ -5,12 +5,6 @@
  * son tres o cuatro líneas: título con su glifo de estado, la migaja de dónde vive la
  * tarea, el compromiso (quién y para cuándo) y, si aplica, la tira de bloqueo.
  *
- * El conmutador «Solo este proyecto / Todo el sprint» existe porque el sprint del
- * usuario cruza los 11 proyectos: mirando SICOE hace falta poder preguntar «¿y qué más
- * me comprometí esta quincena?» sin salir de la vista. Para la pregunta al revés —«¿qué
- * me toca a mí esta quincena, venga de donde venga?»— está la vista global del sprint,
- * que es la misma lista con otro filtro.
- *
  * Lo que se pinta sale entero de `dominio/sprint.ts`: la fila llega con el compromiso
  * efectivo, el nombre del responsable, los días de bloqueo, si venció y por cuántos
  * sprints ha pasado la tarea. Este archivo no cuenta nada por su cuenta, y la tarjeta es
@@ -31,11 +25,7 @@ import { useMemo, useRef, useState } from 'react';
 
 import { primerSprintPlaneado } from '../../../compartido/dominio/cierre';
 import { indexarTareas } from '../../../compartido/dominio/derivar';
-import {
-  filasDeProyecto,
-  filasDeSprint,
-  resumirSprint,
-} from '../../../compartido/dominio/sprint';
+import { filasDeSprint, resumirSprint } from '../../../compartido/dominio/sprint';
 import type { Documento, Fecha, Sprint } from '../../../compartido/modelo/tipos';
 import { Medidor } from '../../componentes/Medidor';
 import { TarjetaSprint } from '../../componentes/TarjetaSprint';
@@ -50,10 +40,8 @@ import { FormularioSprint } from './FormularioSprint';
 export interface PropsPanelSprint {
   documento: Documento;
   sprint: Sprint | undefined;
-  /** Clave del proyecto que se está mirando. Filtra cuando el conmutador está en «solo». */
+  /** Clave del proyecto que se está mirando. */
   clave: string;
-  soloEsteProyecto: boolean;
-  cambiarAlcance: (soloEsteProyecto: boolean) => void;
   hoy: Fecha;
   /** `false` en solo lectura: ni se suelta, ni se saca, ni se edita el compromiso. */
   editable: boolean;
@@ -69,8 +57,6 @@ export function PanelSprint({
   documento,
   sprint,
   clave,
-  soloEsteProyecto,
-  cambiarAlcance,
   hoy,
   editable,
   dosPaneles,
@@ -103,11 +89,7 @@ export function PanelSprint({
   const enEspera = ultimoCerrado?.items.filter((item) => item.desenlace === 'arrastrada').length ?? 0;
 
   const todas = useMemo(() => filasDeSprint(documento, sprint, hoy), [documento, sprint, hoy]);
-  const filas = useMemo(
-    () => (soloEsteProyecto ? filasDeProyecto(todas, clave) : todas),
-    [todas, clave, soloEsteProyecto],
-  );
-  const resumen = useMemo(() => resumirSprint(filas), [filas]);
+  const resumen = useMemo(() => resumirSprint(todas), [todas]);
 
   const indice = useMemo(() => indexarTareas(documento), [documento]);
 
@@ -181,14 +163,6 @@ export function PanelSprint({
             </div>}
           </div>
         )}
-        <div className="alternador" role="group" aria-label="Alcance del sprint">
-          <button type="button" aria-pressed={soloEsteProyecto} onClick={() => cambiarAlcance(true)}>
-            Solo {clave}
-          </button>
-          <button type="button" aria-pressed={!soloEsteProyecto} onClick={() => cambiarAlcance(false)}>
-            Todo el sprint
-          </button>
-        </div>
       </header>
 
       {formularioSprint !== null && (
@@ -227,15 +201,11 @@ export function PanelSprint({
             </button>
           )}
         </div>
-      ) : filas.length === 0 ? (
+      ) : todas.length === 0 ? (
         <div className="vacio">
-          <p className="vacio__titulo">
-            {soloEsteProyecto ? `Nada de ${clave} en este sprint` : 'El sprint está vacío'}
-          </p>
+          <p className="vacio__titulo">El sprint está vacío</p>
           <p className="vacio__nota">
-            {soloEsteProyecto
-              ? 'Arrastra una tarea del árbol hasta aquí, o enfócala y pulsa S. Cambia a «Todo el sprint» para ver lo comprometido en los demás proyectos.'
-              : 'Todavía no se comprometió ninguna tarea. Arrastra una del árbol, o enfócala y pulsa S.'}
+            Todavía no se comprometió ninguna tarea. Arrastra una del árbol, o enfócala y pulsa S.
           </p>
         </div>
       ) : (
@@ -250,7 +220,7 @@ export function PanelSprint({
           </div>
 
           <ul className="lista-sprint">
-            {filas.map((fila) => {
+            {todas.map((fila) => {
               const { tarea } = fila.ubicacion;
               const redactando =
                 dosPaneles && redaccion?.tipo === 'compromiso' && redaccion.tareaId === tarea.id;
@@ -258,7 +228,7 @@ export function PanelSprint({
                 <TarjetaSprint
                   key={fila.item.tarea_id}
                   fila={fila}
-                  mostrarProyecto={!soloEsteProyecto}
+                  mostrarProyecto={false}
                   arrastrando={arrastre?.tareaId === tarea.id}
                   acciones={
                     editable && sprint.estado !== 'cerrado'

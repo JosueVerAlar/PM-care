@@ -1,17 +1,55 @@
 /**
  * Glifos e iconos. Copiados de la maqueta de E0, no reinventados.
  *
- * **El estado vive en la FORMA, no en el color.** Cinco siluetas distinguibles a 14px y
- * en escala de grises: círculo hueco, medio relleno, relleno con paloma, con diagonal y
- * punteado. La paleta de E0 se validó también en deuteranopía, pero la forma es lo que
- * sostiene la lectura si el color falla.
+ * **El estado vive en la FORMA, no en el color.** Siete siluetas distinguibles a 14px y en
+ * escala de grises. La paleta de E0 se validó también en deuteranopía, pero la forma es lo
+ * que sostiene la lectura si el color falla.
+ *
+ * ## MB · por qué son siete y no cinco
+ *
+ * Hasta M4 el dominio tenía cuatro estados de tarea y aquí bastaban cinco siluetas. Con
+ * cinco estados de pipeline (`pendiente` · `iniciado` · `en_pruebas` · `terminado` ·
+ * `done`) más `cancelada` y `sindesglosar` hacen falta siete, y las tres del medio se
+ * pintaban con el MISMO círculo medio relleno: en pantalla eran indistinguibles.
+ *
+ * Los cinco pasos del pipeline son un **anillo de relleno progresivo** —vacío, ¼, ½, ¾,
+ * lleno—, un cuadrante por paso. En sextos no cabría: cada escalón sería la mitad de tinta
+ * y dos contiguos solo se separarían con las filas pegadas, que en un árbol no lo están.
+ * `cancelada` conserva su diagonal y `sindesglosar` su punteado: no son pasos del pipeline,
+ * son salirse de él y no haber entrado.
+ *
+ * **La geometría de las cinco formas que ya estaban no cambió ni un decimal.** Solo se
+ * añadieron los dos cuadrantes que faltaban, para no invalidar la medición de E0 ni mover
+ * el peso óptico de una columna que aparece en todas las pantallas.
+ *
+ * Medición en `maqueta/glifos.html`: los 21 pares en gris y en las tres dicromacias, con
+ * su ancla —el par de escalón más flojo tiene MÁS área discriminante que `o`/`c` y que
+ * `3`/`8` al tamaño del cuerpo de texto de esta app—.
+ *
+ * **Por eso `etiqueta` es obligatoria en `Glifo`**, y lo es en el tipo, no en una revisión:
+ * con siete formas la silueta ya no se explica sola y un glifo sin nombre no compila.
  *
  * `CuadroBloqueo` es el cuadrito que acompaña SIEMPRE a la palabra «Bloqueada» o a un
  * número: el rojo nunca viaja solo.
  */
 
-/** Clave de forma. No es el enum de estado: `curso` cubre «en curso» y «en movimiento». */
-export type FormaEstado = 'pendiente' | 'curso' | 'hecha' | 'cancelada' | 'sindesglosar';
+/**
+ * Clave de forma. **No es el enum de estado.** Se conservan los cinco nombres que ya
+ * existían para no renombrar en cascada las vistas que piden una forma por literal:
+ *
+ * - `curso` es el medio anillo, y cubre dos cosas de enums distintos: `en_pruebas` de una
+ *   tarea y `en_movimiento` de un contenedor. Un contenedor no tiene pipeline, así que no
+ *   pide los cuadrantes: «a media marcha» es todo lo que hay que decir de él.
+ * - `hecha` cubre `done` de una tarea y `hecha` de un contenedor.
+ */
+export type FormaEstado =
+  | 'pendiente'
+  | 'iniciado'
+  | 'curso'
+  | 'terminado'
+  | 'hecha'
+  | 'cancelada'
+  | 'sindesglosar';
 
 const COMUNES = { width: 14, height: 14, viewBox: '0 0 14 14', 'aria-hidden': true } as const;
 
@@ -23,11 +61,44 @@ function Pendiente() {
   );
 }
 
+/**
+ * ¼ · `iniciado`. El sector arranca a las 12 y avanza en el sentido del reloj, que es como
+ * se lee cualquier medidor circular; cada paso siguiente añade el cuadrante de al lado.
+ * El radio del relleno es el de la LÍNEA del anillo, no el de su filo: así el anillo sigue
+ * leyéndose como anillo en vez de convertirse en un pastel.
+ */
+function Iniciado() {
+  return (
+    <svg {...COMUNES} fill="none">
+      <circle cx="7" cy="7" r="4.4" stroke="currentColor" strokeWidth={1.4} />
+      <path d="M7 7 7 2.6A4.4 4.4 0 0 1 11.4 7Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** ½ · `en_pruebas` de una tarea, `en_movimiento` de un contenedor. Sin cambios desde E0. */
 function Curso() {
   return (
     <svg {...COMUNES} fill="none">
       <circle cx="7" cy="7" r="4.4" stroke="currentColor" strokeWidth={1.4} />
       <path d="M7 2.6a4.4 4.4 0 010 8.8z" fill="currentColor" />
+    </svg>
+  );
+}
+
+/**
+ * ¾ · `terminado` — «lo entregué», todavía sin aceptar. Es el paso que más se parece a
+ * `done` y por eso es el que más margen necesita: el cuadrante que le falta muerde el
+ * contorno, y `done` además es disco pleno con paloma. Medidos: 28.5 px² de área
+ * discriminante, más del triple que el par `o`/`c` del cuerpo de texto.
+ *
+ * Bandera de arco grande en 1: son 270°, no 90°.
+ */
+function Terminado() {
+  return (
+    <svg {...COMUNES} fill="none">
+      <circle cx="7" cy="7" r="4.4" stroke="currentColor" strokeWidth={1.4} />
+      <path d="M7 7 7 2.6A4.4 4.4 0 1 1 2.6 7Z" fill="currentColor" />
     </svg>
   );
 }
@@ -67,7 +138,9 @@ function SinDesglosar() {
 
 const FORMAS: Record<FormaEstado, () => React.JSX.Element> = {
   pendiente: Pendiente,
+  iniciado: Iniciado,
   curso: Curso,
+  terminado: Terminado,
   hecha: Hecha,
   cancelada: Cancelada,
   sindesglosar: SinDesglosar,

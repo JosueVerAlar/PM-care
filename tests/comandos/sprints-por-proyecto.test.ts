@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { reducir } from '../../src/principal/comandos/reductor';
 import { validarDocumento } from '../../src/compartido/modelo/esquema';
 import type { Documento } from '../../src/compartido/modelo/tipos';
+import { sprintsActivos } from '../../src/compartido/dominio/derivar';
+import { filasDeSprint, filasDeSprints } from '../../src/compartido/dominio/sprint';
 import { unDocumento, unItem, unProyecto, unSprint, unaTarea } from '../apoyo/constructores';
 import { AHORA, exigirError, exigirOk } from '../apoyo/comandos';
 
@@ -176,5 +178,41 @@ describe('la retrospectiva de un sprint cerrado', () => {
     expect(
       exigirError(reducir(doc, { comando: 'editarSprint', sprintId: 'UNO-S1', nombre: 'Otro' }, AHORA)).codigo,
     ).toBe('sprint-cerrado');
+  });
+});
+
+/**
+ * La vista global del sprint, cuando hay más de un sprint abierto.
+ *
+ * El defecto que esto fija: la vista tomaba `sprintsActivos(doc)[0]` y pintaba solo ese.
+ * Con sprint abierto en dos proyectos, el segundo no se veía — y no parecía «sin
+ * comprometer», parecía que sus tareas no existían.
+ */
+describe('filasDeSprints agrega todos los sprints activos', () => {
+  it('trae las tareas de los dos proyectos, no solo las del primero', () => {
+    const doc = dosProyectosActivos();
+    const filas = filasDeSprints(doc, sprintsActivos(doc), '2026-08-27');
+    expect(filas.map((f) => f.ubicacion.tarea.id).sort()).toEqual(['DOS-T1', 'UNO-T1']);
+  });
+
+  /** Sin esto, «Sacar del sprint» mandaría el id del sprint de otro proyecto. */
+  it('cada fila sabe de qué sprint sale', () => {
+    const doc = dosProyectosActivos();
+    const filas = filasDeSprints(doc, sprintsActivos(doc), '2026-08-27');
+    const porTarea = new Map(filas.map((f) => [f.ubicacion.tarea.id, f.sprint.id]));
+    expect(porTarea.get('UNO-T1')).toBe('UNO-S1');
+    expect(porTarea.get('DOS-T1')).toBe('DOS-S1');
+  });
+
+  it('filasDeSprint sigue devolviendo solo el sprint que se le pasa', () => {
+    const doc = dosProyectosActivos();
+    const soloUno = filasDeSprint(doc, doc.sprints[0], '2026-08-27');
+    expect(soloUno.map((f) => f.ubicacion.tarea.id)).toEqual(['UNO-T1']);
+  });
+
+  it('sin sprints activos no hay filas, y no revienta', () => {
+    const doc = dosProyectosActivos();
+    expect(filasDeSprints(doc, [], '2026-08-27')).toEqual([]);
+    expect(filasDeSprint(doc, undefined, '2026-08-27')).toEqual([]);
   });
 });

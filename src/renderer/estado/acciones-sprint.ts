@@ -26,6 +26,12 @@ export interface AccionesSprint {
   mover(tarea: Tarea): Promise<void>;
   moverLote(historia: Historia): Promise<void>;
   sacar(tareaId: string): Promise<void>;
+  /**
+   * Sacar de un sprint CONCRETO. La vista global mezcla los sprints activos de todos los
+   * proyectos, y ahí `sacar` no puede suponer cuál es el sprint de la tarjeta: la tarjeta
+   * lo sabe y lo pasa. `sacar` es esto mismo con el sprint que se le dio al hook.
+   */
+  sacarDe(tareaId: string, sprintId: string): Promise<void>;
 }
 
 export function useAccionesSprint(sprint: Sprint | undefined): AccionesSprint {
@@ -93,18 +99,25 @@ export function useAccionesSprint(sprint: Sprint | undefined): AccionesSprint {
     [avisar, loteDe, mutar, redactar, sprint],
   );
 
+  const sacarDe = useCallback(
+    async (tareaId: string, sprintId: string) => {
+      // El diálogo vive arriba de ambas vistas de sprint: así botón y drag comparten la
+      // misma excepción N16 y ninguno puede sacar por un camino silencioso.
+      confirmar({ tipo: 'sacarDelSprint', tareaId, sprintId });
+    },
+    [confirmar],
+  );
+
   const sacar = useCallback(
     async (tareaId: string) => {
       if (sprint === undefined) return;
-      // El diálogo vive arriba de ambas vistas de sprint: así botón y drag comparten la
-      // misma excepción N16 y ninguno puede sacar por un camino silencioso.
-      confirmar({ tipo: 'sacarDelSprint', tareaId, sprintId: sprint.id });
+      await sacarDe(tareaId, sprint.id);
     },
-    [confirmar, sprint],
+    [sacarDe, sprint],
   );
 
   return useMemo(
-    () => ({ admiteSprint, loteDe, mover, moverLote, sacar }),
-    [admiteSprint, loteDe, mover, moverLote, sacar],
+    () => ({ admiteSprint, loteDe, mover, moverLote, sacar, sacarDe }),
+    [admiteSprint, loteDe, mover, moverLote, sacar, sacarDe],
   );
 }

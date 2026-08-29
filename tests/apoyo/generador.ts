@@ -12,7 +12,13 @@
  * No se usó `fast-check`: ver la nota al pie de este archivo.
  */
 
-import type { Documento, EstadoTarea, Proyecto, Sprint } from '../../src/compartido/modelo/tipos';
+import type {
+  Documento,
+  EstadoTarea,
+  Proyecto,
+  Sprint,
+  TramoTrabajo,
+} from '../../src/compartido/modelo/tipos';
 import { ESQUEMA_VERSION } from '../../src/compartido/modelo/version';
 
 /** mulberry32: 32 bits de estado, distribución suficiente para elegir formas de árbol. */
@@ -40,6 +46,47 @@ export function elegir<T>(rng: Aleatorio, opciones: readonly T[]): T {
 }
 
 const ESTADOS: readonly EstadoTarea[] = ['pendiente', 'iniciado', 'en_pruebas', 'terminado', 'done', 'cancelada'];
+
+/**
+ * Los tramos de trabajo de una tarea, con la forma que el reductor produce de verdad.
+ *
+ * Tres cosas que las invariantes del reloj no pueden comprobar si el generador no las
+ * produce, y que ningún caso escrito a mano cubre en volumen:
+ *
+ * - **Tareas sin ningún tramo.** Es lo que le pasa a todo lo cerrado antes de que el reloj
+ *   existiera, y ahí la duración tiene que salir `null` y jamás `0`.
+ * - **Varios tramos cerrados en la misma tarea**, que es el caso que separa la SUMA de
+ *   `fin − inicio`: si el generador diera siempre uno, las dos fórmulas coincidirían y la
+ *   invariante pasaría por casualidad.
+ * - **Como mucho un tramo abierto, y solo en un estado de trabajo.** El esquema rechaza
+ *   dos abiertos y el reductor cierra el anterior antes de abrir el siguiente; un
+ *   generador que produjera otra cosa mediría un mundo que la app no puede alcanzar.
+ */
+function unosTramos(rng: Aleatorio, estado: EstadoTarea): TramoTrabajo[] {
+  const tramos: TramoTrabajo[] = [];
+  // Sin tramos: ni el estado de trabajo se salva, porque una tarea puesta a mano en
+  // `iniciado` en el archivo tampoco los tiene.
+  if (rng() < 0.3) return tramos;
+
+  for (let i = 0; i < entero(rng, 0, 2); i += 1) {
+    const dia = 1 + i * 3;
+    const largo = entero(rng, 0, 1);
+    tramos.push({
+      desde: `2026-07-${String(dia).padStart(2, '0')}T09:00:00-06:00`,
+      hasta: `2026-07-${String(dia + largo).padStart(2, '0')}T13:00:00-06:00`,
+      // Uno de cada cuatro es de pruebas: el desglose no se puede medir sobre un solo
+      // estado, y el reparto real se parece más a esto que a la mitad y la mitad.
+      estado: rng() < 0.25 ? 'en_pruebas' : 'iniciado',
+    });
+  }
+
+  // El reloj solo sigue corriendo si la tarea está en marcha, y el tramo abierto lleva
+  // SU estado: es de donde sale el desglose sin tener que migrar nada.
+  if (estado === 'iniciado' || estado === 'en_pruebas') {
+    tramos.push({ desde: '2026-08-20T09:00:00-06:00', hasta: null, estado });
+  }
+  return tramos;
+}
 
 export interface OpcionesArbol {
   clave?: string;
@@ -95,12 +142,7 @@ export function unProyectoAleatorio(rng: Aleatorio, opciones: OpcionesArbol = {}
           estado === 'done' && rng() < 0.85
             ? `2026-06-${String(entero(rng, 1, 28)).padStart(2, '0')}T12:00:00-06:00`
             : null,
-        trabajo:
-          estado === 'iniciado' || estado === 'en_pruebas'
-            ? [{ desde: '2026-08-20T09:00:00-06:00', hasta: rng() < 0.5 ? null : '2026-08-20T12:00:00-06:00', estado }]
-            : rng() < 0.35
-              ? [{ desde: '2026-08-18T09:00:00-06:00', hasta: '2026-08-18T12:00:00-06:00', estado: 'iniciado' as const }]
-              : [],
+        trabajo: unosTramos(rng, estado),
         bloqueos: rng() < 0.15
           ? [
               {

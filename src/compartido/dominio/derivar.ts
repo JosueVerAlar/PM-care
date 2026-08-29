@@ -100,6 +100,8 @@ export function contarTareas(
         hechas += 1;
         break;
       case 'iniciado':
+      case 'en_pruebas':
+      case 'terminado':
         enCurso += 1;
         break;
       case 'pendiente':
@@ -108,6 +110,10 @@ export function contarTareas(
       case 'cancelada':
         canceladas += 1;
         break;
+      default: {
+        const estadoNoContado: never = tarea.estado;
+        throw new Error(`Estado de tarea no contado: ${String(estadoNoContado)}`);
+      }
     }
   }
 

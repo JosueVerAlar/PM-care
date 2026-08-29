@@ -43,6 +43,16 @@ import {
 /** Una tarjeta del sprint con todo lo que la tarjeta enseña, ya calculado. */
 export interface FilaSprintVista {
   item: ItemSprint;
+  /**
+   * De QUÉ sprint sale esta fila.
+   *
+   * Desde «sprints por proyecto» hay un sprint activo por proyecto, así que la vista
+   * global mezcla varios y la fila ya no puede dar por sabido cuál es el suyo. Sin este
+   * campo, «Sacar del sprint» sobre una tarjeta de EVENTOS mandaba el `sprintId` del
+   * sprint de SICOE y el reductor lo rechazaba, o peor: lo aceptaba si la tarea estaba
+   * en los dos.
+   */
+  sprint: Sprint;
   ubicacion: UbicacionTarea;
   /** El item manda; en `null` hereda de la tarea. Nunca se lee uno de los dos solo. */
   compromiso: Compromiso;
@@ -65,15 +75,34 @@ export interface FilaSprintVista {
 }
 
 /**
- * Las filas del sprint, en el orden del array de items (que ES la prioridad).
+ * Las filas de UN sprint, en el orden del array de items (que ES la prioridad).
  *
- * El mapa `tarea -> nº de sprints` se construye de una pasada sobre todos los sprints en
- * vez de preguntar por tarea: con 20 items y 30 sprints, lo segundo son 600 recorridos
- * por render.
+ * Se conserva porque es lo que quiere el panel derecho de un proyecto, donde el sprint es
+ * uno y es el de ese proyecto. La vista global usa `filasDeSprints`.
  */
 export function filasDeSprint(
   doc: Documento,
   sprint: Sprint | undefined,
+  hoy: Fecha,
+): FilaSprintVista[] {
+  return filasDeSprints(doc, sprint === undefined ? [] : [sprint], hoy);
+}
+
+/**
+ * Las filas de VARIOS sprints, concatenadas en el orden en que se pasan.
+ *
+ * Es la vista global, y existe porque el supuesto de «hay un sprint activo y solo uno»
+ * murió cuando los sprints pasaron a ser por proyecto. Mientras la vista global tomaba
+ * `sprintsActivos(doc)[0]`, un usuario con sprint abierto en SICOE, EVENTOS y ENCUESTA
+ * solo veía el de SICOE — y lo demás no parecía «no comprometido», parecía inexistente.
+ *
+ * El mapa `tarea -> nº de sprints` se construye de una pasada sobre todos los sprints en
+ * vez de preguntar por tarea: con 20 items y 30 sprints, lo segundo son 600 recorridos
+ * por render. Se hace una sola vez para todos los sprints que se pidan, no uno por uno.
+ */
+export function filasDeSprints(
+  doc: Documento,
+  sprints: readonly Sprint[],
   hoy: Fecha,
 ): FilaSprintVista[] {
   const nombres = new Map(doc.personas.map((persona) => [persona.id, persona.nombre]));
@@ -85,13 +114,18 @@ export function filasDeSprint(
     }
   }
 
-  return paraVistaSprint(doc, sprint).map(({ item, ubicacion }) => {
+  const crudas = sprints.flatMap((sprint) =>
+    paraVistaSprint(doc, sprint).map((fila) => ({ ...fila, sprint })),
+  );
+
+  return crudas.map(({ item, ubicacion, sprint }) => {
     const { tarea } = ubicacion;
     const compromiso = compromisoEfectivo(item, tarea);
     const bloqueo = bloqueoAbierto(tarea);
 
     return {
       item,
+      sprint,
       ubicacion,
       compromiso,
       responsable:
@@ -113,14 +147,6 @@ export function filasDeSprint(
       ruta: rutaDe(ubicacion),
     };
   });
-}
-
-/** El sprint filtrado a un proyecto: el panel derecho de la vista de proyecto. */
-export function filasDeProyecto(
-  filas: readonly FilaSprintVista[],
-  clave: string,
-): FilaSprintVista[] {
-  return filas.filter((fila) => fila.ubicacion.proyecto.clave === clave);
 }
 
 /**

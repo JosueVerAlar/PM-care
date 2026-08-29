@@ -1,0 +1,784 @@
+{
+  "proyectos": [
+    {
+      "clave": "RELOJ",
+      "avance": {
+        "hojas": 14,
+        "hechas": 9,
+        "enCurso": 4,
+        "pendientes": 1,
+        "canceladas": 1,
+        "pct": 64,
+        "contenedoresSinDesglosar": 1
+      },
+      "estado": "en_movimiento",
+      "mostrarPct": true,
+      "sinDesglosar": 1,
+      "epicas": [
+        {
+          "id": "RELOJ-E1",
+          "avance": {
+            "hojas": 11,
+            "hechas": 9,
+            "enCurso": 1,
+            "pendientes": 1,
+            "canceladas": 1,
+            "pct": 82,
+            "contenedoresSinDesglosar": 0
+          },
+          "estado": "en_movimiento",
+          "sinDesglosar": 0,
+          "historias": [
+            {
+              "id": "RELOJ-H1",
+              "avance": {
+                "hojas": 6,
+                "hechas": 6,
+                "enCurso": 0,
+                "pendientes": 0,
+                "canceladas": 0,
+                "pct": 100,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "hecha",
+              "tareas": [
+                "RELOJ-T1",
+                "RELOJ-T2",
+                "RELOJ-T3",
+                "RELOJ-T4",
+                "RELOJ-T5",
+                "RELOJ-T6"
+              ]
+            },
+            {
+              "id": "RELOJ-H2",
+              "avance": {
+                "hojas": 3,
+                "hechas": 1,
+                "enCurso": 1,
+                "pendientes": 1,
+                "canceladas": 1,
+                "pct": 33,
+                "contenedoresSinDesglosar": 0
+              },
+              "estado": "en_movimiento",
+              "tareas": [
+                "RELOJ-T11",
+                "RELOJ-T13",
+                "RELOJ-T14",
+                "RELOJ-T15"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "RELOJ-E2",
+          "avance": {
+            "hojas": 0,
+            "hechas": 0,
+            "enCurso": 0,
+            "pendientes": 0,
+            "canceladas": 0,
+            "pct": null,
+            "contenedoresSinDesglosar": 0
+          },
+          "estado": "sin_desglosar",
+          "sinDesglosar": 0,
+          "historias": []
+        }
+      ]
+    },
+    {
+      "clave": "POCO",
+      "avance": {
+        "hojas": 3,
+        "hechas": 2,
+        "enCurso": 0,
+        "pendientes": 1,
+        "canceladas": 0,
+        "pct": 67,
+        "contenedoresSinDesglosar": 0
+      },
+      "estado": "en_movimiento",
+      "mostrarPct": false,
+      "sinDesglosar": 0,
+      "epicas": []
+    }
+  ],
+  "indice": [
+    {
+      "id": "POCO-T1",
+      "ruta": [
+        "POCO"
+      ]
+    },
+    {
+      "id": "POCO-T2",
+      "ruta": [
+        "POCO"
+      ]
+    },
+    {
+      "id": "POCO-T3",
+      "ruta": [
+        "POCO"
+      ]
+    },
+    {
+      "id": "RELOJ-T1",
+      "ruta": [
+        "RELOJ",
+        "Reloj de tramos",
+        "Medidas que salen de los tramos"
+      ]
+    },
+    {
+      "id": "RELOJ-T10",
+      "ruta": [
+        "RELOJ"
+      ]
+    },
+    {
+      "id": "RELOJ-T11",
+      "ruta": [
+        "RELOJ",
+        "Reloj de tramos",
+        "Lo que sigue en marcha"
+      ]
+    },
+    {
+      "id": "RELOJ-T12",
+      "ruta": [
+        "RELOJ"
+      ]
+    },
+    {
+      "id": "RELOJ-T13",
+      "ruta": [
+        "RELOJ",
+        "Reloj de tramos",
+        "Lo que sigue en marcha"
+      ]
+    },
+    {
+      "id": "RELOJ-T14",
+      "ruta": [
+        "RELOJ",
+        "Reloj de tramos",
+        "Lo que sigue en marcha"
+      ]
+    },
+    {
+      "id": "RELOJ-T15",
+      "ruta": [
+        "RELOJ",
+        "Reloj de tramos",
+        "Lo que sigue en marcha"
+      ]
+    },
+    {
+      "id": "RELOJ-T2",
+      "ruta": [
+        "RELOJ",
+        "Reloj de tramos",
+        "Medidas que salen de los tramos"
+      ]
+    },
+    {
+      "id": "RELOJ-T3",
+      "ruta": [
+        "RELOJ",
+        "Reloj de tramos",
+        "Medidas que salen de los tramos"
+      ]
+    },
+    {
+      "id": "RELOJ-T4",
+      "ruta": [
+        "RELOJ",
+        "Reloj de tramos",
+        "Medidas que salen de los tramos"
+      ]
+    },
+    {
+      "id": "RELOJ-T5",
+      "ruta": [
+        "RELOJ",
+        "Reloj de tramos",
+        "Medidas que salen de los tramos"
+      ]
+    },
+    {
+      "id": "RELOJ-T6",
+      "ruta": [
+        "RELOJ",
+        "Reloj de tramos",
+        "Medidas que salen de los tramos"
+      ]
+    },
+    {
+      "id": "RELOJ-T7",
+      "ruta": [
+        "RELOJ",
+        "Reloj de tramos"
+      ]
+    },
+    {
+      "id": "RELOJ-T8",
+      "ruta": [
+        "RELOJ",
+        "Reloj de tramos"
+      ]
+    },
+    {
+      "id": "RELOJ-T9",
+      "ruta": [
+        "RELOJ"
+      ]
+    }
+  ],
+  "vistas": {
+    "sprint": [],
+    "bloqueos": [],
+    "terminadas": [
+      "RELOJ-T7",
+      "RELOJ-T8",
+      "RELOJ-T1",
+      "RELOJ-T2",
+      "RELOJ-T3",
+      "RELOJ-T4",
+      "RELOJ-T5",
+      "RELOJ-T6",
+      "RELOJ-T13",
+      "POCO-T1",
+      "POCO-T2"
+    ],
+    "backlogDelArea": [
+      "RELOJ-T9",
+      "RELOJ-T10",
+      "RELOJ-T12",
+      "RELOJ-T7",
+      "RELOJ-T8",
+      "RELOJ-T1",
+      "RELOJ-T2",
+      "RELOJ-T3",
+      "RELOJ-T4",
+      "RELOJ-T5",
+      "RELOJ-T6",
+      "RELOJ-T11",
+      "RELOJ-T13",
+      "RELOJ-T14",
+      "RELOJ-T15",
+      "POCO-T1",
+      "POCO-T2",
+      "POCO-T3"
+    ]
+  },
+  "carga": {
+    "personas": [
+      {
+        "id": "ana-lopez",
+        "abiertas": {
+          "total": 2,
+          "porProyecto": [
+            {
+              "clave": "RELOJ",
+              "nombre": "Reloj de tramos",
+              "abiertas": 2
+            }
+          ],
+          "proyectosDistintos": 1
+        },
+        "enSprint": {
+          "total": 2,
+          "abiertas": 2,
+          "hechas": 0,
+          "bloqueadas": 0,
+          "vencidas": 0,
+          "porProyecto": [
+            {
+              "clave": "RELOJ",
+              "nombre": "Reloj de tramos",
+              "total": 2,
+              "abiertas": 2
+            }
+          ],
+          "proyectosDistintos": 1
+        },
+        "abiertasFueraDelSprint": 0,
+        "historial": {
+          "porSprint": [
+            {
+              "sprintId": "RELOJ-S1",
+              "nombre": "Sprint 1",
+              "cerradas": 2
+            },
+            {
+              "sprintId": "RELOJ-S2",
+              "nombre": "Sprint 2",
+              "cerradas": 2
+            }
+          ],
+          "medianaCerradas": null
+        }
+      },
+      {
+        "id": "beto-ruiz",
+        "abiertas": {
+          "total": 2,
+          "porProyecto": [
+            {
+              "clave": "RELOJ",
+              "nombre": "Reloj de tramos",
+              "abiertas": 2
+            }
+          ],
+          "proyectosDistintos": 1
+        },
+        "enSprint": {
+          "total": 2,
+          "abiertas": 1,
+          "hechas": 1,
+          "bloqueadas": 0,
+          "vencidas": 0,
+          "porProyecto": [
+            {
+              "clave": "RELOJ",
+              "nombre": "Reloj de tramos",
+              "total": 2,
+              "abiertas": 1
+            }
+          ],
+          "proyectosDistintos": 1
+        },
+        "abiertasFueraDelSprint": 1,
+        "historial": {
+          "porSprint": [
+            {
+              "sprintId": "RELOJ-S1",
+              "nombre": "Sprint 1",
+              "cerradas": 0
+            },
+            {
+              "sprintId": "RELOJ-S2",
+              "nombre": "Sprint 2",
+              "cerradas": 1
+            }
+          ],
+          "medianaCerradas": null
+        }
+      },
+      {
+        "id": "caro-diaz",
+        "abiertas": {
+          "total": 0,
+          "porProyecto": [],
+          "proyectosDistintos": 0
+        },
+        "enSprint": {
+          "total": 0,
+          "abiertas": 0,
+          "hechas": 0,
+          "bloqueadas": 0,
+          "vencidas": 0,
+          "porProyecto": [],
+          "proyectosDistintos": 0
+        },
+        "abiertasFueraDelSprint": 0,
+        "historial": {
+          "porSprint": [
+            {
+              "sprintId": "RELOJ-S1",
+              "nombre": "Sprint 1",
+              "cerradas": 0
+            },
+            {
+              "sprintId": "RELOJ-S2",
+              "nombre": "Sprint 2",
+              "cerradas": 0
+            }
+          ],
+          "medianaCerradas": null
+        }
+      }
+    ],
+    "sinAsignar": {
+      "abiertas": {
+        "total": 2,
+        "porProyecto": [
+          {
+            "clave": "POCO",
+            "nombre": "Dos medidas y nada más",
+            "abiertas": 1
+          },
+          {
+            "clave": "RELOJ",
+            "nombre": "Reloj de tramos",
+            "abiertas": 1
+          }
+        ],
+        "proyectosDistintos": 2
+      },
+      "enSprint": {
+        "total": 0,
+        "abiertas": 0,
+        "hechas": 0,
+        "bloqueadas": 0,
+        "vencidas": 0,
+        "porProyecto": [],
+        "proyectosDistintos": 0
+      }
+    }
+  },
+  "tiempos": {
+    "medidas": [
+      {
+        "id": "POCO-T1",
+        "dias": 1,
+        "tramos": 1,
+        "desarrollo": 1,
+        "pruebas": null,
+        "calendario": 1,
+        "responsable": "caro-diaz",
+        "clave": "POCO",
+        "sprintsAtravesados": 0
+      },
+      {
+        "id": "POCO-T2",
+        "dias": 2,
+        "tramos": 1,
+        "desarrollo": 2,
+        "pruebas": null,
+        "calendario": 2,
+        "responsable": "caro-diaz",
+        "clave": "POCO",
+        "sprintsAtravesados": 0
+      },
+      {
+        "id": "RELOJ-T1",
+        "dias": 2,
+        "tramos": 1,
+        "desarrollo": 2,
+        "pruebas": null,
+        "calendario": 2,
+        "responsable": "ana-lopez",
+        "clave": "RELOJ",
+        "sprintsAtravesados": 1
+      },
+      {
+        "id": "RELOJ-T13",
+        "dias": 1,
+        "tramos": 1,
+        "desarrollo": 1,
+        "pruebas": null,
+        "calendario": 1,
+        "responsable": "beto-ruiz",
+        "clave": "RELOJ",
+        "sprintsAtravesados": 1
+      },
+      {
+        "id": "RELOJ-T2",
+        "dias": 4,
+        "tramos": 2,
+        "desarrollo": 3,
+        "pruebas": 1,
+        "calendario": 8,
+        "responsable": "ana-lopez",
+        "clave": "RELOJ",
+        "sprintsAtravesados": 1
+      },
+      {
+        "id": "RELOJ-T3",
+        "dias": 1.5,
+        "tramos": 3,
+        "desarrollo": 1.3,
+        "pruebas": 0.2,
+        "calendario": 9,
+        "responsable": "ana-lopez",
+        "clave": "RELOJ",
+        "sprintsAtravesados": 2
+      },
+      {
+        "id": "RELOJ-T4",
+        "dias": 0.3,
+        "tramos": 2,
+        "desarrollo": 0.3,
+        "pruebas": null,
+        "calendario": 1.2,
+        "responsable": "ana-lopez",
+        "clave": "RELOJ",
+        "sprintsAtravesados": 1
+      },
+      {
+        "id": "RELOJ-T5",
+        "dias": 0.5,
+        "tramos": 2,
+        "desarrollo": 0.3,
+        "pruebas": 0.3,
+        "calendario": 1.3,
+        "responsable": "ana-lopez",
+        "clave": "RELOJ",
+        "sprintsAtravesados": 0
+      },
+      {
+        "id": "RELOJ-T7",
+        "dias": 3,
+        "tramos": 1,
+        "desarrollo": 3,
+        "pruebas": null,
+        "calendario": 3,
+        "responsable": "ana-lopez",
+        "clave": "RELOJ",
+        "sprintsAtravesados": 0
+      },
+      {
+        "id": "RELOJ-T8",
+        "dias": 2,
+        "tramos": 2,
+        "desarrollo": 2,
+        "pruebas": null,
+        "calendario": 3,
+        "responsable": "beto-ruiz",
+        "clave": "RELOJ",
+        "sprintsAtravesados": 0
+      }
+    ],
+    "total": {
+      "promedio": 1.7,
+      "mediana": 1.8,
+      "cuentan": 10,
+      "sinMedir": 1,
+      "masLenta": "RELOJ-T2"
+    },
+    "desglose": {
+      "desarrollo": 15.9,
+      "pruebas": 1.5,
+      "conDesarrollo": 10,
+      "conPruebas": 3
+    },
+    "transcurso": {
+      "trabajado": 17.3,
+      "calendario": 31.5,
+      "sobre": 10,
+      "proporcion": 0.55
+    },
+    "porPunto": {
+      "dias": 0.6,
+      "sobre": 7,
+      "puntos": 21
+    },
+    "cerradasSinMedir": 1,
+    "corriendo": [
+      {
+        "id": "RELOJ-T10",
+        "clave": "RELOJ",
+        "dias": 17,
+        "olvidado": true
+      },
+      {
+        "id": "RELOJ-T11",
+        "clave": "RELOJ",
+        "dias": 3,
+        "olvidado": false
+      },
+      {
+        "id": "RELOJ-T9",
+        "clave": "RELOJ",
+        "dias": 2,
+        "olvidado": false
+      },
+      {
+        "id": "RELOJ-T13",
+        "clave": "RELOJ",
+        "dias": 1,
+        "olvidado": false
+      }
+    ],
+    "relojes": [
+      {
+        "id": "POCO-T1",
+        "dias": 1,
+        "tramos": 1,
+        "desarrollo": 1,
+        "pruebas": null,
+        "corriendoDesde": null
+      },
+      {
+        "id": "POCO-T2",
+        "dias": 2,
+        "tramos": 1,
+        "desarrollo": 2,
+        "pruebas": null,
+        "corriendoDesde": null
+      },
+      {
+        "id": "RELOJ-T1",
+        "dias": 2,
+        "tramos": 1,
+        "desarrollo": 2,
+        "pruebas": null,
+        "corriendoDesde": null
+      },
+      {
+        "id": "RELOJ-T10",
+        "dias": null,
+        "tramos": 0,
+        "desarrollo": null,
+        "pruebas": null,
+        "corriendoDesde": "2026-08-10T09:00-06:00"
+      },
+      {
+        "id": "RELOJ-T11",
+        "dias": 2,
+        "tramos": 1,
+        "desarrollo": 2,
+        "pruebas": null,
+        "corriendoDesde": "2026-08-24T09:00-06:00"
+      },
+      {
+        "id": "RELOJ-T12",
+        "dias": 3,
+        "tramos": 1,
+        "desarrollo": 3,
+        "pruebas": null,
+        "corriendoDesde": null
+      },
+      {
+        "id": "RELOJ-T13",
+        "dias": 1,
+        "tramos": 1,
+        "desarrollo": 1,
+        "pruebas": null,
+        "corriendoDesde": "2026-08-26T09:00-06:00"
+      },
+      {
+        "id": "RELOJ-T2",
+        "dias": 4,
+        "tramos": 2,
+        "desarrollo": 3,
+        "pruebas": 1,
+        "corriendoDesde": null
+      },
+      {
+        "id": "RELOJ-T3",
+        "dias": 1.5,
+        "tramos": 3,
+        "desarrollo": 1.3,
+        "pruebas": 0.2,
+        "corriendoDesde": null
+      },
+      {
+        "id": "RELOJ-T4",
+        "dias": 0.3,
+        "tramos": 2,
+        "desarrollo": 0.3,
+        "pruebas": null,
+        "corriendoDesde": null
+      },
+      {
+        "id": "RELOJ-T5",
+        "dias": 0.5,
+        "tramos": 2,
+        "desarrollo": 0.3,
+        "pruebas": 0.3,
+        "corriendoDesde": null
+      },
+      {
+        "id": "RELOJ-T7",
+        "dias": 3,
+        "tramos": 1,
+        "desarrollo": 3,
+        "pruebas": null,
+        "corriendoDesde": null
+      },
+      {
+        "id": "RELOJ-T8",
+        "dias": 2,
+        "tramos": 2,
+        "desarrollo": 2,
+        "pruebas": null,
+        "corriendoDesde": null
+      },
+      {
+        "id": "RELOJ-T9",
+        "dias": null,
+        "tramos": 0,
+        "desarrollo": null,
+        "pruebas": null,
+        "corriendoDesde": "2026-08-25T09:00-06:00"
+      }
+    ],
+    "porPersona": [
+      {
+        "id": "ana-lopez",
+        "nombre": "Ana López",
+        "tiempo": {
+          "promedio": 1.9,
+          "mediana": 1.8,
+          "cuentan": 6,
+          "sinMedir": 0,
+          "masLenta": "RELOJ-T2"
+        }
+      },
+      {
+        "id": "beto-ruiz",
+        "nombre": "Beto Ruiz",
+        "tiempo": {
+          "promedio": null,
+          "mediana": null,
+          "cuentan": 2,
+          "sinMedir": 1,
+          "masLenta": "RELOJ-T8"
+        }
+      },
+      {
+        "id": "caro-diaz",
+        "nombre": "Caro Díaz",
+        "tiempo": {
+          "promedio": null,
+          "mediana": null,
+          "cuentan": 2,
+          "sinMedir": 0,
+          "masLenta": "POCO-T2"
+        }
+      }
+    ],
+    "porEquipo": [
+      {
+        "id": "RELOJ",
+        "nombre": "Reloj de tramos",
+        "tiempo": {
+          "promedio": 1.8,
+          "mediana": 1.8,
+          "cuentan": 8,
+          "sinMedir": 1,
+          "masLenta": "RELOJ-T2"
+        }
+      }
+    ],
+    "porProyecto": [
+      {
+        "id": "RELOJ",
+        "nombre": "Reloj de tramos",
+        "tiempo": {
+          "promedio": 1.8,
+          "mediana": 1.8,
+          "cuentan": 8,
+          "sinMedir": 1,
+          "masLenta": "RELOJ-T2"
+        }
+      },
+      {
+        "id": "POCO",
+        "nombre": "Dos medidas y nada más",
+        "tiempo": {
+          "promedio": null,
+          "mediana": null,
+          "cuentan": 2,
+          "sinMedir": 0,
+          "masLenta": "POCO-T2"
+        }
+      }
+    ]
+  }
+}

@@ -15,7 +15,7 @@ import { readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Arbol } from '../../src/renderer/vistas/proyecto/Arbol';
 import { Leyenda } from '../../src/renderer/vistas/proyecto/Leyenda';
@@ -26,10 +26,30 @@ import { unProyecto, unaEpica, unaHistoria, unaTarea } from '../apoyo/constructo
 import { validarDocumento } from '../../src/compartido/modelo/esquema';
 import type { Proyecto } from '../../src/compartido/modelo/tipos';
 
+const dobles = vi.hoisted(() => ({ mutar: vi.fn() }));
+/**
+ * Se dobla `useMutar` y **solo** `useMutar`: el resto del módulo se reexporta tal cual.
+ *
+ * Una fábrica que devuelve el objeto a secas sustituye el módulo ENTERO, así que todo lo
+ * demás que vive ahí —`useSoloLectura`, `usePuedeDeshacer`, `useEtiquetaDeshacer`,
+ * `useAplicar`— queda en `undefined`. Hoy pasa porque `Arbol` no importa ninguno; el día
+ * que importe cualquiera, la prueba revienta con un «X is not a function» dentro de React
+ * que no señala a este archivo ni a esta línea. Con `importOriginal` el doble es aditivo y
+ * ese fallo no puede ocurrir.
+ */
+vi.mock('../../src/renderer/estado/mutaciones', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/renderer/estado/mutaciones')>()),
+  useMutar: () => dobles.mutar,
+}));
+
 const CLAVE = 'PM';
 const HOY = '2026-08-27';
 
 afterEach(cleanup);
+beforeEach(() => {
+  dobles.mutar.mockReset();
+  dobles.mutar.mockResolvedValue(true);
+});
 
 function montar(proyecto: Proyecto) {
   return render(
@@ -322,6 +342,23 @@ describe('el menú ⋯ de la fila', () => {
     expect(acciones.length).toBeGreaterThan(0);
   });
 
+  it('done detiene Avanzar: Espacio no despacha ni muestra un error', () => {
+    montarEditable(
+      unProyecto({
+        clave: CLAVE,
+        epicas: [],
+        tareas: [unaTarea({ clave: CLAVE, id: 'PM-T1', estado: 'done' })],
+      }),
+    );
+    const fila = screen.getByRole('treeitem');
+    fireEvent.focus(fila);
+    fireEvent.keyDown(fila, { key: ' ' });
+
+    expect(dobles.mutar).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('option', { name: /Marcar/ })).toBeNull();
+  });
+
   /** Cada acción trae su tecla al lado: es lo que permitió borrar la leyenda de atajos. */
   it('cada acción dice con qué tecla se hace', () => {
     montarEditable(conTarea());
@@ -422,5 +459,143 @@ describe('el panel de ayuda', () => {
     render(<PanelAyuda cerrar={() => { cerrado = true; }} />);
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
     expect(cerrado).toBe(true);
+  });
+});
+
+/**
+ * El doble de `mutaciones` no puede borrar el resto del módulo.
+ *
+ * Esta es la prueba del propio andamio, y existe porque su fallo es de los que no señalan
+ * la causa: si el doble vuelve a sustituir el módulo entero, lo que revienta no es esta
+ * suite sino la primera que renderice un componente que importe otra cosa de ahí, con un
+ * «no es una función» que apunta al interior de React.
+ */
+describe('el doble de `mutaciones` es aditivo', () => {
+  it('el módulo doblado conserva todo lo que exporta el real', async () => {
+    const doblado = await import('../../src/renderer/estado/mutaciones');
+    const real = await vi.importActual<typeof import('../../src/renderer/estado/mutaciones')>(
+      '../../src/renderer/estado/mutaciones',
+    );
+    // Sin control de cobertura, un módulo real vacío haría pasar la comparación (R2).
+    expect(Object.keys(real).length).toBeGreaterThan(1);
+    expect(Object.keys(doblado).sort()).toEqual(Object.keys(real).sort());
+  });
+
+  it('y lo doblado sigue siendo el doble, no lo real', async () => {
+    const { useMutar } = await import('../../src/renderer/estado/mutaciones');
+    expect(useMutar()).toBe(dobles.mutar);
+  });
+});
+
+/**
+ * La leyenda, ampliada de cinco a siete entradas por MB.
+ *
+ * Lo que se afirma es lo que el glosario tiene que cumplir para servir de algo: que estén
+ * las siete siluetas, que estén EN EL ORDEN del pipeline —con el anillo progresivo el
+ * orden es la información, cada entrada enseña un cuadrante más— y que cada glifo lleve su
+ * nombre accesible, porque el color no lo oye nadie.
+ *
+ * Lo que NO se puede afirmar aquí está escrito abajo, en `el envoltorio con la ventana
+ * angosta`: jsdom no calcula layout y esta suite no arranca Electron.
+ */
+describe('la leyenda de siete', () => {
+  const montarLeyenda = (editable = false) =>
+    render(
+      <ProveedorAlmacen>
+        <ProveedorInterfaz>
+          <Leyenda editable={editable} abrirAyuda={() => undefined} />
+        </ProveedorInterfaz>
+      </ProveedorAlmacen>,
+    );
+
+  /** Los cinco del flujo, el medio anillo compartido y los dos que no son pasos. */
+  const ESPERADAS = [
+    'Pendiente',
+    'Iniciado',
+    'En pruebas · en movimiento',
+    'Terminado',
+    'Done',
+    'Cancelada',
+    'Sin desglosar',
+  ];
+
+  it('nombra las siete siluetas, en el orden en que avanza el trabajo', () => {
+    const { container } = montarLeyenda();
+    const pie = container.querySelector('.leyenda');
+    expect(pie).toBeTruthy();
+    // El texto visible va `aria-hidden`; el nombre lo carga el glifo en su `.solo-lectores`,
+    // que es exactamente lo que oiría un lector de pantalla. Leer eso y no el texto de al
+    // lado es lo que hace que la prueba mida el contrato accesible y no la decoración.
+    const nombres = [...(pie as HTMLElement).querySelectorAll('.glifo .solo-lectores')].map(
+      (t) => t.textContent,
+    );
+    expect(nombres).toEqual(ESPERADAS);
+  });
+
+  /**
+   * Dos entradas con el mismo nombre serían dos filas del glosario que traducen al mismo
+   * sitio: el glosario dejaría de desempatar justo donde hace falta.
+   */
+  it('ninguna entrada repite nombre', () => {
+    montarLeyenda();
+    expect(new Set(ESPERADAS).size).toBe(ESPERADAS.length);
+  });
+
+  /**
+   * `terminado` y `done` NO son sinónimos (CLAUDE.md), y la leyenda es el único sitio
+   * donde se aprende que son dos cosas. Si alguna vez se fusionaran para «ahorrar» una
+   * entrada, esta prueba lo dice.
+   */
+  it('«Terminado» y «Done» aparecen por separado', () => {
+    const { container } = montarLeyenda();
+    const nombres = [...container.querySelectorAll('.leyenda .glifo .solo-lectores')].map(
+      (t) => t.textContent,
+    );
+    expect(nombres).toContain('Terminado');
+    expect(nombres).toContain('Done');
+  });
+
+  /** Lo que no es estado sigue estando: procedencia, bandera y compromiso. */
+  it('conserva las tres entradas que no son estados', () => {
+    const { container } = montarLeyenda();
+    const pie = container.querySelector('.leyenda') as HTMLElement;
+    expect(pie.textContent).toContain('No planeado');
+    expect(pie.textContent).toContain('Bloqueada');
+    expect(pie.textContent).toContain('en el sprint');
+  });
+
+  /**
+   * Con siete siluetas la leyenda tiene diez entradas y ya no cabe en una línea en la
+   * mitad de la ventana que le toca al árbol. Lo que se puede comprobar sin arrancar
+   * Electron es que **el envoltorio esté preparado para envolver**, que es lo que decide
+   * si el desbordamiento se convierte en una segunda línea o en contenido recortado.
+   *
+   * Lo que esto NO prueba, y hay que decirlo en vez de darlo por bueno: en cuántas líneas
+   * cae de verdad a un ancho concreto, y si esas líneas le comen demasiado alto al árbol.
+   * jsdom no calcula layout —`getBoundingClientRect` devuelve ceros— así que eso solo se
+   * ve con la ventana en la mano.
+   */
+  it('el envoltorio con la ventana angosta está preparado para envolver', () => {
+    const css = readFileSync(
+      path.resolve(process.cwd(), 'src/renderer/estilos/arbol.css'),
+      'utf8',
+    );
+    const regla = /\.leyenda\s*\{([^}]*)\}/.exec(css);
+    expect(regla, 'no se encontró la regla .leyenda').toBeTruthy();
+    const cuerpo = (regla as RegExpExecArray)[1] as string;
+
+    // 1. Envuelve en vez de desbordar. Sin esto las entradas se salen del panel.
+    expect(cuerpo).toMatch(/flex-wrap:\s*wrap/);
+    // 2. `gap` con DOS valores: el primero separa las líneas envueltas. Con uno solo las
+    //    filas nuevas se tocarían y el pie se leería como un bloque.
+    expect(cuerpo).toMatch(/gap:\s*\S+\s+\S+/);
+    // 3. Ni alto fijo ni recorte: al envolver, el pie tiene que CRECER. Un `height` o un
+    //    `overflow: hidden` aquí convertirían la segunda línea en contenido invisible,
+    //    que es el peor desenlace posible —la leyenda seguiría «estando» sin verse—.
+    expect(cuerpo).not.toMatch(/overflow:\s*hidden/);
+    expect(cuerpo).not.toMatch(/(^|;)\s*height:/);
+    // 4. Y el hermano de arriba cede el alto que el pie gane: `.arbol` scrollea.
+    const arbol = /\.arbol\s*\{([^}]*)\}/.exec(css);
+    expect((arbol as RegExpExecArray)[1]).toMatch(/overflow-y:\s*auto/);
   });
 });

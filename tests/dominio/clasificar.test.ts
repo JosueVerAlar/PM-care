@@ -22,7 +22,6 @@ import {
   mediana,
   mostrarProcedencia,
   paraBacklogDelArea,
-  paraSprintDeProyecto,
   paraVistaBloqueos,
   paraVistaSprint,
   paraVistaTerminadas,
@@ -87,9 +86,11 @@ describe('fechas', () => {
 // --- predicados de tarea ----------------------------------------------------
 
 describe('predicados de estado', () => {
-  it('pendiente y iniciado están abiertas', () => {
+  it('los cuatro estados anteriores a la aceptación están abiertos', () => {
     expect(estaAbierta(unaTarea({ estado: 'pendiente' }))).toBe(true);
     expect(estaAbierta(unaTarea({ estado: 'iniciado' }))).toBe(true);
+    expect(estaAbierta(unaTarea({ estado: 'en_pruebas' }))).toBe(true);
+    expect(estaAbierta(unaTarea({ estado: 'terminado' }))).toBe(true);
   });
 
   it('hecha no está abierta', () => {
@@ -376,15 +377,6 @@ describe('selectores por vista', () => {
     expect(filas.map((f) => f.ubicacion.tarea.id)).not.toContain('PRUEBA-T404');
   });
 
-  it('Sprint del proyecto: filtra al panel derecho de esa clave', () => {
-    const { doc, activo } = documentoDePrueba();
-    expect(paraSprintDeProyecto(doc, activo, 'OTRO').map((f) => f.ubicacion.tarea.id)).toEqual(['OTRO-T1']);
-  });
-
-  it('Sprint del proyecto: una clave que no existe da lista vacía', () => {
-    const { doc, activo } = documentoDePrueba();
-    expect(paraSprintDeProyecto(doc, activo, 'NOEXISTE')).toEqual([]);
-  });
 });
 
 describe('senalesDeProyecto', () => {

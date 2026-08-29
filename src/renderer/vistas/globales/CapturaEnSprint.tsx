@@ -23,6 +23,14 @@
  * contemplado. La marca la pone el reductor según `planeacion_cerrada_en` del proyecto
  * (D4, regla 17), así que el formulario **lo dice antes de capturar** en vez de
  * sorprender después — incluido el caso en el que no va a poder marcarlo.
+ *
+ * ## A qué sprint entra
+ *
+ * Al del PROYECTO del destino, no a uno elegido por la vista. Los sprints son por
+ * proyecto y `moverAlSprint` rechaza meter una tarea de EVENTOS en el sprint de SICOE, así
+ * que un solo sprint fijo hacía fallar toda captura fuera de ese proyecto. Los proyectos
+ * sin sprint abierto no se ofrecen: es mejor no estar en la lista que estar y fallar al
+ * pulsar «Capturar».
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -40,12 +48,13 @@ import { fechaCorta } from '../../util/presentacion';
 
 export function CapturaEnSprint({
   documento,
-  sprint,
+  sprints,
   hoy,
   cerrar,
 }: {
   documento: Documento;
-  sprint: Sprint;
+  /** Los sprints ACTIVOS. Uno por proyecto, más el transversal legado si lo hubiera. */
+  sprints: readonly Sprint[];
   hoy: Fecha;
   /** Se llama al terminar o al cancelar. `tareaId` no nulo = se creó y entró al sprint. */
   cerrar: (tareaId: string | null) => void;
@@ -53,7 +62,27 @@ export function CapturaEnSprint({
   const aplicar = useAplicar();
   const { avisar } = useAccionesInterfaz();
 
-  const destinos = useMemo(() => destinosDeCaptura(documento, hoy), [documento, hoy]);
+  /**
+   * A qué sprint va lo que se capture en un proyecto. Un sprint transversal legado
+   * (`clave === null`) sirve para cualquiera y por eso es el respaldo, igual que en
+   * `sprintActivo`.
+   */
+  const sprintDe = useMemo(() => {
+    const porClave = new Map<string, Sprint>();
+    let transversal: Sprint | undefined;
+    for (const s of sprints) {
+      if (s.clave === null) transversal ??= s;
+      else porClave.set(s.clave, s);
+    }
+    return (clave: string) => porClave.get(clave) ?? transversal;
+  }, [sprints]);
+
+  // Solo lo que tiene dónde caer: un proyecto sin sprint abierto no es un destino, y
+  // ofrecerlo sería ofrecer un botón que falla.
+  const destinos = useMemo(
+    () => destinosDeCaptura(documento, hoy).filter((d) => sprintDe(d.clave) !== undefined),
+    [documento, hoy, sprintDe],
+  );
 
   const [contenedorId, setContenedorId] = useState(() => destinos[0]?.contenedorId ?? '');
   const [titulo, setTitulo] = useState('');
@@ -65,6 +94,7 @@ export function CapturaEnSprint({
   }, []);
 
   const destino: DestinoCaptura | undefined = destinos.find((d) => d.contenedorId === contenedorId);
+  const sprintDestino = destino === undefined ? undefined : sprintDe(destino.clave);
 
   /** Los destinos agrupados por proyecto: el desplegable de once proyectos sin `optgroup`
    *  es una lista de doscientas líneas sin ninguna referencia de dónde está uno. */
@@ -78,10 +108,11 @@ export function CapturaEnSprint({
     return [...grupos.values()];
   }, [destinos]);
 
-  const puedeEnviar = titulo.trim() !== '' && destino !== undefined && !enviando;
+  const puedeEnviar =
+    titulo.trim() !== '' && destino !== undefined && sprintDestino !== undefined && !enviando;
 
   const enviar = async () => {
-    if (destino === undefined || titulo.trim() === '') return;
+    if (destino === undefined || sprintDestino === undefined || titulo.trim() === '') return;
     setEnviando(true);
     try {
       const previos = idsDeContenedor(documento, destino.contenedorId);
@@ -100,8 +131,8 @@ export function CapturaEnSprint({
       }
 
       const movido = await aplicar(
-        { comando: 'moverAlSprint', tareaId, sprintId: sprint.id },
-        `Mover ${tareaId} al sprint`,
+        { comando: 'moverAlSprint', tareaId, sprintId: sprintDestino.id },
+        `Mover ${tareaId} a ${sprintDestino.nombre}`,
       );
       // Aunque el movimiento falle, la tarea ya existe: no se revierte nada (regla 5).
       cerrar(movido === null ? null : tareaId);
@@ -115,7 +146,8 @@ export function CapturaEnSprint({
       <div className="alta alta--sprint">
         <p className="alta__titulo">No hay dónde capturar</p>
         <p className="alta__pie">
-          No hay ningún proyecto activo. Da de alta uno y vuelve.
+          Ningún proyecto activo tiene un sprint abierto. Abre uno desde el panel del
+          proyecto y vuelve.
         </p>
         <div className="alta__fila">
           <button type="button" className="boton-texto" onClick={() => cerrar(null)}>
@@ -140,7 +172,12 @@ export function CapturaEnSprint({
         }
       }}
     >
-      <p className="alta__titulo">Capturar en {sprint.nombre}</p>
+      {/* El nombre sale del destino elegido, y cambia con él: es la única forma de que el
+          usuario vea a qué quincena está mandando lo que escribe. */}
+      <p className="alta__titulo">
+        Capturar en {sprintDestino?.nombre ?? 'el sprint'}
+        {sprintDestino?.clave !== null && sprintDestino !== undefined && ` · ${sprintDestino.clave}`}
+      </p>
 
       <div className="alta__fila">
         <label className="campo campo--crece">

@@ -1055,5 +1055,38 @@
         "proyectosDistintos": 0
       }
     }
+  },
+  "tiempos": {
+    "medidas": [],
+    "total": {
+      "promedio": null,
+      "mediana": null,
+      "cuentan": 0,
+      "sinMedir": 11,
+      "masLenta": null
+    },
+    "desglose": {
+      "desarrollo": null,
+      "pruebas": null,
+      "conDesarrollo": 0,
+      "conPruebas": 0
+    },
+    "transcurso": {
+      "trabajado": null,
+      "calendario": null,
+      "sobre": 0,
+      "proporcion": null
+    },
+    "porPunto": {
+      "dias": null,
+      "sobre": 0,
+      "puntos": 0
+    },
+    "cerradasSinMedir": 11,
+    "corriendo": [],
+    "relojes": [],
+    "porPersona": [],
+    "porEquipo": [],
+    "porProyecto": []
   }
 }

@@ -9,6 +9,12 @@ las de esta ronda se numeran **N11–N18** y hay que trasladarlas allí (etapa M
 
 Fecha: 2026-08-27. Base: 1006 pruebas en verde, `esquema_version: 1`, app empaquetada.
 
+> **Puesto al día el 2026-08-28.** Este documento nació sin casilla de estado: quince etapas
+> y ninguna forma de saber cuál estaba hecha. Cuatro lo estaban. Ahora la tabla de la
+> sección 3 lleva **estado y evidencia** —archivo:línea o commit—, y una etapa sin evidencia
+> dice «sin verificar», nunca «pendiente». Misma marca de texto superado que `docs/PLAN.md`:
+> `**[SUPERADO — …]**`, se marca y no se borra.
+
 ---
 
 ## Lo primero, porque manda sobre todo el orden
@@ -27,24 +33,42 @@ Medí tu documento real (`~/Library/Application Support/PM-care/datos.json`), no
 Y `src/principal/migraciones/index.ts` tiene `MIGRACIONES = []`: **nunca ha corrido una
 migración en este proyecto**. El andamio existe y jamás se ha ejercitado.
 
+**[SUPERADO — M2 cerró el 2026-08-27]** las dos afirmaciones de arriba son de la foto del
+2026-08-27 y hoy son falsas. `src/compartido/modelo/version.ts:10` declara
+`ESQUEMA_VERSION = 2`, y `src/principal/migraciones/index.ts:34-60` contiene la migración
+1→2 —«Añade sprints por proyecto, reloj por tramos, equipos y el flujo de seis estados»—,
+que además convierte `proyecto.equipo` en `proyecto.equipos` con un equipo «General» por
+proyecto (`${clave}-general`), `responsabilidades: [rol]` y `capacidad: null`. El andamio
+ya se ejercitó. Los conteos de la tabla siguen sirviendo como línea base de la migración.
+
 **Consecuencia operativa, y es la acción tuya de mayor impacto en todo el plan:
 no captures los 11 proyectos hasta que M2 esté cerrada.** Hoy la migración mueve dos
 tareas. En dos semanas movería cientos, y esa es la diferencia entre un `map` y un riesgo.
+
+**[SUPERADO — el bloqueo se levantó el 2026-08-28]** M2 está cerrada, así que **capturar los
+11 proyectos ya no es prematuro por esta razón**. Queda un aviso distinto y menor: hasta que
+cierre M4, una tarea en `en_pruebas` o en `terminado` se cae del denominador del avance
+(`derivar.ts:98-114`). Capturar sí; usar esos dos estados todavía no.
 
 ---
 
 ## Las ocho decisiones, y qué implica cada una
 
+**Numeración renumerada el 2026-08-28 para que coincida con `docs/PLAN.md`, que es el
+canónico** (lo exige M0). Este documento arrastraba la numeración vieja: su N12 era el N17
+de allí y su N13 el N12, y por eso M11 citaba «criterios de aceptación (N17)» apuntando al
+número equivocado. «Un bug es TRABAJO» no tenía número aquí y es **N13**.
+
 | | Decisión | Consecuencia real |
 |---|---|---|
 | **N11** | **Equipo es una entidad de tres niveles**: proyecto → equipos → personas con responsabilidades | Sustituye `proyecto.equipo[]`. Desbloquea backlog, sprint general y capacidad por equipo |
-| **N12** | Sprints en la raíz con `clave` de proyecto | Uno activo **por proyecto**, no por documento |
-| **N13** | Cinco estados: `pendiente → iniciado → en_pruebas → terminado → done`, más `cancelada` | Seis valores. El verde exige `done` |
+| **N12** | Cinco estados: `pendiente → iniciado → en_pruebas → terminado → done`, más `cancelada` | Seis valores. El verde exige `done` |
+| **N13** | **Un bug es TRABAJO** y nace como tarea, distinguido por `tipo` | Un bloqueo NO es trabajo: sigue siendo la bandera. El enum de estado no crece |
 | **N14** | **El reloj se pausa y se reanuda** | `duracion.ts` se reescribe entero y **la regla 21 cambia** |
 | **N15** | El sprint general es una **vista derivada**, no una entidad | No se guarda, no tiene fechas propias, nace y muere sola |
 | **N16** | Sacar del sprint **pide confirmación** | **Modifica la regla de `DialogoConfirmar`**: deja de haber una sola |
-| **N17** | Criterios de aceptación: **texto**, sin casillas | Casillas serían sub-tareas con estado propio, contra la regla 1 |
-| **N18** | Capacidad en **puntos y en tareas**, siempre con su cobertura | Por debajo del umbral no hay porcentaje, solo conteo |
+| **N17** | **Sprints en la raíz con `clave` de proyecto** | Uno activo **por proyecto**, no por documento |
+| **N18** | Criterios de aceptación en **texto** libre, y capacidad en **puntos y tareas** con su cobertura | Casillas serían sub-tareas con estado propio (regla 1). Por debajo del umbral no hay porcentaje, solo conteo |
 
 ---
 
@@ -223,7 +247,7 @@ cambia, y el motivo tiene que quedar escrito donde estaba la regla vieja:
 Y el defecto se arregla igual: el compromiso completo se vuelca. Con los tramos de N14, el
 reloj ya no vive en el item, así que sacar deja de poder reiniciarlo.
 
-### N18 · Capacidad: las dos lecturas, siempre con cobertura
+### N18 · Criterios en texto, y capacidad con sus dos lecturas y su cobertura
 
 **Puntos y tareas, lado a lado**, nunca uno solo:
 
@@ -253,23 +277,32 @@ burndown, velocidad, índice 0-100.
 
 Tamaños: **P** ≈ media jornada · **M** ≈ 1-2 · **G** ≈ 3+.
 
-| # | Entrega | Depende de | Tam. | Agente | Paralelo con |
-|---|---|---|---|---|---|
-| **M0** | Reglas y decisiones al día antes de que nadie construya | — | P | `docs` | M1, MA |
-| **M1** | La evidencia congelada | — | P | `qa` | M0, MA |
-| **MA** | El compromiso se ve en el backlog (tu arrastre) | — | P | `frontend` | M0, M1 — **y va ya** |
-| **M2** | Esquema v2 y la primera migración | M0, M1 | G | `dba`+`backend`, revisa `arquitecto` | MB |
-| **MB** | Glifos y paleta de los seis valores, medidos | M0 | M | `diseno` | M2, M3, M4, M5, M6 |
-| **M3** | El dominio deja de creer en un solo sprint | M2 | G | `backend` | MB |
-| **M4** | El dominio entiende cinco estados | M3 | G | `backend`+`qa` | MB |
-| **M5** | El reloj de tramos | M4 | G | `backend`+`qa` | MB |
-| **M6** | Equipos: entidad, comandos y vista | M2 | M | `backend`+`frontend` | MB |
-| **M7** | Cada proyecto gestiona su sprint — **primer entregable visible del bloque** | M3 | M | `frontend` | M8 |
-| **M8** | Sprint general derivado, con su estado vacío | M3, M6 | G | `frontend`+`data` | M7 |
-| **M9** | Capacidad, con su cobertura | M6, M8 | M | `data`+`frontend` | M10, M11 |
-| **M10** | Tablero por equipo: pipeline, bloqueo y errores | M4, MB, M6 | G | `frontend`+`ux` | M9, M11 |
-| **M11** | Detalle de tarea: criterios, estado y bloqueo | M4, M5 | M | `frontend` | M9, M10 |
-| **M12** | Panorama: avances, espera, cobertura y errores | M5, M9, M10 | M | `frontend`+`data` | — |
+**Estado al 2026-08-28**, y cada casilla con la línea de código o el commit que la sostiene.
+Estas etapas nunca tuvieron estado escrito en ningún sitio: **el código es la única fuente**,
+así que se grepeó una por una. Cuatro estaban cerradas sin que nadie moviera nada.
+
+| # | Entrega | Depende de | Tam. | Agente | Estado | Evidencia (verificada 2026-08-28) |
+|---|---|---|---|---|---|---|
+| **M0** | Reglas y decisiones al día antes de que nadie construya | — | P | `docs` | ✅ | Commit `84cc125`; bitácora de `PLAN.md` del 2026-08-27, «`CLAUDE.md` corregido en los cinco puntos» |
+| **M1** | La evidencia congelada | — | P | `qa` | ✅ | Commit `84cc125`; bitácora de `PLAN.md`, restauración **probada** y los conteos escritos |
+| **MA** | El compromiso se ve en el backlog (tu arrastre) | — | P | `frontend` | ✅ | Commit `e272933` «MA — el compromiso se ve en el backlog, y el reloj deja de reiniciarse». Fue antes de M2, como el plan pedía |
+| **M2** | Esquema v2 y la primera migración | M0, M1 | G | `dba`+`backend`, revisa `arquitecto` | ✅ | Commit `509630b`; `version.ts:10` (`ESQUEMA_VERSION = 2`); `migraciones/index.ts:34-60` (una sola entrada 1→2); `tests/migraciones/esquema-v2.test.ts` cubre campo desconocido, dos tramos abiertos y dos sprints activos |
+| **MB** | Glifos y paleta de los seis valores, medidos | M0 | M | `diseno` | ⬜ | **No empezada.** `util/presentacion.ts:17-24` mapea `iniciado`, `en_pruebas` y `terminado` a la **misma** forma `'curso'`: tres estados, un glifo. Faltan cuatro de las siete formas |
+| **M3** | El dominio deja de creer en un solo sprint | M2 | G | `backend` | 🟡 | **Casi entera.** Commits `9d6e8f8` y `e35fd43`; `derivar.ts:330` ya es `sprintActivo(doc, clave)`; `tests/comandos/sprints-por-proyecto.test.ts:32,39` es la prueba que M3 pedía. **Queda:** `paraSprintDeProyecto` (`clasificar.ts:210`) y `filasDeProyecto` (`sprint.ts:153`) siguen vivos |
+| **M4** | El dominio entiende cinco estados | M3 | G | `backend`+`qa` | ⬜ | **No empezada, y es lo más urgente.** `derivar.ts:98-111` tiene el `switch` de cuatro casos; `clasificar.ts:61-63` `estaAbierta` ignora `en_pruebas` y `terminado`; `backlog.ts:54` `ORDEN_ESTADO` lista cuatro. El enum de seis ya está en el modelo: el defecto es alcanzable hoy |
+| **M5** | El reloj de tramos | M4 | G | `backend`+`qa` | ⬜ | **No empezada.** El campo existe y nadie lo escribe: las dos únicas escrituras de `tarea.trabajo` en todo `src/` son `[]` (`reductor.ts:831`, `migraciones/index.ts:104`), y `cambiarEstado` (`reductor.ts:946-972`) no abre ni cierra tramos |
+| **M6** | Equipos: entidad, comandos y vista | M2 | M | `backend`+`frontend` | 🟡 | **Modelo sí, comandos y vista no.** `esquema.ts:140-154` ya tiene `Equipo` con `responsabilidades` y `capacidad`, y `:344` `proyecto.equipos`. Pero el único comando es `editarEquipo` (`tipos.ts:548-554`) y escribe **solo sobre `equipos[0]`** (`reductor.ts:1436-1443`): un proyecto no puede tener dos equipos. Faltan `crearEquipo`, `eliminarEquipo`, `moverMiembro`, `asignarEquipo` |
+| **M7** | Cada proyecto gestiona su sprint — **primer entregable visible del bloque** | M3 | M | `frontend` | 🟡 | Crear, activar y cerrar por proyecto ya están (commit `9d6e8f8`). **Queda** el conmutador «Solo este proyecto / Todo el sprint», vivo en `PanelSprint.tsx:107`, que esta etapa dice que debe desaparecer. **Bloqueada además por la decisión G1** |
+| **M8** | Sprint general derivado, con su estado vacío | M3, M6 | G | `frontend`+`data` | 🟡 | `VistaSprintGlobal.tsx:67` ya agrega `sprintsActivos(documento)` en vez de tomar `[0]` — corregido el 2026-08-28 por otro agente. **Falta** la agregación por persona y equipo y el estado vacío con sus tres salidas |
+| **M9** | Capacidad, con su cobertura | M6, M8 | M | `data`+`frontend` | ⬜ | **No empezada.** `MINIMO_COBERTURA_PARA_PUNTOS` no existe en `src/`; `dominio/carga.ts` no calcula cobertura |
+| **M10** | Tablero por equipo: pipeline, bloqueo y errores | M4, MB, M6 | G | `frontend`+`ux` | ⬜ | **No empezada.** No existe `VistaTablero.tsx` ni entrada de tablero en `vistas/globales/registro.ts` |
+| **M11** | Detalle de tarea: criterios, estado y bloqueo | M4, M5 | M | `frontend` | 🟡 | **En curso y sin commitear.** `vistas/proyecto/HojaDetalle.tsx` es un archivo nuevo del árbol de trabajo: lee criterios, equipo, bloqueo y el reloj. Su propio encabezado (`:24`) dice que `criterios`, `tipo` y `equipo_id` **solo se leen**, no se editan. Y el reloj no puede mostrar nada mientras M5 no produzca tramos |
+| **M12** | Panorama: avances, espera, cobertura y errores | M5, M9, M10 | M | `frontend`+`data` | ⬜ | **No empezada.** `dominio/panorama.ts` no tiene espera de aceptación, ni cobertura de estimación, ni sprint vencido |
+
+**Lo que esta tabla deja a la vista, y es la razón de que exista:** el carril 1 se ejecutó
+salteado. M2 entró entero, M3 casi entero, y **M4 y M5 se saltaron** — pero M7 y M11, que
+van después, ya empezaron. El resultado es un modelo de seis estados con un dominio de
+cuatro, que es el defecto de la bitácora del 2026-08-28.
 
 ### Cómo repartirlas sin que se pisen
 
@@ -295,7 +328,7 @@ M11 a la vez**. M12 va al final porque lee de las tres.
 ---
 
 ### M0 · Reglas y decisiones al día
-**Agente:** `docs` · **Tamaño:** P · **Depende de:** nada
+**Estado:** ✅ terminada (commit `84cc125`) · **Agente:** `docs` · **Tamaño:** P · **Depende de:** nada
 
 Trasladar N11–N18 a `docs/PLAN.md` y **corregir `CLAUDE.md`**, que a partir de las decisiones
 de hoy contradice al producto en cinco puntos: los cuatro estados de la sección Convenciones,
@@ -316,7 +349,7 @@ métricas de adorno; N11–N18 están en `docs/PLAN.md` con fecha.
 ---
 
 ### M1 · La evidencia congelada
-**Agente:** `qa` · **Tamaño:** P · **Depende de:** nada
+**Estado:** ✅ terminada (commit `84cc125`) · **Agente:** `qa` · **Tamaño:** P · **Depende de:** nada
 
 Una copia fechada de `datos.json`, `historial.jsonl` y `respaldos/` **fuera** de la carpeta de
 la app, y los conteos de hoy escritos.
@@ -331,7 +364,9 @@ conteos (4 proyectos, 2 tareas, 0 sprints, 0 estimadas) quedan en `docs/PLAN.md`
 ---
 
 ### MA · El compromiso se ve en el backlog
-**Agente:** `frontend` · **Tamaño:** P · **Depende de:** nada · **Va ya, antes que M2**
+**Estado:** ✅ terminada (commit `e272933`) · **Agente:** `frontend` · **Tamaño:** P · **Depende de:** nada
+
+*Sobre «va ya, antes que M2»: se cumplió. `e272933` es anterior a `509630b`, que es M2.*
 
 El alcance por omisión del backlog pasa a `todas`; la fila comprometida **destaca** en vez de
 atenuarse; sacar del sprint confirma (N16) y el compromiso se vuelca entero.
@@ -358,7 +393,7 @@ comandos; una prueba de interfaz comprueba la marca en el DOM.
 ---
 
 ### M2 · Esquema v2 y la primera migración
-**Agente:** `dba` + `backend`, revisa `arquitecto` · **Tamaño:** G · **Depende de:** M0, M1
+**Estado:** ✅ terminada (commit `509630b`) · **Agente:** `dba` + `backend`, revisa `arquitecto` · **Tamaño:** G · **Depende de:** M0, M1
 
 **Todo lo estructural en un solo salto.** Cada etapa posterior que cambie el esquema cuesta
 otra migración, y para entonces los datos ya serán tuyos.
@@ -406,7 +441,9 @@ proyectos distintos **se acepta**; `npm run tipos` limpio en los tres tsconfig.
 ---
 
 ### MB · Glifos y paleta de los seis valores
-**Agente:** `diseno` · **Tamaño:** M · **Depende de:** M0 · **En paralelo con todo el carril 1**
+**Estado:** ⬜ pendiente · **Agente:** `diseno` · **Tamaño:** M · **Depende de:** M0 · **En paralelo con todo el carril 1**
+
+*Hoy `presentacion.ts:17-24` da la misma forma `'curso'` a `iniciado`, `en_pruebas` y `terminado`: en pantalla los tres son el mismo glifo.*
 
 Cinco estados del pipeline + `cancelada` + `sindesglosar` = **siete formas** que tienen que
 distinguirse a 14 px y en escala de grises.
@@ -433,22 +470,57 @@ forma y se separan con un chip. No se amplía el número de siluetas.
 ---
 
 ### M3 · El dominio deja de creer en un solo sprint
-**Agente:** `backend` · **Tamaño:** G · **Depende de:** M2
+**Estado:** 🟡 casi entera · **Agente:** `backend` · **Tamaño:** G → **P**, ver el recorte de abajo · **Depende de:** M2
 
-Renombrar `sprintActivo(doc): Sprint | undefined` a `sprintsActivos(doc): Sprint[]` y añadir
-`sprintDeProyecto(doc, clave)`. **El compilador hace el inventario**: no hay que buscar los
-sitios a mano.
+**[SUPERADO — alcance recortado el 2026-08-28. Lo que sigue describe un mundo que ya no
+existe; se conserva porque explica el defecto que se estaba persiguiendo.]**
 
-Y acotar al proyecto lo que hoy es global: `activarSprint` (rechaza si hay otro activo *en
-todo el documento*), `resolverSprintSiguiente` y `primerSprintPlaneado` (arrastran lo no
-terminado de SICOE al sprint planeado de PED), `sprintDelCierre` y `sprintsAtravesados`.
-Desaparecen `paraSprintDeProyecto` y `filasDeProyecto`: filtraban el sprint global por
-proyecto, y ya no hay sprint global.
+> Renombrar `sprintActivo(doc): Sprint | undefined` a `sprintsActivos(doc): Sprint[]` y añadir
+> `sprintDeProyecto(doc, clave)`. **El compilador hace el inventario**: no hay que buscar los
+> sitios a mano.
+>
+> Y acotar al proyecto lo que hoy es global: `activarSprint` (rechaza si hay otro activo *en
+> todo el documento*), `resolverSprintSiguiente` y `primerSprintPlaneado` (arrastran lo no
+> terminado de SICOE al sprint planeado de PED), `sprintDelCierre` y `sprintsAtravesados`.
+> Desaparecen `paraSprintDeProyecto` y `filasDeProyecto`: filtraban el sprint global por
+> proyecto, y ya no hay sprint global.
+>
+> **Terminado cuando:** `grep -rn "sprintActivo(" src/` da **cero**; `npm run tipos` limpio
+> **sin un solo `as` ni `!` añadido**; las 1006 pruebas en verde tras actualizar
+> `tests/apoyo/constructores.ts`; y **una prueba nueva que hoy es imposible**: dos proyectos con
+> sprint activo a la vez, con fechas distintas, y cada uno cierra sin tocar al otro.
 
-**Terminado cuando:** `grep -rn "sprintActivo(" src/` da **cero**; `npm run tipos` limpio
-**sin un solo `as` ni `!` añadido**; las 1006 pruebas en verde tras actualizar
-`tests/apoyo/constructores.ts`; y **una prueba nueva que hoy es imposible**: dos proyectos con
-sprint activo a la vez, con fechas distintas, y cada uno cierra sin tocar al otro.
+**Lo que ya está hecho** (commits `9d6e8f8` y `e35fd43`), y no hay que volver a hacerlo:
+
+- `sprintsActivos(doc)` existe y se usa en once sitios. `sprintActivo` sobrevive con
+  **otra firma** —`sprintActivo(doc: Documento, clave: string | null)`,
+  `derivar.ts:330`—, y esa firma ya es por proyecto. **El criterio «`grep sprintActivo(` da
+  cero» quedó obsoleto: medía el nombre, no el defecto**, y el defecto está corregido.
+- `activarSprint` rechaza por clave, no por documento (`reductor.ts:1236`).
+- El arrastre entre proyectos ya no ocurre: `resolverSprintSiguiente` filtra por
+  `s.clave === cerrando.clave` (`reductor.ts:1913`) y rechaza un id explícito de otra clave
+  (`:1903`); `primerSprintPlaneado` recibe la clave (`cierre.ts:226`) y filtra por ella
+  (`cierre.ts:243`); `moverAlSprint` rechaza una tarea de otra clave (`reductor.ts:981`).
+- **La prueba «que hoy es imposible» ya existe**: `tests/comandos/sprints-por-proyecto.test.ts`
+  cubre «activar el segundo proyecto no apaga ni bloquea el primero» (`:32`) y «cerrar UNO
+  no arrastra su tarea al planeado de DOS» (`:39`).
+
+**Lo que queda de M3, y es todo. Tamaño: P.**
+
+1. **`paraSprintDeProyecto`** sigue vivo en `clasificar.ts:210`, usado solo por
+   `tests/dominio/clasificar.test.ts:381,386`. O se borra con su prueba, o se declara por
+   escrito para qué sirve todavía.
+2. **`filasDeProyecto`** sigue vivo en `sprint.ts:153`, con un solo consumidor:
+   `PanelSprint.tsx:107`, el conmutador «Solo este proyecto». **Se va con M7**, no antes:
+   borrarlo aquí rompería el panel.
+3. **`sprintDeProyecto(doc, clave)` no existe** y nadie lo ha echado en falta, porque
+   `sprintActivo(doc, clave)` hace ese papel. Decidir en una línea: se crea como alias o se
+   declara innecesario. *Recomendación:* **innecesario**; dos nombres para lo mismo es cómo
+   empieza que se contradigan.
+
+**Terminado cuando:** `grep -rn "paraSprintDeProyecto\|filasDeProyecto" src/` da cero (el
+segundo, después de M7); `npm run tipos` limpio sin un solo `as` ni `!` añadido; la suite en
+verde.
 
 **Archivos:** `src/compartido/dominio/` — `derivar.ts`, `clasificar.ts`, `sprint.ts`,
 `cierre.ts`, `backlog.ts`, `bloqueos.ts`, `carga.ts`, `terminadas.ts`, `administracion.ts`,
@@ -459,7 +531,14 @@ y `tests/comandos/`.
 ---
 
 ### M4 · El dominio entiende cinco estados
-**Agente:** `backend` + `qa` · **Tamaño:** G · **Depende de:** M3 (mismos archivos, en serie)
+**Estado:** ⬜ pendiente — **la más urgente del plan** · **Agente:** `backend` + `qa` · **Tamaño:** G · **Depende de:** M3 (mismos archivos, en serie)
+
+> **Ya no es preventiva, es un defecto en curso.** M2 metió `en_pruebas` y `terminado` en el
+> modelo y `cambiarEstado` los acepta, pero `contarTareas` (`derivar.ts:98-111`) sigue con
+> cuatro casos y `hojas = hechas + enCurso + pendientes` (`:114`): esas tareas **se caen del
+> denominador**. Medido contra el dominio real: cuatro tareas —una de cada— devuelven
+> `hojas: 2` y `pct: 50`, cuando lo honesto es 1 de 4. Es el `0%` de la regla 2 con otra
+> ropa. Mientras M4 no cierre, esos dos estados no se deben usar.
 
 **Lo primero de la etapa es volver exhaustivo el `switch` de `contarTareas`.** Hoy tiene
 cuatro casos, sin `default` y sin chequeo: un estado nuevo **no da error de tipos**, cae
@@ -491,7 +570,22 @@ ciclo); `tests/modelo/oro-documento-real.test.ts` y las suites de dominio y coma
 ---
 
 ### M5 · El reloj de tramos
-**Agente:** `backend` + `qa` · **Tamaño:** G · **Depende de:** M4 (mismos archivos, en serie)
+**Estado:** ⬜ pendiente · **Agente:** `backend` + `qa` · **Tamaño:** G · **Depende de:** M4 (mismos archivos, en serie)
+
+> **Lo que se verificó el 2026-08-28, y confirma que M5 no ha empezado.** El reloj de tramos
+> está construido **entero del lado lector y vacío del lado escritor**. Existen el modelo
+> (`esquema.ts:166-181`, `EsquemaTramoTrabajo`), la validación (`esquema.ts:239-245`), el
+> cálculo (`duracion.ts:88-108`) y la pantalla (`HojaDetalle.tsx:385-400`). Lo que **no**
+> existe es nadie que escriba un tramo: las dos únicas escrituras de `tarea.trabajo` en todo
+> `src/` lo inicializan a `[]` —`reductor.ts:831` en `crearTarea` y
+> `migraciones/index.ts:104` en la migración— y `cambiarEstado` (`reductor.ts:946-972`) solo
+> toca `estado` y `aceptada_en`: no abre ni cierra un tramo con ningún estado.
+> **Consecuencia medida:** `tiempoEnDesarrollo` devuelve `{dias: null, tramos: 0}` para todo
+> el documento y la vista Tiempos dice «Sin tramos cerrados» a perpetuidad. Comprobado
+> también sobre el archivo real del usuario —tres tareas en `iniciado`, las tres con
+> `trabajo: []`— y sobre `datos/ejemplo.json` y `datos/semilla.json`.
+> **Esto es exactamente el alcance de esta etapa**, y el productor de tramos es su primera
+> línea de código, no la última.
 
 `duracion.ts` se reescribe entero. Mueren `arranqueDelSprint`, `arranqueEfectivo` y
 `sprintDelCierre`, y con ellos los tres defectos que ese anclaje produjo. Nacen: suma de
@@ -515,7 +609,12 @@ presenta como «corriendo desde hace N días» y **no entra en ningún promedio*
 ---
 
 ### M6 · Equipos: entidad, comandos y vista
-**Agente:** `backend` + `frontend` · **Tamaño:** M · **Depende de:** M2 (en serie tras M5 por `reductor.ts`)
+**Estado:** 🟡 modelo sí, comandos y vista no · **Agente:** `backend` + `frontend` · **Tamaño:** M · **Depende de:** M2 (en serie tras M5 por `reductor.ts`)
+
+*La migración de M2 ya dejó `proyecto.equipos` con un equipo «General» por proyecto,
+`responsabilidades` y `capacidad`. Lo que falta es todo lo que hace de esto una entidad de
+tres niveles: `editarEquipo` escribe solo sobre `equipos[0]` (`reductor.ts:1436-1443`), y
+`SeccionEquipos.tsx:6-8` todavía declara que «no hay entidad equipo con identidad propia».*
 
 Comandos nuevos: `crearEquipo`, `editarEquipo`, `eliminarEquipo`, `moverMiembro`,
 `asignarEquipo` (a una tarea). La vista de Equipos —la única que hay, y sigue siendo única—
@@ -536,10 +635,20 @@ ningún `rol`; `⌘Z` revierte cada comando nuevo.
 ---
 
 ### M7 · Cada proyecto gestiona su sprint
-**Agente:** `frontend` · **Tamaño:** M · **Depende de:** M3 · **Paralelo con M8**
+**Estado:** 🟡 el fondo sí, el conmutador no · **Agente:** `frontend` · **Tamaño:** M · **Depende de:** M3 **y de la decisión G1** · **Paralelo con M8**
 
 `PanelSprint` pierde el conmutador «Solo este proyecto / Todo el sprint» —existía porque el
 sprint cruzaba once proyectos— y gana planear, activar y cerrar el sprint **de su** proyecto.
+
+**Estado real:** planear, activar y cerrar por proyecto **ya están** (commit `9d6e8f8`). Lo
+que queda de esta etapa es el conmutador, vivo en `PanelSprint.tsx:107` a través de
+`filasDeProyecto`, y con él se cierra el punto 2 del recorte de M3.
+
+**Antes de tocarla hay que decidir G1** —la ceremonia de once cierres, sección 4 punto 1—,
+porque es lo que decide si esta pantalla gana un botón de cierre o lo pierde en favor de una
+pantalla de cierre en lote. **Y aquí es donde encaja la retrospectiva** si se toma la
+recomendación del punto 3 de la sección 4: el comando y la pantalla ya existen y solo les
+falta ficha.
 
 **Terminado cuando:** abres SICOE y SIES, activas un sprint en cada uno **con fechas
 distintas**, arrastras una tarea a cada uno, cierras la app, la reabres y los dos siguen ahí;
@@ -553,7 +662,7 @@ le arrastra nada.
 ---
 
 ### M8 · Sprint general derivado
-**Agente:** `frontend` + `data` · **Tamaño:** G · **Depende de:** M3, M6 · **Paralelo con M7**
+**Estado:** 🟡 empezada · **Agente:** `frontend` + `data` · **Tamaño:** G · **Depende de:** M3, M6 · **Paralelo con M7**
 
 `VistaSprintGlobal` deja de leer «el sprint activo» y pasa a agregar los sprints activos y
 planeados **por persona y por equipo**, diciendo su ventana en voz alta y muriendo cuando
@@ -573,7 +682,7 @@ sprint **planeado**, la vista vuelve sola sin que nadie pulse nada.
 ---
 
 ### M9 · Capacidad
-**Agente:** `data` + `frontend` · **Tamaño:** M · **Depende de:** M6, M8 · **Paralelo con M10, M11**
+**Estado:** ⬜ pendiente · **Agente:** `data` + `frontend` · **Tamaño:** M · **Depende de:** M6, M8 · **Paralelo con M10, M11**
 
 **Terminado cuando:** un equipo con 3 de 8 tareas estimadas **no** muestra barra ni
 porcentaje, muestra «3 de 8 estimadas · faltan 5»; con 8 de 8 muestra «21 de 30 pts · 8 de 8
@@ -590,7 +699,7 @@ sprints cerrados aparece la mediana real al lado de la capacidad declarada.
 ---
 
 ### M10 · El tablero por equipo
-**Agente:** `frontend` + `ux` · **Tamaño:** G · **Depende de:** M4, MB, M6 · **Paralelo con M9, M11**
+**Estado:** ⬜ pendiente · **Agente:** `frontend` + `ux` · **Tamaño:** G · **Depende de:** M4, MB, M6 · **Paralelo con M9, M11**
 
 Columnas del pipeline, tarjeta de equipo con su avance agregado, tarjetas de tarea dentro,
 bloqueo y captura de errores.
@@ -623,9 +732,12 @@ documento sembrado de **mil** filas y el número está publicado al pie, como ya
 ---
 
 ### M11 · Detalle de tarea
-**Agente:** `frontend` · **Tamaño:** M · **Depende de:** M4, M5 · **Paralelo con M9, M10**
+**Estado:** 🟡 en curso, sin commitear · **Agente:** `frontend` · **Tamaño:** M · **Depende de:** M4, M5 · **Paralelo con M9, M10**
 
-Descripción, **criterios de aceptación como texto** (N17: casillas serían sub-tareas con
+*Empezó antes que sus dos dependencias, contra el orden del carril 1. Se nota: la hoja de
+detalle pinta el reloj y solo puede decir «Sin tramos cerrados», porque M5 no existe.*
+
+Descripción, **criterios de aceptación como texto** (**N18**: casillas serían sub-tareas con
 estado propio, contra la regla 1), estado, equipo, esfuerzo y bloqueo con su motivo.
 
 **Terminado cuando:** abres una tarea, ves y editas todo lo anterior, y sobrevive al
@@ -641,7 +753,7 @@ el estado se cambia por **el mismo camino** que el tablero y la tecla, no por un
 ---
 
 ### M12 · Panorama
-**Agente:** `frontend` + `data` · **Tamaño:** M · **Depende de:** M5, M9, M10
+**Estado:** ⬜ pendiente · **Agente:** `frontend` + `data` · **Tamaño:** M · **Depende de:** M5, M9, M10
 
 **Terminado cuando:** por proyecto se ve avance con su conteo crudo, **sprint vencido y
 todavía abierto** si lo hay («SIES · terminó hace 6 días y sigue abierto»), **cuántas esperan
@@ -656,9 +768,9 @@ estimación («SICOE · 4 de 19 estimadas») y errores abiertos; **cero gráfica
 
 ## 4 · Lo que no pediste y hace falta
 
-Tres, cada una justificada contra lo que la app ya hace. Las otras dos de la ronda anterior
-se disolvieron: la ventana del sprint general la resolvió N15, y la espera de aceptación ya
-está dentro de M12.
+Cuatro —la tercera se añadió el 2026-08-28—, cada una justificada contra lo que la app ya
+hace. Las otras dos de la ronda anterior se disolvieron: la ventana del sprint general la
+resolvió N15, y la espera de aceptación ya está dentro de M12.
 
 1. **Un sprint por proyecto multiplica por once la ceremonia de abrir y cerrar.**
    Cerrar un sprint hoy es una pantalla entera con una decisión por tarea. Hacerlo once veces
@@ -667,12 +779,33 @@ está dentro de M12.
    proyecto (duración y día de inicio) que cree el siguiente solo. **No está en ninguna
    etapa: decídelo antes de M7**, porque es donde encaja sin rehacer nada.
 
+   **Sigue sin decidir y sin etapa al 2026-08-28, y ahora bloquea de verdad:** M7 ya está
+   empezada. La disyuntiva, en una línea cada una:
+   **(a) cierre en lote** — una pantalla que cierra los once de un tirón: más trabajo de
+   interfaz, cero campos nuevos, una sola ceremonia y tú decides cada vez;
+   **(b) cadencia por proyecto** — duración y día de inicio guardados por proyecto y el
+   siguiente sprint nace solo: menos interfaz, pero un campo nuevo en el esquema (otra
+   migración, ya no gratis) y un automatismo que tiene que poder apagarse.
+   *No la decido yo.* Lo que sí digo es el costo: (b) era barata cuando M2 estaba abierta y
+   ahora cuesta una migración propia.
+
 2. **La cobertura de estimación tiene que verse fuera de la vista de capacidad.**
    Vas a mirar «34 pts» y no «12 de 18». Por eso está en M12 como señal por proyecto: es la
    única forma de saber si la capacidad de esta semana significa algo. Sin ella, la capacidad
    se convierte en el índice de salud 0-100 que está prohibido desde el día uno.
 
-3. **El archivo de oro se regenera una vez y se lee entero.**
+3. **La retrospectiva ya está construida y ningún plan la registra.** No es un hueco de
+   producto: es un hueco de tablero. `escribirRetrospectiva` existe como comando aparte de
+   `editarSprint`, tal como manda la regla 8 (`tipos.ts:513`, `reductor.ts:1318`); se ofrece
+   al cerrar (`vistas/cierre/ResumenCierre.tsx:130`), se lee en Terminadas
+   (`VistaTerminadas.tsx:176`) y tiene pruebas propias
+   (`tests/interfaz/retrospectiva.test.tsx`, `tests/comandos/sprints-por-proyecto.test.ts:127-190`).
+   Commits `2176c4f` y `6c21435`. **Lo único que falta decidir es dónde queda registrada:**
+   ficha propia con efecto retroactivo, anexo a M7, o entrega fuera de plan anotada solo en
+   bitácora. *Recomendación:* **anexo a M7** — cerrar un sprint y escribir su retro son la
+   misma pantalla, y M7 es la etapa del cierre por proyecto.
+
+4. **El archivo de oro se regenera una vez y se lee entero.**
    `tests/modelo/oro-documento-real.test.ts` congela 1037 líneas y es el mecanismo que probó
    que N9 no rompía nada. Con sprints por proyecto, seis estados y tramos, **cambia porque
    debe cambiar** — y ahí está el peligro: borrarlo y regenerarlo sin leerlo destruye la única
@@ -682,7 +815,10 @@ está dentro de M12.
 
 ## 5 · Qué NO hacer
 
-1. **No captures los 11 proyectos hasta que M2 esté cerrada.**
+1. ~~**No captures los 11 proyectos hasta que M2 esté cerrada.**~~ **[CUMPLIDA — M2 cerró
+   el 2026-08-27]** Ya puedes capturar. El aviso que la sustituye es más chico: no uses
+   `en_pruebas` ni `terminado` hasta que cierre M4, porque hoy esas tareas se caen del
+   denominador del avance.
 2. **No hagas M3, M4 y M5 en la misma etapa ni en paralelo.** Tocan los mismos archivos y las
    mismas suites; juntos, ninguna prueba roja dice cuál de los tres cambios la rompió.
 3. **No metas `bloqueado` en el enum de estado.** Obliga a guardar el estado anterior en otro
@@ -719,7 +855,7 @@ después.
 | **S3** | Las responsabilidades son texto libre. Se promueven a catálogo el día que la app necesite ramificar según el valor, y ese día se escribe en `docs/PLAN.md` | Antes de M6 |
 | **S4** | `MINIMO_COBERTURA_PARA_PUNTOS = 0.8`, revisable con datos tras dos sprints | Antes de M9 |
 | **S5** | El id de equipo es legible a mano (`sicoe-frontend`), sin contador, como el de persona | Antes de M2 |
-| **S6** | La cadencia de sprint por proyecto (punto 1 de la sección 4) se decide antes de M7 | Antes de M7 |
+| **S6** | La cadencia de sprint por proyecto (punto 1 de la sección 4) se decide antes de M7 | Antes de M7 — **vencido: M7 ya empezó y sigue sin decidirse** |
 
 ---
 

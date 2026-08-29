@@ -136,13 +136,13 @@ import {
  * cancelar no es un paso más del avance sino salirse de él, y tropezarse con ella
  * pulsando Espacio de más sería sacar la tarea de todos los denominadores sin querer.
  */
-const CICLO: Record<EstadoTarea, EstadoTarea> = {
+const CICLO: Record<EstadoTarea, EstadoTarea | null> = {
   pendiente: 'iniciado',
   iniciado: 'en_pruebas',
   en_pruebas: 'terminado',
   terminado: 'done',
-  done: 'pendiente',
-  cancelada: 'pendiente',
+  done: null,
+  cancelada: null,
 };
 
 /** Un arrastre no señala una posición, señala un HUECO: el de arriba o el de abajo. */
@@ -205,12 +205,15 @@ function itemsDeFila(fila: Fila, admiteSprint: boolean): ItemMenu[] {
   const items: ItemMenu[] = [];
 
   if (fila.tipo === 'tarea') {
-    items.push({
-      accion: 'estado',
-      texto: `Marcar ${etiquetaDeTarea(CICLO[fila.tarea.estado]).toLowerCase()}`,
-      tecla: 'Espacio',
-      grupo: 'hacer',
-    });
+    const siguiente = CICLO[fila.tarea.estado];
+    if (siguiente !== null) {
+      items.push({
+        accion: 'estado',
+        texto: `Marcar ${etiquetaDeTarea(siguiente).toLowerCase()}`,
+        tecla: 'Espacio',
+        grupo: 'hacer',
+      });
+    }
     if (admiteSprint) {
       items.push({ accion: 'sprint', texto: 'Al sprint', tecla: 'S', grupo: 'hacer' });
     }
@@ -422,6 +425,7 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
     expandir,
     irANodo,
     redactar,
+    verDetalle,
     confirmar,
     avisar,
     ofrecerDeshacer,
@@ -574,6 +578,22 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
 
   const editandoTitulo = redaccion?.tipo === 'titulo' ? redaccion.id : null;
 
+  /**
+   * Abrir el detalle de una fila. Enfoca ADEMÁS de abrir: la hoja se pinta en el otro
+   * panel, y si el foco lógico no viajara con ella, cerrarla con `Escape` devolvería el
+   * teclado a una fila distinta de la que el usuario acababa de mirar.
+   *
+   * No está en el `⋯`: con ocho ítems ese menú ya está en el techo de la regla 19. Sus
+   * dos puertas son el clic en el título y la tecla `D`, y las dos pasan por aquí.
+   */
+  const abrirDetalle = useCallback(
+    (fila: Fila) => {
+      irANodo(fila.id);
+      verDetalle({ id: fila.id, clase: fila.tipo });
+    },
+    [irANodo, verDetalle],
+  );
+
   // --- acciones de una fila -------------------------------------------------
 
   const eliminar = useCallback(
@@ -683,7 +703,10 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
     (fila: Fila, accion: AccionFila) => {
       switch (accion) {
         case 'estado':
-          if (fila.tipo === 'tarea') cambiarEstado(fila.tarea, CICLO[fila.tarea.estado]);
+          if (fila.tipo === 'tarea') {
+            const siguiente = CICLO[fila.tarea.estado];
+            if (siguiente !== null) cambiarEstado(fila.tarea, siguiente);
+          }
           return;
         case 'sprint':
           if (fila.tipo === 'tarea') void acciones.mover(fila.tarea);
@@ -790,7 +813,8 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
           if (fila.tipo !== 'tarea') {
             if (expandible) alternar(fila.id);
           } else if (editable) {
-            cambiarEstado(fila.tarea, CICLO[fila.tarea.estado]);
+            const siguiente = CICLO[fila.tarea.estado];
+            if (siguiente !== null) cambiarEstado(fila.tarea, siguiente);
           }
           return;
         case 'F2':
@@ -804,6 +828,15 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
           return;
         default:
           break;
+      }
+
+      // `D` va ANTES del corte por `editable`: el detalle se LEE, y leerlo tiene que
+      // seguir funcionando en la pestaña «Terminadas» y en modo solo lectura, que es
+      // justo donde uno va a preguntarse qué era aquella tarea.
+      if (letraSuelta(evento, 'd')) {
+        evento.preventDefault();
+        abrirDetalle(fila);
+        return;
       }
 
       if (!editable) return;
@@ -839,6 +872,7 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
       }
     },
     [
+      abrirDetalle,
       acciones,
       activoVigente,
       alternar,
@@ -933,6 +967,7 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
             capturar={capturarConBoton}
             cambiarEstado={cambiarEstado}
             ejecutar={ejecutarAccion}
+            abrirDetalle={abrirDetalle}
 
             registrar={(nodo) => {
               if (nodo === null) nodos.current.delete(fila.id);
@@ -972,6 +1007,8 @@ interface PropsFila {
   cambiarEstado: (tarea: Tarea, estado: EstadoTarea) => void;
   /** Lo que hace el menú `⋯`. Comparte implementación con el teclado, no la duplica. */
   ejecutar: (fila: Fila, accion: AccionFila) => void;
+  /** Abre la hoja de detalle. Misma implementación que la tecla `D`, no una copia. */
+  abrirDetalle: (fila: Fila) => void;
   registrar: (nodo: HTMLDivElement | null) => void;
 }
 
@@ -992,6 +1029,7 @@ function FilaArbol({
   capturar,
   cambiarEstado,
   ejecutar,
+  abrirDetalle,
   registrar,
 }: PropsFila) {
 
@@ -1061,6 +1099,7 @@ function FilaArbol({
   if (fila.tipo === 'tarea') {
     const { tarea } = fila;
     const bloqueo = bloqueoAbierto(tarea);
+    const siguienteEstado = CICLO[tarea.estado];
     const arrastrable = editable && acciones.admiteSprint(tarea);
     const clases = ['fila', 'fila--tarea'];
     // Canal 2: la banda de procedencia. Solo mientras la tarea siga abierta.
@@ -1088,17 +1127,17 @@ function FilaArbol({
         {asa}
         <Chevron abierto={false} vacio />
         {/* Canal 1: el estado, en la forma del glifo. El bloqueo NO lo sustituye. */}
-        {editable ? (
+        {editable && siguienteEstado !== null ? (
           <button
             type="button"
             className="glifo glifo--boton"
             // El árbol tiene UNA parada de tabulador (roving tabindex); este botón no
             // puede abrir 300 más. Se llega con Espacio sobre la fila.
             tabIndex={-1}
-            title={`${etiquetaDeTarea(tarea.estado)} · clic para pasar a ${etiquetaDeTarea(CICLO[tarea.estado])}`}
+            title={`${etiquetaDeTarea(tarea.estado)} · clic para pasar a ${etiquetaDeTarea(siguienteEstado)}`}
             onClick={(evento) => {
               evento.stopPropagation();
-              cambiarEstado(tarea, CICLO[tarea.estado]);
+              cambiarEstado(tarea, siguienteEstado);
             }}
           >
             <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} />
@@ -1110,9 +1149,7 @@ function FilaArbol({
         {editandoTitulo ? (
           <CampoTitulo id={tarea.id} valor={tarea.titulo} clase="tarea" />
         ) : (
-          <span className="fila__texto" title={tarea.titulo}>
-            {tarea.titulo}
-          </span>
+          <TituloAbridor titulo={tarea.titulo} clase="tarea" abrir={() => abrirDetalle(fila)} />
         )}
 
         {/* Canal 3: la bandera de bloqueo, junto al glifo y nunca en su lugar. */}
@@ -1188,9 +1225,7 @@ function FilaArbol({
       {editandoTitulo ? (
         <CampoTitulo id={fila.id} valor={titulo} clase={fila.tipo} />
       ) : (
-        <span className="fila__texto" title={titulo}>
-          {titulo}
-        </span>
+        <TituloAbridor titulo={titulo} clase={fila.tipo} abrir={() => abrirDetalle(fila)} />
       )}
 
       <ContadorBloqueos n={fila.bloqueadas} />
@@ -1233,6 +1268,45 @@ function FilaArbol({
       {editable && <MenuFila fila={fila} items={itemsDeFila(fila, false)} ejecutar={ejecutar} />}
       <Clave id={fila.id} />
     </div>
+  );
+}
+
+/**
+ * El título de la fila, que es también la puerta a su detalle.
+ *
+ * Es un `<button>` y no un `<span>` con `onClick` porque abre algo: un `div` que responde
+ * al ratón y a nada más deja fuera a quien navega con teclado o con lector de pantalla.
+ *
+ * `tabIndex={-1}` por la misma razón que el glifo de estado: el árbol tiene UNA parada de
+ * tabulador (roving tabindex) y trescientas filas no pueden traer trescientas más. Con el
+ * teclado se llega con `D` sobre la fila enfocada.
+ *
+ * `stopPropagation` es lo que separa los dos gestos que ahora conviven en la fila: el
+ * clic en el título ABRE, y el clic en cualquier otro sitio de la fila sigue plegando.
+ */
+function TituloAbridor({
+  titulo,
+  clase,
+  abrir,
+}: {
+  titulo: string;
+  clase: 'epica' | 'historia' | 'tarea';
+  abrir: () => void;
+}) {
+  const que = clase === 'epica' ? 'la épica' : clase === 'historia' ? 'la historia' : 'la tarea';
+  return (
+    <button
+      type="button"
+      className="fila__texto fila__texto--abre"
+      tabIndex={-1}
+      title={`${titulo}\nVer el detalle de ${que} · tecla D`}
+      onClick={(evento) => {
+        evento.stopPropagation();
+        abrir();
+      }}
+    >
+      {titulo}
+    </button>
   );
 }
 

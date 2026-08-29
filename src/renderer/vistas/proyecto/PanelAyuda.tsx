@@ -128,6 +128,13 @@ export function PanelAyuda({ cerrar }: { cerrar: () => void }) {
               Todas están también en el menú <span aria-hidden="true">⋯</span> de cada fila,
               al lado de lo que hacen.
             </p>
+            {/* `D` va aparte y no en la lista de arriba: esa lista promete estar entera
+                en el `⋯`, y el detalle NO está ahí — ese menú ya llega a los ocho ítems
+                que la regla 19 pone de techo. Prometerlo sería mentir en pantalla. */}
+            <p className="ayuda__nota">
+              <kbd>D</kbd> —o un clic en el título de la fila— abre el detalle: descripción,
+              criterios, bloqueos y tiempos. No está en el <span aria-hidden="true">⋯</span>.
+            </p>
           </section>
 
           <section className="ayuda__seccion">

@@ -59,7 +59,12 @@ export function primerDiaHabil(fecha: Fecha): Fecha {
 
 /** Está abierta: cuenta para la carga de alguien. Cancelada no cuenta para nada. */
 export function estaAbierta(tarea: Tarea): boolean {
-  return tarea.estado === 'pendiente' || tarea.estado === 'iniciado';
+  return (
+    tarea.estado === 'pendiente' ||
+    tarea.estado === 'iniciado' ||
+    tarea.estado === 'en_pruebas' ||
+    tarea.estado === 'terminado'
+  );
 }
 
 export function estaHecha(tarea: Tarea): boolean {
@@ -204,15 +209,6 @@ export function paraVistaSprint(
     if (ubicacion) filas.push({ item, ubicacion });
   }
   return filas;
-}
-
-/** Sprint filtrado a un proyecto: el panel derecho de la vista de proyecto. */
-export function paraSprintDeProyecto(
-  doc: Documento,
-  sprint: Sprint | undefined,
-  clave: string,
-): FilaSprint[] {
-  return paraVistaSprint(doc, sprint).filter((fila) => fila.ubicacion.proyecto.clave === clave);
 }
 
 /**

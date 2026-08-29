@@ -1,0 +1,145 @@
+/* ═══════════════════════════════════════════════════════════════
+   HOJA DE DETALLE — lo que hay dentro de una épica, una historia
+   o una tarea. Se apila sobre la celda del sprint en la misma
+   rejilla de `.cuerpo`; no es un modal y no atrapa el foco.
+   Ni un color literal: todo sale de los tokens de `base.css`.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Misma celda que el sprint —tercera columna de `.cuerpo`—, encima de él. La colocación
+   explícita del árbol y del sprint vive en `base.css` y es lo que impide que compartir
+   celda empuje al sprint a una segunda fila. */
+.panel--detalle {
+  grid-column: 3;
+  grid-row: 1;
+  z-index: 3;
+  border-left: 1px solid var(--hairline);
+  background: var(--fondo-panel);
+}
+
+/* Bajo el umbral duro el sprint no se pinta y la rejilla es de dos columnas: la hoja
+   pasa a la segunda, que es la del árbol. Sin esto abriría una columna implícita fuera
+   de la pantalla y la hoja no se vería nunca. */
+@media (max-width: 1040px) {
+  .panel--detalle { grid-column: 2; }
+}
+
+.detalle {
+  padding: 14px 16px 24px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+/* ── titular ──────────────────────────────────────────────────── */
+
+.detalle__titular { display: flex; flex-direction: column; gap: 4px; }
+
+.detalle__ruta {
+  font-size: 11px; color: var(--tinta-3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.detalle__titulo { display: flex; align-items: baseline; gap: 8px; }
+.detalle__titulo h3 {
+  font-size: 15px; font-weight: 600; color: var(--tinta-1);
+  line-height: 1.35; min-width: 0;
+}
+.detalle__titulo .glifo { align-self: center; }
+.detalle__titulo input { flex: 1 1 auto; min-width: 0; }
+
+.detalle__avance {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 11.5px; color: var(--tinta-2);
+}
+.detalle__estado { font-weight: 600; color: var(--tinta-1); }
+
+/* Ir a un estado concreto. Botones planos separados por hairline: es un grupo de
+   opciones, no cinco acciones primarias compitiendo por la atención. */
+.detalle__estados {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  padding: 4px; border: 1px solid var(--hairline); border-radius: 5px;
+  background: var(--fondo-cabecera);
+}
+.detalle__estados button {
+  min-height: 24px; padding: 0 8px; border-radius: 3px;
+  font-size: 11.5px; color: var(--tinta-2); white-space: nowrap;
+}
+.detalle__estados button:hover { background: var(--hover); color: var(--tinta-1); }
+.detalle__estados button[aria-pressed="true"] {
+  background: var(--fondo-panel); color: var(--tinta-1); font-weight: 600;
+  box-shadow: 0 0 0 1px var(--hairline-fuerte);
+}
+.detalle__estados-sep {
+  width: 1px; align-self: stretch; margin: 0 3px;
+  background: var(--hairline);
+}
+
+/* El bloqueo, con el motivo entero: en la fila del árbol solo cabía el contador. */
+.detalle__bloqueo {
+  padding: 7px 9px; border-radius: 4px;
+  background: var(--bloqueo-fondo); color: var(--bloqueo-tinta);
+  font-size: 11.5px; line-height: 1.45;
+}
+
+/* ── secciones ────────────────────────────────────────────────── */
+
+.detalle__seccion { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+
+.detalle__seccion-titulo {
+  font-size: 11px; font-weight: 600; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--tinta-3);
+  padding-bottom: 4px; border-bottom: 1px solid var(--hairline);
+  width: 100%;
+}
+
+.detalle__parrafo {
+  font-size: 12.5px; line-height: 1.5; color: var(--tinta-1);
+  white-space: pre-wrap; word-break: break-word;
+}
+
+/* Lo ausente se NOMBRA. Va en tinta apagada y en cursiva para que no se lea como dato. */
+.detalle__nada { font-size: 12px; color: var(--tinta-3); font-style: italic; }
+
+/* ── listas de hijos ──────────────────────────────────────────── */
+
+.detalle__hijos { list-style: none; margin: 0; padding: 0; width: 100%; }
+.detalle__hijos li {
+  display: flex; align-items: center; gap: 7px;
+  min-height: 24px; padding: 2px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 12.5px; color: var(--tinta-1);
+}
+.detalle__hijos li:last-child { border-bottom: 0; }
+.detalle__hijo-texto {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── tramos, bloqueos y sprints: dos columnas de metadato ─────── */
+
+.detalle__tramos { list-style: none; margin: 0; padding: 0; width: 100%; }
+.detalle__tramos li {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 11.5px; color: var(--tinta-2);
+}
+.detalle__tramos li:last-child { border-bottom: 0; }
+.detalle__tramo-estado {
+  flex: 1; min-width: 0; color: var(--tinta-3);
+  overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── campos ───────────────────────────────────────────────────── */
+
+.detalle__campos {
+  display: grid; grid-template-columns: 110px 1fr; gap: 4px 12px;
+  width: 100%; margin: 0;
+  font-size: 12.5px;
+}
+.detalle__campos dt { color: var(--tinta-3); font-size: 11.5px; }
+.detalle__campos dd { margin: 0; color: var(--tinta-1); min-width: 0; word-break: break-word; }
+
+/* ── editor de descripción ────────────────────────────────────── */
+
+.detalle__editor { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.detalle__editor textarea { width: 100%; }
+.detalle__acciones { display: flex; align-items: center; gap: 8px; }

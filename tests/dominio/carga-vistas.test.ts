@@ -25,6 +25,7 @@ import {
   type CargaPersona,
 } from '../../src/compartido/dominio/carga';
 import { estaAbierta, todasLasTareas } from '../../src/compartido/dominio/clasificar';
+import { filasDeBacklog } from '../../src/compartido/dominio/backlog';
 import { validarDocumento } from '../../src/compartido/modelo/esquema';
 import type { Documento, Tarea } from '../../src/compartido/modelo/tipos';
 import {
@@ -119,6 +120,23 @@ describe('el documento de prueba es válido: si no, las pruebas medirían un doc
 });
 
 describe('RepartoAbierto: la cola entera, dentro y fuera del sprint', () => {
+  it('en pruebas sigue en la carga y aparece en el backlog sin comprometer', () => {
+    const tarea = unaTarea({
+      id: 'ALFA-T1',
+      clave: 'ALFA',
+      estado: 'en_pruebas',
+      responsable: 'ana',
+    });
+    const doc = unDocumento({
+      personas: [ana],
+      proyectos: [proyectoCon('ALFA', 'Alfa', [tarea], ['ana'])],
+    });
+
+    expect(cargaDeQuien(doc, 'ana').abiertas.total).toBe(1);
+    expect(filasDeBacklog(doc, HOY, 'sin-comprometer', '').filas.map((fila) => fila.ubicacion.tarea.id)).toEqual([
+      'ALFA-T1',
+    ]);
+  });
   it('cuenta todo lo abierto de la persona, esté o no comprometido', () => {
     const doc = documentoCarga();
     expect(cargaDeQuien(doc, 'ana').abiertas.total).toBe(4);
