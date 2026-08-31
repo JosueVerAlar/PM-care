@@ -110,6 +110,7 @@ import { Medidor } from '../../componentes/Medidor';
 
 import { useAccionesOrden } from '../../estado/acciones-orden';
 import { useAccionesSprint } from '../../estado/acciones-sprint';
+import { MenuFila, type ItemMenuFila } from '../../componentes/menu-fila';
 import { useAccionesInterfaz, useInterfaz } from '../../estado/interfaz';
 import { useMutar } from '../../estado/mutaciones';
 import { enCampoDeTexto, letraSuelta } from '../../util/atajos';
@@ -185,12 +186,8 @@ type AccionFila =
   | 'eliminar';
 
 /** Un ítem del menú: qué dice, qué tecla hace lo mismo, y en qué grupo cae. */
-interface ItemMenu {
-  accion: AccionFila;
-  texto: string;
-  tecla: string;
+interface ItemMenu extends ItemMenuFila<AccionFila> {
   /** Los grupos separan lo benigno de lo destructivo. Ver `MenuFila`. */
-  grupo: 'hacer' | 'mover' | 'quitar';
 }
 
 /**
@@ -250,12 +247,6 @@ function itemsDeFila(fila: Fila, admiteSprint: boolean): ItemMenu[] {
   return items;
 }
 
-const GRUPOS: readonly { id: ItemMenu['grupo']; etiqueta: string }[] = [
-  { id: 'hacer', etiqueta: 'Sobre esta fila' },
-  { id: 'mover', etiqueta: 'Orden' },
-  { id: 'quitar', etiqueta: 'Cuidado' },
-];
-
 /**
  * El menú `⋯` de la fila. Es un `<select>` nativo, y es una decisión, no una rendija.
  *
@@ -272,7 +263,7 @@ const GRUPOS: readonly { id: ItemMenu['grupo']; etiqueta: string }[] = [
  * porque juntar lo destructivo con lo benigno es de los errores más caros de una interfaz
  * y aquí cuesta un recorrido más largo a propósito.
  */
-function MenuFila({
+function MenuFilaArbol({
   fila,
   items,
   ejecutar,
@@ -281,43 +272,7 @@ function MenuFila({
   items: readonly ItemMenu[];
   ejecutar: (fila: Fila, accion: AccionFila) => void;
 }) {
-  return (
-    <select
-      className="fila__menu"
-      // El árbol tiene UNA parada de tabulador; este control no puede abrir trescientas.
-      tabIndex={-1}
-      value=""
-      // Específico a propósito: «Más» sería el nombre que no dice nada del que avisa la
-      // literatura de menús contextuales.
-      aria-label={`Acciones de ${fila.id}`}
-      title={`Acciones de ${fila.id}`}
-      onClick={(evento) => evento.stopPropagation()}
-      onChange={(evento) => {
-        const accion = evento.target.value as AccionFila | '';
-        // Se devuelve al placeholder SIEMPRE: esto dispara acciones, no guarda un valor, y
-        // dejarlo mostrando la última haría creer que la fila está «en» ese estado.
-        evento.target.value = '';
-        if (accion !== '') ejecutar(fila, accion);
-      }}
-    >
-      <option value="">⋯</option>
-      {GRUPOS.map((grupo) => {
-        const suyos = items.filter((item) => item.grupo === grupo.id);
-        if (suyos.length === 0) return null;
-        return (
-          <optgroup key={grupo.id} label={grupo.etiqueta}>
-            {suyos.map((item) => (
-              // La tecla va al lado del texto, que es lo que permite borrar la leyenda de
-              // atajos del pie: pegada a la acción que ejecuta, no en una lista aparte.
-              <option key={item.accion} value={item.accion}>
-                {item.texto} · {item.tecla}
-              </option>
-            ))}
-          </optgroup>
-        );
-      })}
-    </select>
-  );
+  return <MenuFila identificador={fila.id} items={items} ejecutar={(accion) => ejecutar(fila, accion)} />;
 }
 
 /**
@@ -1181,7 +1136,7 @@ function FilaArbol({
             frecuente de la app, escondida. Ahora es el primer ítem del `⋯`, que se ve
             siempre. La tecla `S` no cambia y pasa a ser lo que debía: la vía rápida de
             quien ya se la sabe. */}
-        {editable && <MenuFila fila={fila} items={itemsDeFila(fila, arrastrable)} ejecutar={ejecutar} />}
+        {editable && <MenuFilaArbol fila={fila} items={itemsDeFila(fila, arrastrable)} ejecutar={ejecutar} />}
         <Clave id={tarea.id} />
       </div>
     );
@@ -1280,7 +1235,7 @@ function FilaArbol({
       )}
       <Medidor avance={fila.avance} conBarra={esEpica} />
 
-      {editable && <MenuFila fila={fila} items={itemsDeFila(fila, false)} ejecutar={ejecutar} />}
+      {editable && <MenuFilaArbol fila={fila} items={itemsDeFila(fila, false)} ejecutar={ejecutar} />}
       <Clave id={fila.id} />
     </div>
   );

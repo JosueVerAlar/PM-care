@@ -18,6 +18,7 @@ import type { ReactNode } from 'react';
 import type { FilaSprintVista } from '../../compartido/dominio/sprint';
 import { ChipNeutro, ChipNuevo, TiraBloqueo } from './Chips';
 import { Glifo } from './iconos';
+import { MenuFila, type ItemMenuFila } from './menu-fila';
 import {
   etiquetaDeTarea,
   fechaCorta,
@@ -76,6 +77,26 @@ export function TarjetaSprint({
         ? `${vencida ? 'venció el' : 'vence'} ${fechaCorta(compromiso.fechaLimite)}`
         : null;
 
+  type AccionTarjeta = 'editar' | 'sacar';
+  /**
+   * UNA acción, con el verbo que corresponde al estado del compromiso: «Completar» cuando
+   * está vacío, «Editar» cuando ya hay algo. Es lo que hacía el botón que este menú
+   * reemplaza. Dos ítems —uno «Editar» y otro «Completar»— que abren lo mismo obligan a
+   * elegir entre dos nombres de la misma cosa.
+   *
+   * Sin `tecla`: la tarjeta del sprint no tiene manejador de teclado, y la regla 19 pide
+   * la tecla al lado porque el menú y el teclado comparten implementación — no para
+   * escribir un atajo que no responde.
+   */
+  const items: ItemMenuFila<AccionTarjeta>[] = [
+    {
+      accion: 'editar',
+      texto: responsable === null && cuando === null ? 'Completar compromiso' : 'Editar compromiso',
+      grupo: 'hacer',
+    },
+    { accion: 'sacar', texto: 'Sacar del sprint', grupo: 'quitar' },
+  ];
+
   const clases = ['tarjeta'];
   if (noPlaneada) clases.push('tarjeta--nuevo');
   if (arrastrando) clases.push('tarjeta--arrastrando');
@@ -91,34 +112,25 @@ export function TarjetaSprint({
       <div className="tarjeta__cab">
         <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} />
         <span className="tarjeta__titulo">{tarea.titulo}</span>
-        {acciones !== null && (
-          <div className="tarjeta__acciones">
-            {formulario === null && (
-              <button type="button" className="mini" onClick={acciones.editar}>
-                {responsable === null && cuando === null ? 'Completar' : 'Editar'}
-              </button>
-            )}
-            <button
-              type="button"
-              className="mini"
-              title="Sacarla del sprint. Lo escrito se conserva en la tarea."
-              onClick={acciones.sacar}
-            >
-              Sacar
-            </button>
-          </div>
+        {acciones !== null && formulario === null && (
+          <MenuFila
+            identificador={tarea.id}
+            items={items}
+            clase="tarjeta__menu"
+            ejecutar={(accion) => accion === 'sacar' ? acciones.sacar() : acciones.editar()}
+          />
         )}
         <span className="clave">{tarea.id}</span>
       </div>
 
       <p className="tarjeta__ruta" title={`${ubicacion.proyecto.nombre} › ${resto}`}>
-        {mostrarProyecto && (
-          <>
-            <span className="tarjeta__proy">{ubicacion.proyecto.clave}</span>
-            {' › '}
-          </>
-        )}
-        {resto}
+        <span>{mostrarProyecto && (
+            <>
+              <span className="tarjeta__proy">{ubicacion.proyecto.clave}</span>
+              {' › '}
+            </>
+          )}
+          {resto}</span>
       </p>
 
       {formulario ?? (

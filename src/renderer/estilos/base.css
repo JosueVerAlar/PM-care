@@ -399,8 +399,8 @@ button:disabled { cursor: default; opacity: .5; }
 
 /* Primero cae COMPLETADAS: es un registro, no un sitio donde se opera. */
 @media (max-width: 1320px) {
-  .cuerpo { grid-template-columns: var(--ancho-lateral) 1fr clamp(340px, 30%, 420px); }
-  .app--rail .cuerpo { grid-template-columns: var(--ancho-rail) 1fr clamp(340px, 30%, 420px); }
+  .cuerpo { grid-template-columns: var(--ancho-lateral) minmax(0, 1fr) clamp(340px, 30%, 420px); }
+  .app--rail .cuerpo { grid-template-columns: var(--ancho-rail) minmax(0, 1fr) clamp(340px, 30%, 420px); }
   .panel--completadas { display: none; }
   .panel--sprint { grid-column: 3; }
 }
@@ -413,7 +413,16 @@ button:disabled { cursor: default; opacity: .5; }
   .cuerpo,
   .app--rail .cuerpo,
   .cuerpo--global,
-  .app--rail .cuerpo--global { grid-template-columns: var(--ancho-rail) 1fr; }
-  .panel--sprint { display: none; }
+  .app--rail .cuerpo--global { grid-template-columns: var(--ancho-rail) minmax(0, 1fr); }
+  .cuerpo, .app--rail .cuerpo { grid-template-rows: minmax(0, 1fr) auto; }
+  /* El mismo formulario conserva su estado local y baja al pie del árbol. Ocultar el
+     panel completo lo dejaba abierto e inaccesible, con lo ya tecleado dentro. */
+  .panel--sprint { display: contents; }
+  .panel--sprint > :not(.form-sprint) { display: none; }
+  .panel--sprint > .form-sprint {
+    grid-column: 2; grid-row: 2;
+    border-top: 1px solid var(--hairline); border-bottom: 0;
+    background: var(--fondo-cabecera);
+  }
   .panel--completadas { display: none; }
 }

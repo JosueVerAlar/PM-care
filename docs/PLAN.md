@@ -44,6 +44,8 @@ que la sostiene**, y sin evidencia la casilla dice «sin verificar», no `⬜`.
 | E12 | Empaquetado | `infra` | E8–E11 | Mediano | ✅ | Bitácora 2026-08-27 · CSP estricta leída del `.app` en ejecución |
 | E13 | Uso real | usuario + `pm` | E12 | — | ⬜ | No empezada. Ver la ficha: su bloqueo por M2 quedó levantado el 2026-08-28 |
 | E14 | La vista de proyecto en tres columnas | `frontend` | E7 | Mediano | ✅ | Bitácora 2026-08-31 · «muere el alternador; el detalle pasa a modal centrada» |
+| E15 | El panel del sprint cabe en su ancho | `frontend` | E14 | Pequeño | ✅ | Bitácora 2026-08-31 · formulario apilado a 316 px útiles; sin divisores arrastrables |
+| E16 | Los cinco defectos del panel del sprint | `frontend` | E15 | Mediano | ✅ | Bitácora 2026-08-31 · acciones en menú visible, envío honesto y teclado consistente |
 
 **Camino crítico:** E1 → E2 → E3 → E5 → E6 → E7 → E8 → E12 → E13.
 Todo retraso ahí retrasa el proyecto. E2 es el cuello de botella: cinco etapas la esperan.
@@ -322,6 +324,33 @@ de completadas y bajo 1040 px también cae el sprint; pruebas y tipos quedan en 
 
 ---
 
+## E15 · El panel del sprint cabe en su ancho
+**Estado:** ✅ terminada · **Agente:** `frontend` · **Depende de:** E14 · **Tamaño:** pequeño
+
+**Entrega:** el rango va primero y envuelve, el nombre ocupa todo el ancho con su valor
+resultante visible y las acciones tienen fila propia. Los resúmenes, compromisos y pies
+envuelven; la migaja conserva el extremo específico. Bajo 1040 px el mismo formulario baja
+al pie del árbol, conservando lo tecleado.
+
+**Terminado cuando:** las pistas duras caben en los 340 px del suelo declarado, el envío
+se alcanza con el ratón, la duración responde al fin vigente y las regresiones comparan
+contra los valores leídos de CSS.
+
+---
+
+## E16 · Los cinco defectos del panel del sprint
+**Estado:** ✅ terminada · **Agente:** `frontend` · **Depende de:** E15 · **Tamaño:** mediano
+
+**Entrega:** las acciones de cada tarjeta salen del hover a una puerta `⋯` siempre visible
+que reutiliza el menú del árbol; crear o editar se bloquea con su razón si falta el fin o
+hay solape. El estado vacío no duplica el primario y el formulario enfoca el primer campo
+habilitado, cierra con Escape y devuelve el foco.
+
+**Terminado cuando:** los diez casos de interfaz y estilo de E16 pasan, siguen existiendo
+exactamente dos confirmaciones y la regresión del suelo angosto de E15 permanece verde.
+
+---
+
 ## Decisiones pendientes
 
 **D1 · Undo/redo — YA DECIDIDO, no reabrir.**
@@ -510,6 +539,24 @@ protegía de verdad: **el pronóstico** —burndown, velocidad, fecha estimada d
 ## Bitácora
 
 <!-- Entradas nuevas arriba. Formato: **FECHA · etapa · qué pasó**, y el cuerpo debajo. -->
+
+**2026-08-31 · E16 · las acciones dejan el hover y el formulario explica por qué no envía.**
+
+La tarjeta usa la misma implementación de menú nativo que el árbol, con una puerta `⋯`
+siempre visible, tres acciones y «Sacar del sprint» aislada al fondo; se eligió el menú y
+no tres botones permanentes porque el panel tiene 340 px de suelo y el título debe conservar
+el ancho. La confirmación de sacar sigue en su ruta única. El envío se deshabilita junto a
+las fechas cuando falta el fin o existe solape, sin retirar la validación del reductor. El
+estado vacío deja un solo primario y Escape replica el foco y cierre del formulario hermano.
+
+**2026-08-31 · E15 · el formulario del sprint se apila y conserva lo tecleado al angostar.**
+
+Inicio y fin forman la primera fila flexible; nombre y acciones ocupan filas propias. La
+nota calcula la duración elegida y conserva aparte la procedencia del valor inicial. Bajo
+1040 px el panel cede su caja, oculta el contenido de consulta y deja el mismo formulario
+al pie del árbol. Se descartaron divisores arrastrables: el suelo de 340 px seguiría
+reproduciendo el desborde y además exigiría un componente ARIA, persistencia nueva y
+reescribir ambos umbrales responsive.
 
 **2026-08-31 · E14 · tres paneles visibles; muere el alternador y el detalle pasa a modal centrada.**
 

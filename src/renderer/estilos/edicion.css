@@ -191,7 +191,7 @@
 .campo textarea::placeholder { color: var(--tinta-3); }
 
 .boton-solido {
-  height: 28px; padding: 0 13px; border-radius: 5px;
+  min-height: 28px; padding: 0 13px; border-radius: 5px;
   background: var(--solido-fondo); color: var(--solido-tinta);
   font-weight: 600; font-size: 12.5px;
   flex: 0 0 auto;
@@ -251,7 +251,7 @@
 .pie-edicion .compromiso { margin-left: 0; }
 .compromiso__fila { display: flex; flex-wrap: wrap; gap: 8px; }
 .compromiso__fila .campo { flex: 1 1 190px; }
-.compromiso__pie { display: flex; align-items: center; gap: 8px; }
+.compromiso__pie { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .compromiso__pista { font-size: 11px; color: var(--tinta-3); }
 
 /* La tarjeta en la que se está redactando se separa del resto por su superficie, no por
@@ -259,9 +259,7 @@
 .tarjeta--redactando { background: var(--fondo-cabecera); }
 .tarjeta--redactando:hover { background: var(--fondo-cabecera); }
 
-.tarjeta__acciones { display: flex; gap: 5px; flex: 0 0 auto; visibility: hidden; }
-.tarjeta:hover .tarjeta__acciones,
-.tarjeta:focus-within .tarjeta__acciones { visibility: visible; }
+.tarjeta__menu { flex: 0 0 auto; width: 30px; }
 
 /* ── franja de aviso ──────────────────────────────────────────── */
 /* Un comando falló. La app NO revierte nada: el documento es el que devolvió el proceso

@@ -140,13 +140,15 @@ export function PanelSprint({
 
   return (
     <section className={clasesPanel.join(' ')} aria-label="Sprint activo" {...zona}>
-      <header className="cab">
-        <h2 className="cab__titulo">
-          {sprint
-            ? `${sprint.nombre} · ${fechaCorta(sprint.inicio)}–${fechaCorta(sprint.fin)}`
-            : 'Sin sprint activo'}
-        </h2>
-        <span className="crece" />
+      <header className="cab cab--doble">
+        <div className="cab__linea">
+          <h2 className="cab__titulo">
+            {sprint
+              ? `${sprint.nombre} · ${fechaCorta(sprint.inicio)}–${fechaCorta(sprint.fin)}`
+              : 'Sin sprint activo'}
+          </h2>
+        </div>
+        <div className="cab__linea cab__linea--controles">
         {/* La entrada al cierre vive donde el usuario mira el sprint. No confirma nada
             aquí: abre la pantalla de decisiones, que es donde está la consecuencia. */}
         {sprint !== undefined && sprint.estado !== 'cerrado' && editable && (
@@ -163,6 +165,7 @@ export function PanelSprint({
             </div>}
           </div>
         )}
+        </div>
       </header>
 
       {formularioSprint !== null && (
@@ -181,7 +184,7 @@ export function PanelSprint({
               : `Un sprint es una quincena de compromisos de ${clave}: qué tareas se harán, quién las toma y para cuándo.`}</p>
           {/* Activar es un acto aparte de cerrar, y por eso está aquí y no encadenado al
               cierre. El botón dice a cuál y con cuánto dentro. */}
-          {planeado !== undefined && editable && (
+          {formularioSprint === null && planeado !== undefined && editable && (
             <button
               type="button"
               className="boton-solido"
@@ -195,7 +198,7 @@ export function PanelSprint({
               Activar {planeado.nombre}
             </button>
           )}
-          {planeado === undefined && editable && (
+          {formularioSprint === null && planeado === undefined && editable && (
             <button type="button" className="boton-solido" onClick={() => setFormularioSprint('crear')}>
               {ultimoCerrado ? 'Crear el siguiente sprint' : `Crear el primer sprint de ${clave}`}
             </button>
