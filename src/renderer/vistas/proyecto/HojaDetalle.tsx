@@ -6,7 +6,7 @@
  * tenían dónde verse: la única puerta a la descripción de una tarea era el formulario de
  * compromiso, y ese solo abre para las que ya están en el sprint.
  *
- * ## Por qué es una hoja encima del sprint y no un tercer panel
+ * ## Por qué era una hoja encima del sprint y no un tercer panel
  *
  * `CLAUDE.md` es explícito: bajo 1040 px el panel del sprint ya no cabe y un tercero no
  * cabría nunca. Así que la hoja OCUPA la celda del sprint en la misma rejilla —columna 3
@@ -14,9 +14,15 @@
  * un modal: no atrapa el foco ni apaga el resto de la pantalla, porque leer el detalle de
  * una tarea mientras se mira el árbol es exactamente lo que uno quiere hacer.
  *
- * Se cierra con `Escape`, con su botón, al cambiar de vista o de pestaña, y al empezar un
- * arrastre —eso último lo decide el reductor de interfaz, porque la hoja tapa la zona
- * donde hay que soltar—.
+ * **[SUPERADO — 2026-08-31, decisión del usuario: la hoja pasa a modal centrada para tener
+ * ancho de trabajo. La razón original —mirar el árbol mientras se lee— la cubre ahora la
+ * columna de completadas, que no tapa nada.]**
+ *
+ * Ahora el detalle es un diálogo modal centrado: ofrece ancho estable, atrapa el foco y
+ * apaga temporalmente el tablero hasta cerrar la tarea en curso.
+ *
+ * Se cierra con `Escape`, con su botón, al cambiar de vista y al empezar un arrastre.
+ * Esto último lo decide el reductor: un modal abierto impide interactuar con el fondo.
  *
  * ## Qué escribe y qué solo enseña
  *
@@ -26,7 +32,7 @@
  * que un campo que se ve en gris.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
   bloqueoAbierto,
@@ -135,6 +141,7 @@ export function HojaDetalle({
   cerrar,
 }: PropsHojaDetalle) {
   const nodo = localizar(proyecto, detalle, indice);
+  const caja = useRef<HTMLDivElement>(null);
 
   /**
    * `Escape` cierra. Se escucha en la ventana y no en la hoja porque el foco del teclado
@@ -143,6 +150,26 @@ export function HojaDetalle({
    */
   useEffect(() => {
     const escucha = (evento: KeyboardEvent) => {
+      if (evento.key === 'Tab' && caja.current !== null) {
+        const enfocables = [...caja.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        )];
+        if (enfocables.length === 0) {
+          evento.preventDefault();
+          caja.current.focus();
+          return;
+        }
+        const primero = enfocables[0]!;
+        const ultimo = enfocables.at(-1)!;
+        if (evento.shiftKey && document.activeElement === primero) {
+          evento.preventDefault();
+          ultimo.focus();
+        } else if (!evento.shiftKey && document.activeElement === ultimo) {
+          evento.preventDefault();
+          primero.focus();
+        }
+        return;
+      }
       if (evento.key !== 'Escape') return;
       const destino = evento.target;
       if (destino instanceof HTMLElement) {
@@ -155,12 +182,30 @@ export function HojaDetalle({
     return () => window.removeEventListener('keydown', escucha);
   }, [cerrar]);
 
+  useEffect(() => {
+    const primero = caja.current?.querySelector<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled])',
+    );
+    (primero ?? caja.current)?.focus();
+  }, []);
+
   if (nodo === null) return null;
 
   const id = detalle.id;
 
   return (
-    <aside className="panel panel--detalle" aria-label={`Detalle de ${id}`}>
+    <div className="panel--detalle" onMouseDown={(evento) => {
+      if (evento.target === evento.currentTarget) cerrar();
+    }}>
+      <div
+        ref={caja}
+        className="panel panel--detalle-caja"
+        role="dialog"
+        aria-label={`Detalle de ${id}`}
+        aria-modal="true"
+        aria-labelledby={`detalle-titular-${id}`}
+        tabIndex={-1}
+      >
       <header className="cab">
         <h2 className="cab__titulo">
           {nodo.clase === 'epica' ? 'Épica' : nodo.clase === 'historia' ? 'Historia' : 'Tarea'} ·{' '}
@@ -180,12 +225,14 @@ export function HojaDetalle({
             sprint={sprint}
             hoy={hoy}
             editable={editable}
+            idTitular={`detalle-titular-${id}`}
           />
         ) : (
-          <DetalleContenedor nodo={nodo} sprint={sprint} editable={editable} />
+          <DetalleContenedor nodo={nodo} sprint={sprint} editable={editable} idTitular={`detalle-titular-${id}`} />
         )}
       </div>
-    </aside>
+      </div>
+    </div>
   );
 }
 
@@ -200,10 +247,12 @@ function DetalleContenedor({
   nodo,
   sprint,
   editable,
+  idTitular,
 }: {
   nodo: Extract<Nodo, { clase: 'epica' | 'historia' }>;
   sprint: Sprint | undefined;
   editable: boolean;
+  idTitular: string;
 }) {
   const esEpica = nodo.clase === 'epica';
   const contenedor = esEpica ? nodo.epica : nodo.historia;
@@ -220,6 +269,7 @@ function DetalleContenedor({
         clase={nodo.clase}
         id={contenedor.id}
         editable={editable}
+        idTitular={idTitular}
       />
 
       <div className="detalle__avance">
@@ -299,12 +349,14 @@ function DetalleTarea({
   sprint,
   hoy,
   editable,
+  idTitular,
 }: {
   documento: Documento;
   ubicacion: UbicacionTarea;
   sprint: Sprint | undefined;
   hoy: Fecha;
   editable: boolean;
+  idTitular: string;
 }) {
   const { tarea } = ubicacion;
   const bloqueo = bloqueoAbierto(tarea);
@@ -327,6 +379,7 @@ function DetalleTarea({
         clase="tarea"
         id={tarea.id}
         editable={editable}
+        idTitular={idTitular}
       />
 
       <div className="detalle__avance">
@@ -528,6 +581,7 @@ function Titular({
   clase,
   id,
   editable,
+  idTitular,
 }: {
   glifo: React.ReactNode;
   titulo: string;
@@ -535,6 +589,7 @@ function Titular({
   clase: 'epica' | 'historia' | 'tarea';
   id: string;
   editable: boolean;
+  idTitular: string;
 }) {
   const mutar = useMutar();
   const [editando, setEditando] = useState(false);
@@ -573,7 +628,7 @@ function Titular({
             onBlur={() => void guardar()}
           />
         ) : (
-          <h3>{titulo}</h3>
+          <h3 id={idTitular}>{titulo}</h3>
         )}
         <span className="crece" />
         {editable && !editando && (

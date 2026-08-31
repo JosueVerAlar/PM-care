@@ -63,6 +63,7 @@
   --medidor-relleno:   #70757D;   /* NEUTRO: el verde está reservado */
   --reparto-a:         #70757D;   /* 5.0:1 — segmentos de la barra de carga */
   --reparto-b:         #9BA1AC;   /* 3.0:1 — no codifican identidad */
+  --velo:              rgb(24 30 41 / 52%);
 
   /* ── métrica · idéntica al sistema vigente ── */
   --alto-epica: 32px;
@@ -138,6 +139,7 @@
     --medidor-relleno:   #878C96;
     --reparto-a:         #878C96;
     --reparto-b:         #5E636D;
+    --velo:              rgb(0 0 0 / 68%);
 
     /* Los mismos seis, en oscuro. `--peligro-tinta` se invierte: sobre el rojo claro del
        tema oscuro, el texto blanco no llega a AA y el fondo de la app sí. */
@@ -211,25 +213,22 @@ button:disabled { cursor: default; opacity: .5; }
 
 .cuerpo {
   display: grid;
-  grid-template-columns: var(--ancho-lateral) 1fr 1fr;
+  grid-template-columns: var(--ancho-lateral) minmax(420px, 1fr) minmax(380px, .85fr) clamp(340px, 26%, 420px);
   min-height: 0;
 }
-.app--rail .cuerpo { grid-template-columns: var(--ancho-rail) 1fr 1fr; }
+.app--rail .cuerpo { grid-template-columns: var(--ancho-rail) minmax(420px, 1fr) minmax(380px, .85fr) clamp(340px, 26%, 420px); }
 /* Una vista global no tiene panel hermano: ocupa las dos columnas. */
 .cuerpo--global { grid-template-columns: var(--ancho-lateral) 1fr; }
 .app--rail .cuerpo--global { grid-template-columns: var(--ancho-rail) 1fr; }
 
 /**
- * Los dos paneles de la vista de proyecto se colocan a mano, no por autoflujo.
- *
- * La hoja de detalle (`.panel--detalle`) ocupa la MISMA celda que el sprint para apilarse
- * encima. Un elemento con posición definida se coloca antes que los automáticos, así que
- * si el árbol y el sprint siguieran en autoflujo, el sprint encontraría su celda ocupada
- * y caería a una segunda fila —la ventana se partiría en dos—. Diciendo dónde va cada uno
- * eso no puede pasar, y la hoja se superpone porque comparte celda, no porque flote.
+ * Los tres paneles de proyecto se colocan a mano, no por autoflujo. Así cada uno conserva
+ * su celda cuando las consultas de medio ocultan primero completadas y luego el sprint;
+ * la hoja de detalle ya no participa en esta rejilla porque ahora es un modal fijo.
  */
 .panel--arbol { grid-column: 2; grid-row: 1; }
-.panel--sprint { grid-column: 3; grid-row: 1; }
+.panel--completadas { grid-column: 3; grid-row: 1; }
+.panel--sprint { grid-column: 4; grid-row: 1; }
 
 /* Separación entre paneles: hairline de 1 px. Sin tarjetas flotantes, sin sombras. */
 .panel {
@@ -300,6 +299,19 @@ button:disabled { cursor: default; opacity: .5; }
   text-transform: uppercase; color: var(--tinta-2);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.cab__nota { font-size: 11px; color: var(--tinta-3); white-space: nowrap; }
+
+/* E14 · la cabecera de dos líneas: lo que se lee arriba, lo que se pulsa abajo. La
+   altura no se fija en píxeles —`auto` con relleno propio— porque el primario mide 24 px
+   por SC 2.5.8 y una altura dura lo recortaría. */
+.cab--doble {
+  flex-direction: column; align-items: stretch;
+  height: auto; gap: 4px; padding: 6px 12px 8px;
+}
+.cab__linea { display: flex; align-items: center; gap: 10px; min-width: 0; }
+/* Los controles se alinean a la derecha bajo el avance, no bajo el título: así la
+   segunda línea no compite con la primera por el arranque de la lectura. */
+.cab__linea--controles { justify-content: flex-end; }
 /* Es un botón, no un metadato: `--tinta-3` (3.6:1) no basta para texto accionable.
    24 px de alto es el mínimo de SC 2.5.8 (Target Size), y no cuesta densidad: es un
    control de cabecera, no un renglón de datos. */
@@ -385,6 +397,14 @@ button:disabled { cursor: default; opacity: .5; }
 }
 .contador svg { flex: 0 0 auto; }
 
+/* Primero cae COMPLETADAS: es un registro, no un sitio donde se opera. */
+@media (max-width: 1320px) {
+  .cuerpo { grid-template-columns: var(--ancho-lateral) 1fr clamp(340px, 30%, 420px); }
+  .app--rail .cuerpo { grid-template-columns: var(--ancho-rail) 1fr clamp(340px, 30%, 420px); }
+  .panel--completadas { display: none; }
+  .panel--sprint { grid-column: 3; }
+}
+
 /* ── umbral duro ──────────────────────────────────────────────── */
 /* Por debajo de ~1040 px el panel del sprint no cabe con densidad legible: se
    colapsa a un panel y la lateral se va a rail. Es la decisión de E0, medida
@@ -395,6 +415,5 @@ button:disabled { cursor: default; opacity: .5; }
   .cuerpo--global,
   .app--rail .cuerpo--global { grid-template-columns: var(--ancho-rail) 1fr; }
   .panel--sprint { display: none; }
-  /* Sin el sprint solo quedan rail y árbol: la hoja de detalle se muda a la columna del
-     árbol, y esa colocación vive junto a la del árbol en `detalle.css`. */
+  .panel--completadas { display: none; }
 }

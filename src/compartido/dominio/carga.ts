@@ -18,7 +18,7 @@
  * Módulo puro: `hoy` entra como parámetro.
  */
 
-import type { Documento, Fecha, PersonaId, Sprint } from '../modelo/tipos';
+import type { Documento, Fecha, PersonaId, Proyecto, Sprint, Tarea } from '../modelo/tipos';
 import {
   compromisoEfectivo,
   indexarTareas,
@@ -85,8 +85,22 @@ export interface HistorialPersona {
   medianaCerradas: number | null;
 }
 
+/**
+ * Una persona dentro de UN equipo concreto.
+ *
+ * Lleva el equipo y el proyecto porque con N11 los dos hacen falta para nombrarla: «está
+ * en SICOE» dejó de ser una respuesta el día que SICOE tuvo un equipo de Frontend y otro
+ * de Backend. `clave` y `nombre` siguen siendo los del PROYECTO —no se renombran para no
+ * romper a quien ya los lee—; el equipo va en `equipoId` y `equipo`.
+ */
 export interface PertenenciaEquipo {
+  /** Id del equipo: `sicoe-frontend`. */
+  equipoId: string;
+  /** Nombre del equipo: «Frontend». */
+  equipo: string;
+  /** Clave del proyecto al que pertenece ese equipo. */
   clave: string;
+  /** Nombre del proyecto. */
   nombre: string;
   responsabilidades: string[];
   capacidad: number | null;
@@ -143,13 +157,27 @@ export function nombreDePersona(
   return nombres.get(personaId) ?? personaId;
 }
 
-/** En qué equipos está una persona. Se lee recorriendo proyectos: no se duplica el dato. */
+/**
+ * En qué equipos está una persona. Se lee recorriendo proyectos: no se duplica el dato.
+ *
+ * **Una entrada por EQUIPO, no por proyecto.** Antes de M6 esta función se quedaba con el
+ * primer miembro que encontraba en cada proyecto (`.find` sobre el aplanado), así que
+ * alguien que estuviera en Frontend y en Backend de SICOE aparecía una sola vez y con las
+ * responsabilidades de uno de los dos. Con equipos de verdad eso deja de ser un detalle:
+ * es la mitad del dato.
+ *
+ * Que la misma persona salga varias veces es correcto y es lo que la ficha muestra: una
+ * fila por adscripción, la persona una sola vez.
+ */
 export function equiposDe(doc: Documento, personaId: PersonaId): PertenenciaEquipo[] {
   const equipos: PertenenciaEquipo[] = [];
   for (const proyecto of doc.proyectos) {
-    const miembro = proyecto.equipos.flatMap((equipo) => equipo.miembros).find((m) => m.persona_id === personaId);
-    if (miembro) {
+    for (const equipo of proyecto.equipos) {
+      const miembro = equipo.miembros.find((m) => m.persona_id === personaId);
+      if (miembro === undefined) continue;
       equipos.push({
+        equipoId: equipo.id,
+        equipo: equipo.nombre,
         clave: proyecto.clave,
         nombre: proyecto.nombre,
         responsabilidades: miembro.responsabilidades,
@@ -158,6 +186,32 @@ export function equiposDe(doc: Documento, personaId: PersonaId): PertenenciaEqui
     }
   }
   return equipos;
+}
+
+/**
+ * La señal «responsable fuera del equipo»: esta tarea es de un equipo y su responsable no
+ * está en él.
+ *
+ * **Informa, no rechaza.** No hay ninguna invariante que obligue a que el responsable de
+ * una tarea pertenezca a su equipo, y no la hay a propósito: el equipo dice quién está
+ * dedicado a eso HOY, la tarea dice quién la hizo, y una tarea vieja de alguien que ya se
+ * cambió de equipo es un hecho correcto, no un documento roto. Rechazarlo obligaría a
+ * reescribir el pasado para poder mover a alguien.
+ *
+ * Los dos `false` de las guardas son la decisión, no un descarte:
+ * - **Sin equipo** no hay nada contra qué contrastar. Una tarea puede no tener equipo.
+ * - **Sin responsable** no hay nadie fuera. Es justo el caso que `asignarEquipo` viene a
+ *   habilitar —«esto es de Backend, aún no sé de quién»—, y marcarlo sería regañar por
+ *   usar lo que se acaba de construir.
+ */
+export function responsableFueraDelEquipo(proyecto: Proyecto, tarea: Tarea): boolean {
+  if (tarea.equipo_id === null || tarea.responsable === null) return false;
+  const equipo = proyecto.equipos.find((e) => e.id === tarea.equipo_id);
+  // Un `equipo_id` que no resuelve lo rechaza `validarDocumento`; si aun así llegara aquí
+  // —un JSON editado a mano que todavía no se ha validado— la respuesta honesta es "no lo
+  // sé", y "no lo sé" no se pinta como una advertencia sobre la persona.
+  if (equipo === undefined) return false;
+  return !equipo.miembros.some((m) => m.persona_id === tarea.responsable);
 }
 
 /** Carga de todas las personas, en el orden en que están declaradas en el documento. */

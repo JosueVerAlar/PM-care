@@ -123,6 +123,19 @@ export function arbolVacio(clave = 'PM'): Arbol {
   return { doc, clave, epicaId: `${clave}-E1`, historiaId: `${clave}-H1` };
 }
 
+/**
+ * `arbolVacio` más un equipo vacío.
+ *
+ * Existe porque desde M6 un proyecto NO nace con equipo: `crearEquipo` es explícito y el
+ * id lo teclea quien lo crea (N11). Antes lo fabricaba el reductor a escondidas al meter
+ * al primer miembro, y esa era justamente la maquinaria que impedía tener dos.
+ */
+export function arbolConEquipo(equipoId: string, nombre = 'Equipo', clave = 'PM'): Arbol {
+  const base = arbolVacio(clave);
+  const doc = aplicar(base.doc, { comando: 'crearEquipo', proyecto: clave, id: equipoId, nombre });
+  return { ...base, doc };
+}
+
 /** `arbolVacio` más `cuantas` tareas: `PM-T1`… `PM-T{cuantas}`. */
 export function arbolConTareas(cuantas: number, clave = 'PM'): Arbol {
   const base = arbolVacio(clave);

@@ -95,14 +95,14 @@ describe('el documento de prueba es válido: si no, las pruebas medirían un doc
 describe('equiposDe', () => {
   it('devuelve todos los proyectos en los que está, con su rol', () => {
     expect(equiposDe(documentoBase(), 'ana')).toEqual([
-      { clave: 'PRUEBA', nombre: 'Proyecto de prueba', responsabilidades: ['backend'], capacidad: null },
-      { clave: 'OTRO', nombre: 'Otro proyecto', responsabilidades: ['vistas'], capacidad: null },
+      { equipoId: 'prueba-general', equipo: 'General', clave: 'PRUEBA', nombre: 'Proyecto de prueba', responsabilidades: ['backend'], capacidad: null },
+      { equipoId: 'otro-general', equipo: 'General', clave: 'OTRO', nombre: 'Otro proyecto', responsabilidades: ['vistas'], capacidad: null },
     ]);
   });
 
   it('conserva el rol nulo en vez de inventarle uno', () => {
     expect(equiposDe(documentoBase(), 'beto')).toEqual([
-      { clave: 'PRUEBA', nombre: 'Proyecto de prueba', responsabilidades: [], capacidad: null },
+      { equipoId: 'prueba-general', equipo: 'General', clave: 'PRUEBA', nombre: 'Proyecto de prueba', responsabilidades: [], capacidad: null },
     ]);
   });
 

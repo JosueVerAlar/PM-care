@@ -19,6 +19,7 @@
 import { z } from 'zod';
 
 import {
+  EsquemaEquipo,
   EsquemaEstadoTarea,
   EsquemaItemSprint,
   EsquemaMiembroEquipo,
@@ -42,17 +43,19 @@ const Responsable = z.string().nullable();
 const Clave = EsquemaProyecto.shape.clave;
 
 /**
- * Claves de los proyectos a los que una persona está dedicada.
+ * Id de un equipo (`sicoe-frontend`). Se toma del esquema del documento por la misma
+ * razón que `Clave`: un segundo patrón mantenido aquí divergiría del de allá.
  *
- * Un "equipo" no es una entidad con identidad propia: ES la lista de miembros de un
- * proyecto (ver `EsquemaMiembroEquipo`). Así que "los equipos de una persona" son las
- * claves de los proyectos donde aparece, y esta lista es la relación vista desde el otro
- * extremo que `editarEquipo`.
+ * **El id lo escribe el usuario y no lo emite ningún contador** (N11). Añadir un cuarto
+ * contador a `EsquemaContadores` sería mantener maquinaria para diez filas, y un id
+ * legible es además lo que hace que `tarea.equipo_id` se pueda leer en el JSON —que el
+ * usuario edita a mano— sin resolver nada contra otra parte del archivo.
  *
- * Es la lista COMPLETA, no un delta: ausente = no tocar sus equipos, `[]` = sacarla de
- * todos. Mismo criterio que el resto de comandos de edición.
+ * Es único en TODO el documento, no por proyecto: así lo valida `validarDocumento`, y por
+ * eso los comandos de equipo identifican con `equipoId` y nada más. Pedir además el
+ * proyecto sería dar dos identificadores que pueden contradecirse.
  */
-const Equipos = z.array(Clave);
+const IdEquipo = EsquemaEquipo.shape.id;
 
 /**
  * Se toma del esquema del documento en vez de repetir el patrón `YYYY-MM-DD`: dos
@@ -167,8 +170,17 @@ const CrearPersona = z
   .object({
     comando: z.literal('crearPersona'),
     nombre: Titulo,
-    /** Opcional: darla de alta ya dedicada a unos proyectos, sin un segundo comando. */
-    equipos: Equipos.optional(),
+    /**
+     * Opcional: darla de alta ya metida en unos equipos, sin un segundo comando. Son ids
+     * de EQUIPO (`sicoe-frontend`), no claves de proyecto: con varios equipos por
+     * proyecto (N11), «adscribir a SICOE» ya no dice a cuál.
+     *
+     * Es el único punto donde la pertenencia se escribe desde el lado de la persona, y se
+     * admite porque en el alta no existe todavía ningún otro valor con el que pueda
+     * contradecirse: la persona nace aquí. **Cambiarla después se hace desde el equipo**
+     * —`editarEquipo`, `moverMiembro`— y por eso `editarPersona` no tiene este campo.
+     */
+    equipos: z.array(IdEquipo).optional(),
   })
   .strict();
 
@@ -177,13 +189,19 @@ const CrearPersona = z
  * que guardan `tarea.responsable` y el `responsable` de cada item de sprint —incluidos
  * los de los sprints CERRADOS (regla 8)—, así que renombrarlo reescribiría de quién fue
  * el trabajo del mes pasado. Se corrige el `nombre`, que es lo que se muestra.
+ *
+ * **No tiene `equipos`, y esa ausencia es la decisión.** La pertenencia se escribe por un
+ * solo camino —el del equipo: `crearEquipo`, `editarEquipo`, `moverMiembro`— y la ficha
+ * de persona la muestra en solo lectura (M6). Dos caminos para el mismo dato es la fuente
+ * de que un día se contradigan, y aquí el segundo camino era además más pobre: una lista
+ * de ids no puede expresar las `responsabilidades` ni la `capacidad` con las que alguien
+ * entra a un equipo, así que reasignar desde la persona o las perdía o las adivinaba.
  */
 const EditarPersona = z
   .object({
     comando: z.literal('editarPersona'),
     id: Id,
     nombre: Titulo.optional(),
-    equipos: Equipos.optional(),
   })
   .strict();
 
@@ -532,24 +550,96 @@ const Bloquear = z
 
 const Desbloquear = z.object({ comando: z.literal('desbloquear'), tareaId: Id }).strict();
 
-// --- equipo -----------------------------------------------------------------
+// --- equipos ----------------------------------------------------------------
 
 /**
- * Reemplaza la lista completa del equipo de un proyecto. Un equipo son cuatro personas:
- * mandar la lista entera es más simple y más fácil de deshacer que tres comandos de alta,
- * baja y cambio de rol, y sigue sin ser «mandar el documento».
+ * Un equipo es una entidad con identidad propia dentro de un proyecto (N11): proyecto →
+ * equipos → personas con responsabilidades. Un proyecto tiene varios —«Frontend»,
+ * «Backend»— y el atajo «equipo ≡ proyecto» está muerto.
  *
- * Con esto ya se cubre «crear un equipo y a qué proyecto está dedicado»: un equipo no es
- * una entidad que se cree, es la lista de miembros de un proyecto, así que crearlo es
- * mandar este comando sobre un proyecto que todavía no tiene ninguno. No hace falta un
- * `crearEquipo`; lo que faltaba era la relación vista desde la persona, y eso lo añade
- * el campo `equipos` de `crearPersona` / `editarPersona`.
+ * Nace VACÍO. Meter gente es `editarEquipo` o `moverMiembro`, que son el único camino de
+ * la pertenencia: si el alta pudiera traer miembros habría dos formas de escribir lo
+ * mismo y la que se usara menos sería la que se olvidara de validar.
+ *
+ * El id lo teclea el usuario y es único en todo el documento; ver `IdEquipo`.
+ */
+const CrearEquipo = z
+  .object({
+    comando: z.literal('crearEquipo'),
+    /** Proyecto al que pertenece. Es lo único que ata el equipo a un sitio. */
+    proyecto: Clave,
+    id: IdEquipo,
+    nombre: Titulo,
+  })
+  .strict();
+
+/**
+ * Renombra el equipo y/o reemplaza su lista de miembros. Convención de los comandos de
+ * edición: campo ausente = no tocar.
+ *
+ * `miembros` es la lista COMPLETA de ESE equipo, no un delta ni el equipo del proyecto:
+ * un equipo son cuatro personas, mandar la lista entera es más simple de deshacer que
+ * tres comandos de alta, baja y cambio de responsabilidades, y sigue sin ser «mandar el
+ * documento». Aquí es donde se editan `responsabilidades` y `capacidad`.
+ *
+ * **Identifica por `equipoId` y no por proyecto.** Antes de M6 este comando recibía
+ * `{proyecto, miembros}` y escribía sobre `equipos[0]`, que es exactamente el defecto que
+ * impedía tener dos equipos en un proyecto.
  */
 const EditarEquipo = z
   .object({
     comando: z.literal('editarEquipo'),
-    proyecto: z.string().min(1),
-    miembros: z.array(EsquemaMiembroEquipo),
+    equipoId: IdEquipo,
+    nombre: Titulo.optional(),
+    miembros: z.array(EsquemaMiembroEquipo).optional(),
+  })
+  .strict();
+
+/**
+ * Borra el equipo. Se lo lleva con sus miembros —la pertenencia es estado del presente y
+ * queda anotada en el evento—, pero **se rechaza si alguna tarea lo tiene asignado**: ver
+ * el reductor para el argumento completo.
+ */
+const EliminarEquipo = z
+  .object({ comando: z.literal('eliminarEquipo'), equipoId: IdEquipo })
+  .strict();
+
+/**
+ * Saca a alguien de un equipo y lo mete en otro **conservando su ficha de miembro**:
+ * responsabilidades, capacidad y cualquier campo que el usuario le haya escrito a mano
+ * dentro (regla 14).
+ *
+ * Es lo que hace que partir el equipo «General» que dejó la migración no pierda ningún
+ * `rol`. Con dos `editarEquipo` el mismo movimiento pasa por un estado intermedio en el
+ * que la persona no está en ninguno de los dos, y ⌘Z tendría que pulsarse dos veces para
+ * deshacer un solo gesto.
+ */
+const MoverMiembro = z
+  .object({
+    comando: z.literal('moverMiembro'),
+    personaId: Id,
+    desde: IdEquipo,
+    hacia: IdEquipo,
+  })
+  .strict();
+
+/**
+ * Dice de qué equipo es una tarea. `null` la deja sin equipo.
+ *
+ * **Explícito, nunca derivado del responsable** (N11): derivarlo falla justo en los dos
+ * casos que importan —una tarea sin responsable no tendría equipo, y una persona en dos
+ * equipos del mismo proyecto lo vuelve ambiguo—. Este comando existe para poder decir
+ * «esto es de Backend, aún no sé de quién».
+ *
+ * `equipoId` es OBLIGATORIO y nullable, al revés que los campos de los comandos de
+ * edición: no hay «ausente = no tocar» que valga en un comando cuyo único trabajo es
+ * tocar este campo. Mismo criterio que `fijarUsuario`.
+ */
+const AsignarEquipo = z
+  .object({
+    comando: z.literal('asignarEquipo'),
+    tareaId: Id,
+    equipoId: IdEquipo.nullable(),
   })
   .strict();
 
@@ -593,7 +683,11 @@ export const EsquemaComando = z.discriminatedUnion('comando', [
   EscribirRetrospectiva,
   Bloquear,
   Desbloquear,
+  CrearEquipo,
   EditarEquipo,
+  EliminarEquipo,
+  MoverMiembro,
+  AsignarEquipo,
 ]);
 
 export type Comando = z.infer<typeof EsquemaComando>;
@@ -643,6 +737,15 @@ const INMEDIATOS = new Set<NombreComando>([
   // Se fija una vez en la vida de la app. Que no sobreviva a cerrar la ventana es
   // exactamente el problema que este campo viene a resolver.
   'fijarUsuario',
+  // Altas y bajas de una entidad, igual que las de proyecto y persona. `editarEquipo` y
+  // `moverMiembro` NO están: renombrar un equipo y recolocar a alguien son edición, y la
+  // edición va al debounce por lo mismo que editar un título.
+  'crearEquipo',
+  'eliminarEquipo',
+  // De qué equipo es una tarea es un HECHO suyo, del mismo orden que su estado, y
+  // `cambiarEstado` ya está aquí. Clasificar el backlog por equipo termina en «listo,
+  // cierro» igual que avanzar una tarea.
+  'asignarEquipo',
 ]);
 
 export function requiereFlushInmediato(comando: Comando): boolean {

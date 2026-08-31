@@ -1,5 +1,5 @@
 /**
- * Comandos de persona y de equipo.
+ * Comandos de persona. Los de equipo viven en `equipos.test.ts`.
  *
  * Tres reglas, y las tres viven en el reductor porque si vivieran en las vistas la
  * próxima pantalla que se escriba se olvidará de aplicarlas:
@@ -19,6 +19,7 @@ import { unDocumento, unItem, unSprint } from '../apoyo/constructores';
 import {
   aplicar,
   aplicarTodos,
+  arbolConEquipo,
   arbolConTareas,
   arbolVacio,
   copiaProfunda,
@@ -125,18 +126,33 @@ describe('crearPersona — alta', () => {
     });
   });
 
-  it('puede nacer ya dedicada a unos proyectos, sin un segundo comando', () => {
-    const { doc } = arbolVacio('PM');
+  it('puede nacer ya metida en unos equipos, sin un segundo comando', () => {
+    const { doc } = arbolConEquipo('pm-frontend', 'Frontend');
     const { documento } = exigirOk(
-      reducirSinMutar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['PM'] }),
+      reducirSinMutar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['pm-frontend'] }),
     );
-    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([{ persona_id: 'ana', responsabilidades: [], capacidad: null }]);
+    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([
+      { persona_id: 'ana', responsabilidades: [], capacidad: null },
+    ]);
+  });
+
+  it('son ids de EQUIPO, no claves de proyecto: adscribir "a SICOE" ya no dice a cuál', () => {
+    const { doc } = arbolConEquipo('pm-frontend', 'Frontend');
+    const error = exigirError(
+      reducirSinMutar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['pm'] }),
+    );
+    expect(error.codigo).toBe('no-encontrado');
+    expect(error.mensaje).toContain('equipo');
   });
 
   it('si uno de los equipos no existe, no se da de alta a nadie', () => {
-    const { doc } = arbolVacio('PM');
+    const { doc } = arbolConEquipo('pm-frontend', 'Frontend');
     const error = exigirError(
-      reducirSinMutar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['PM', 'FANTASMA'] }),
+      reducirSinMutar(doc, {
+        comando: 'crearPersona',
+        nombre: 'Ana',
+        equipos: ['pm-frontend', 'fantasma'],
+      }),
     );
     expect(error.codigo).toBe('no-encontrado');
     expect(doc.personas).toEqual([]);
@@ -183,42 +199,19 @@ describe('editarPersona', () => {
     expect(tarea?.responsable).toBe('ana');
   });
 
-  it('la lista de equipos es completa, no un delta: lo que no viene, se quita', () => {
-    const uno = arbolVacio('UNO');
-    const dos = arbolVacio('DOS');
-    const doc = { ...uno.doc, proyectos: [...uno.doc.proyectos, ...dos.doc.proyectos] };
-    const enAmbos = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['UNO', 'DOS'] });
-    const { documento } = exigirOk(
-      reducirSinMutar(enAmbos, { comando: 'editarPersona', id: 'ana', equipos: ['DOS'] }),
-    );
-    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([]);
-    expect(documento.proyectos[1]?.equipos[0]?.miembros).toEqual([{ persona_id: 'ana', responsabilidades: [], capacidad: null }]);
+  it('NO tiene campo de equipos: la adscripción se escribe desde el equipo y aquí se RECHAZA', () => {
+    // La garantía es estructural, igual que la de `idNuevo`: `.strict()` sobre un esquema
+    // que no tiene el campo. Con dos caminos para el mismo dato —la persona y el equipo—
+    // el día que discreparan no habría forma de saber cuál miente, y este era además el
+    // camino pobre: una lista de ids no sabe con qué responsabilidades entra alguien.
+    const resultado = validarComando({ comando: 'editarPersona', id: 'ana', equipos: ['pm-frontend'] });
+    expect(resultado.ok).toBe(false);
+    if (!resultado.ok) {
+      expect(resultado.problemas.map((p) => p.mensaje).join(' ')).toContain('equipos');
+    }
   });
 
-  it('equipos: [] la saca de todos', () => {
-    const { doc } = arbolVacio('PM');
-    const dentro = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['PM'] });
-    const { documento } = exigirOk(
-      reducirSinMutar(dentro, { comando: 'editarPersona', id: 'ana', equipos: [] }),
-    );
-    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([]);
-  });
-
-  it('donde ya era miembro no se le borra el rol: esta lista no conoce ese dato', () => {
-    const { doc } = arbolVacio('PM');
-    const conPersona = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana' });
-    const conRol = aplicar(conPersona, {
-      comando: 'editarEquipo',
-      proyecto: 'PM',
-      miembros: [{ persona_id: 'ana', responsabilidades: ['backend'], capacidad: null }],
-    });
-    const { documento } = exigirOk(
-      reducirSinMutar(conRol, { comando: 'editarPersona', id: 'ana', equipos: ['PM'] }),
-    );
-    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([{ persona_id: 'ana', responsabilidades: ['backend'], capacidad: null }]);
-  });
-
-  it('un comando sin nombre ni equipos se rechaza', () => {
+  it('un comando sin nombre se rechaza', () => {
     const doc = aplicar(unDocumento(), { comando: 'crearPersona', nombre: 'Ana' });
     expect(exigirError(reducirSinMutar(doc, { comando: 'editarPersona', id: 'ana' })).codigo).toBe(
       'invalido',
@@ -238,8 +231,8 @@ describe('editarPersona', () => {
 
 describe('desactivarPersona', () => {
   it('la marca inactiva y la saca de los equipos, que son el presente', () => {
-    const { doc } = arbolVacio('PM');
-    const dentro = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['PM'] });
+    const { doc } = arbolConEquipo('pm-frontend', 'Frontend');
+    const dentro = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['pm-frontend'] });
     const { documento } = exigirOk(
       reducirSinMutar(dentro, { comando: 'desactivarPersona', id: 'ana' }),
     );
@@ -248,8 +241,9 @@ describe('desactivarPersona', () => {
   });
 
   it('NO toca ni una de sus tareas: su historia es suya y sigue diciendo su nombre', () => {
-    const { doc, historiaId } = arbolConTareas(0);
-    const conPersona = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['PM'] });
+    const { doc: arbol, historiaId } = arbolConTareas(0);
+    const doc = aplicar(arbol, { comando: 'crearEquipo', proyecto: 'PM', id: 'pm-frontend', nombre: 'Frontend' });
+    const conPersona = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['pm-frontend'] });
     const conTarea = aplicar(conPersona, {
       comando: 'crearTarea',
       contenedorId: historiaId,
@@ -282,11 +276,14 @@ describe('desactivarPersona', () => {
     expect(documento.sprints).toEqual(doc.sprints);
   });
 
-  it('de qué equipos salió queda en el evento, así que la baja es reversible a mano', () => {
-    const { doc } = arbolVacio('PM');
-    const dentro = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['PM'] });
+  it('de qué equipos salió queda en el evento POR ID, así que la baja es reversible a mano', () => {
+    // Por id de equipo y no por clave de proyecto: con Frontend y Backend en el mismo
+    // proyecto, "salió de PM" no dice de cuál de los dos, y el detalle deja de servir
+    // para volver a meterla donde estaba — que es lo único para lo que existe.
+    const { doc } = arbolConEquipo('pm-frontend', 'Frontend');
+    const dentro = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['pm-frontend'] });
     const { evento } = exigirOk(reducirSinMutar(dentro, { comando: 'desactivarPersona', id: 'ana' }));
-    expect(evento.detalle).toEqual({ equipos: ['PM'] });
+    expect(evento.detalle).toEqual({ equipos: ['pm-frontend'] });
   });
 
   it('desactivar dos veces se rechaza', () => {
@@ -308,10 +305,10 @@ describe('reactivarPersona', () => {
     expect(documento.personas[0]?.activa).toBe(true);
   });
 
-  it('NO vuelve sola a sus equipos anteriores: a qué se dedica hoy es una decisión de hoy', () => {
-    const { doc } = arbolVacio('PM');
+  it('NO vuelve sola a sus equipos anteriores: en cuáles está hoy es una decisión de hoy', () => {
+    const { doc } = arbolConEquipo('pm-frontend', 'Frontend');
     const ciclo = aplicarTodos(doc, [
-      { comando: 'crearPersona', nombre: 'Ana', equipos: ['PM'] },
+      { comando: 'crearPersona', nombre: 'Ana', equipos: ['pm-frontend'] },
       { comando: 'desactivarPersona', id: 'ana' },
     ]);
     const { documento } = exigirOk(reducirSinMutar(ciclo, { comando: 'reactivarPersona', id: 'ana' }));
@@ -350,7 +347,8 @@ describe('a una persona desactivada no se le asigna trabajo nuevo por NINGUNA ru
       { comando: 'crearPersona', nombre: 'Beto' },
     ]);
     const conTarea = aplicar(conGente, { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T' });
-    const fuera = aplicar(conTarea, { comando: 'desactivarPersona', id: 'ana' });
+    const conEquipo = aplicar(conTarea, { comando: 'crearEquipo', proyecto: clave, id: 'pm-frontend', nombre: 'Frontend' });
+    const fuera = aplicar(conEquipo, { comando: 'desactivarPersona', id: 'ana' });
     return { doc: fuera, historiaId, tareaId: `${clave}-T1` };
   }
 
@@ -399,7 +397,7 @@ describe('a una persona desactivada no se le asigna trabajo nuevo por NINGUNA ru
     const error = exigirError(
       reducirSinMutar(doc, {
         comando: 'editarEquipo',
-        proyecto: 'PM',
+        equipoId: 'pm-frontend',
         miembros: [{ persona_id: 'ana', responsabilidades: [], capacidad: null }],
       }),
     );
@@ -412,7 +410,7 @@ describe('a una persona desactivada no se le asigna trabajo nuevo por NINGUNA ru
     exigirError(
       reducirSinMutar(doc, {
         comando: 'editarEquipo',
-        proyecto: 'PM',
+        equipoId: 'pm-frontend',
         miembros: [
           { persona_id: 'beto', responsabilidades: [], capacidad: null },
           { persona_id: 'ana', responsabilidades: [], capacidad: null },
@@ -422,10 +420,24 @@ describe('a una persona desactivada no se le asigna trabajo nuevo por NINGUNA ru
     expect(doc.proyectos[0]?.equipos[0]?.miembros).toEqual([]);
   });
 
-  it('ruta 4 — editarPersona con equipos no vacíos sobre una desactivada se rechaza', () => {
+  it('ruta 4 — moverMiembro hacia otro equipo tampoco la mete', () => {
+    // Es alcanzable pese a que desactivar la saca de todos: el usuario edita el JSON a
+    // mano (regla 14) y puede dejar a alguien inactivo dentro de un equipo.
     const { doc } = conAnaFuera();
+    const conDos = aplicar(doc, { comando: 'crearEquipo', proyecto: 'PM', id: 'pm-backend', nombre: 'Backend' });
+    const conAnaDentro = copiaProfunda(conDos);
+    conAnaDentro.proyectos[0]?.equipos[0]?.miembros.push({
+      persona_id: 'ana',
+      responsabilidades: [],
+      capacidad: null,
+    });
     const error = exigirError(
-      reducirSinMutar(doc, { comando: 'editarPersona', id: 'ana', equipos: ['PM'] }),
+      reducirSinMutar(conAnaDentro, {
+        comando: 'moverMiembro',
+        personaId: 'ana',
+        desde: 'pm-frontend',
+        hacia: 'pm-backend',
+      }),
     );
     expect(error.codigo).toBe('invalido');
     expect(error.mensaje).toContain('reactivarPersona');
@@ -438,7 +450,7 @@ describe('a una persona desactivada no se le asigna trabajo nuevo por NINGUNA ru
     exigirOk(
       reducirSinMutar(doc, {
         comando: 'editarEquipo',
-        proyecto: 'PM',
+        equipoId: 'pm-frontend',
         miembros: [{ persona_id: 'beto', responsabilidades: [], capacidad: null }],
       }),
     );
@@ -498,14 +510,14 @@ describe('eliminarPersona — se bloquea si tiene historia, y remite a desactiva
   });
 
   it('la pertenencia a un equipo NO bloquea: es presente, no historia — y se retira sola', () => {
-    const { doc } = arbolVacio('PM');
-    const dentro = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['PM'] });
+    const { doc } = arbolConEquipo('pm-frontend', 'Frontend');
+    const dentro = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['pm-frontend'] });
     const { documento, evento } = exigirOk(
       reducirSinMutar(dentro, { comando: 'eliminarPersona', id: 'ana' }),
     );
     expect(documento.personas).toEqual([]);
     expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([]);
-    expect(evento.detalle).toEqual({ equipos: ['PM'] });
+    expect(evento.detalle).toEqual({ equipos: ['pm-frontend'] });
   });
 
   it('se bloquea si es responsable de una tarea viva', () => {
@@ -622,101 +634,5 @@ describe('eliminarPersona — se bloquea si tiene historia, y remite a desactiva
       exigirError(reducirSinMutar(unDocumento(), { comando: 'eliminarPersona', id: 'nadie' }))
         .codigo,
     ).toBe('no-encontrado');
-  });
-});
-
-// --- editarEquipo -----------------------------------------------------------
-
-describe('editarEquipo', () => {
-  it('reemplaza la lista completa del equipo', () => {
-    const { doc } = arbolVacio('PM');
-    const conGente = aplicarTodos(doc, [
-      { comando: 'crearPersona', nombre: 'Ana' },
-      { comando: 'crearPersona', nombre: 'Beto' },
-    ]);
-    const { documento } = exigirOk(
-      reducirSinMutar(conGente, {
-        comando: 'editarEquipo',
-        proyecto: 'PM',
-        miembros: [
-          { persona_id: 'ana', responsabilidades: ['backend'], capacidad: null },
-          { persona_id: 'beto', responsabilidades: [], capacidad: null },
-        ],
-      }),
-    );
-    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([
-      { persona_id: 'ana', responsabilidades: ['backend'], capacidad: null },
-      { persona_id: 'beto', responsabilidades: [], capacidad: null },
-    ]);
-  });
-
-  it('vaciar el equipo con [] se permite: un proyecto puede quedarse sin nadie dedicado', () => {
-    const { doc } = arbolVacio('PM');
-    const conEquipo = aplicar(doc, { comando: 'crearPersona', nombre: 'Ana', equipos: ['PM'] });
-    const { documento } = exigirOk(
-      reducirSinMutar(conEquipo, { comando: 'editarEquipo', proyecto: 'PM', miembros: [] }),
-    );
-    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([]);
-  });
-
-  it('sacar a alguien del equipo NO le quita sus tareas: el equipo no restringe quién es responsable', () => {
-    const { doc, historiaId } = arbolConTareas(0);
-    const conTarea = aplicarTodos(doc, [
-      { comando: 'crearPersona', nombre: 'Ana', equipos: ['PM'] },
-      { comando: 'crearTarea', contenedorId: historiaId, titulo: 'T', responsable: 'ana' },
-    ]);
-    const { documento } = exigirOk(
-      reducirSinMutar(conTarea, { comando: 'editarEquipo', proyecto: 'PM', miembros: [] }),
-    );
-    expect(documento.proyectos[0]?.epicas[0]?.historias[0]?.tareas[0]?.responsable).toBe('ana');
-  });
-
-  it('rechaza a la misma persona dos veces en la lista', () => {
-    const doc = aplicar(arbolVacio('PM').doc, { comando: 'crearPersona', nombre: 'Ana' });
-    const error = exigirError(
-      reducirSinMutar(doc, {
-        comando: 'editarEquipo',
-        proyecto: 'PM',
-        miembros: [
-          { persona_id: 'ana', responsabilidades: ['uno'], capacidad: null },
-          { persona_id: 'ana', responsabilidades: ['dos'], capacidad: null },
-        ],
-      }),
-    );
-    expect(error.codigo).toBe('invalido');
-    expect(error.mensaje).toContain('dos veces');
-  });
-
-  it('rechaza a alguien que no está en personas', () => {
-    const { doc } = arbolVacio('PM');
-    expect(
-      exigirError(
-        reducirSinMutar(doc, {
-          comando: 'editarEquipo',
-          proyecto: 'PM',
-          miembros: [{ persona_id: 'fantasma', responsabilidades: [], capacidad: null }],
-        }),
-      ).codigo,
-    ).toBe('no-encontrado');
-  });
-
-  it('sobre un proyecto que no existe da no-encontrado', () => {
-    expect(
-      exigirError(
-        reducirSinMutar(unDocumento(), { comando: 'editarEquipo', proyecto: 'NADA', miembros: [] }),
-      ).codigo,
-    ).toBe('no-encontrado');
-  });
-
-  it('el equipo de un proyecto no toca el de otro', () => {
-    const uno = arbolVacio('UNO');
-    const dos = arbolVacio('DOS');
-    const base = { ...uno.doc, proyectos: [...uno.doc.proyectos, ...dos.doc.proyectos] };
-    const enAmbos = aplicar(base, { comando: 'crearPersona', nombre: 'Ana', equipos: ['UNO', 'DOS'] });
-    const { documento } = exigirOk(
-      reducirSinMutar(enAmbos, { comando: 'editarEquipo', proyecto: 'UNO', miembros: [] }),
-    );
-    expect(documento.proyectos[0]?.equipos[0]?.miembros).toEqual([]);
-    expect(documento.proyectos[1]?.equipos[0]?.miembros).toEqual([{ persona_id: 'ana', responsabilidades: [], capacidad: null }]);
   });
 });

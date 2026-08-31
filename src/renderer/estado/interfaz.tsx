@@ -1,7 +1,7 @@
 /**
  * Estado de INTERFAZ, deliberadamente fuera del reductor del documento.
  *
- * Qué está expandido, qué vista se mira, qué pestaña y qué filtro. Nada de esto se
+ * Qué está expandido, qué vista se mira y qué filtro. Nada de esto se
  * persiste ni viaja por IPC. Si viviera en el reductor de datos, colapsar una épica
  * entraría por la misma ruta que una mutación y despertaría el ciclo de guardado.
  *
@@ -76,9 +76,6 @@ export function esVistaAncha(vista: Vista | null): boolean {
   );
 }
 
-/** «Terminadas» es una PESTAÑA del panel del árbol, no un tercer panel (CLAUDE.md). */
-export type PestanaArbol = 'backlog' | 'terminadas';
-
 /** Los tres niveles del árbol. Se usa para saber qué comando toca sin `instanceof`. */
 export type ClaseNodo = 'epica' | 'historia' | 'tarea';
 
@@ -144,7 +141,6 @@ export interface EstadoInterfaz {
   vista: Vista | null;
   /** Ids de épica e historia abiertos. Colapsado por omisión: solo se ven las épicas. */
   expandidos: ReadonlySet<string>;
-  pestana: PestanaArbol;
   lateralColapsada: boolean;
 
   // --- E12 · Sprint global ---------------------------------------------
@@ -178,7 +174,7 @@ export interface EstadoInterfaz {
   /**
    * Nonce de «pasa a la fila siguiente». Lo pide quien cierra un formulario tras
    * confirmarlo; lo resuelve el árbol, que es el único que sabe qué fila viene después
-   * —depende de qué está plegado y de qué pestaña se mira—. Así la cadena de mover diez
+   * —depende de qué está plegado—. Así la cadena de mover diez
    * tareas es `S · Enter · S · Enter…` sin una flecha por medio.
    */
   siguienteArbol: number;
@@ -237,7 +233,6 @@ type AccionInterfaz =
   | { tipo: 'alternarNodo'; id: string }
   | { tipo: 'expandir'; ids: readonly string[] }
   | { tipo: 'colapsarTodo' }
-  | { tipo: 'pestana'; pestana: PestanaArbol }
   | { tipo: 'alternarLateral' }
   | { tipo: 'enfocarNodo'; id: string }
   | { tipo: 'irANodo'; id: string }
@@ -255,7 +250,6 @@ type AccionInterfaz =
 const INICIAL: EstadoInterfaz = {
   vista: null,
   expandidos: new Set(),
-  pestana: 'backlog',
   lateralColapsada: false,
   soloMio: true,
   yo: null,
@@ -277,7 +271,7 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
   switch (accion.tipo) {
     case 'verProyecto': {
       if (estado.vista?.tipo === 'proyecto' && estado.vista.clave === accion.clave) return estado;
-      // Cambiar de proyecto reinicia el plegado y la pestaña: los ids expandidos son de
+      // Cambiar de proyecto reinicia el plegado: los ids expandidos son de
       // otro árbol, y arrastrarlos deja la vista nueva en un estado que nadie pidió. Con
       // la misma razón se cierra lo que hubiera abierto: un formulario apuntando a una
       // tarea de otro proyecto no se puede pintar en ningún sitio.
@@ -285,7 +279,6 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
         ...estado,
         vista: { tipo: 'proyecto', clave: accion.clave },
         expandidos: new Set(),
-        pestana: 'backlog',
         nodoActivo: null,
         redaccion: null,
         detalle: null,
@@ -300,16 +293,14 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
      * despacho aparte dependería de que llegara después, y bastaría una reordenación
      * para que la tarea quedara enterrada bajo una épica cerrada.
      *
-     * La pestaña se fuerza a «backlog» aunque la tarea esté hecha: esa pestaña pinta el
-     * árbol entero, y «Terminadas» filtra. Llegar a una tarea y no verla porque la
-     * pestaña la esconde es peor que no ofrecer el salto.
+     * El backlog pinta el árbol entero, así que el salto siempre encuentra también una
+     * tarea hecha aunque el panel hermano de completadas esté oculto por el ancho.
      */
     case 'irATarea':
       return {
         ...estado,
         vista: { tipo: 'proyecto', clave: accion.clave },
         expandidos: new Set(accion.abrir),
-        pestana: 'backlog',
         nodoActivo: accion.tareaId,
         // El nonce mueve el foco de verdad: el usuario venía de otra pantalla y el
         // teclado tiene que aterrizar en la fila, no en el principio del árbol.
@@ -375,12 +366,6 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
     case 'colapsarTodo':
       return estado.expandidos.size === 0 ? estado : { ...estado, expandidos: new Set() };
 
-    case 'pestana':
-      // La pestaña «Terminadas» no admite edición ni arrastre: cerrar lo abierto al
-      // cambiar evita un formulario colgado sobre una fila que ya no se pinta.
-      return estado.pestana === accion.pestana
-        ? estado
-        : { ...estado, pestana: accion.pestana, redaccion: null, detalle: null, arrastre: null };
     case 'alternarLateral':
       return { ...estado, lateralColapsada: !estado.lateralColapsada };
 
@@ -398,9 +383,8 @@ function reducir(estado: EstadoInterfaz, accion: AccionInterfaz): EstadoInterfaz
     case 'verDetalle':
       return { ...estado, detalle: accion.detalle };
     case 'arrastrar':
-      // Empezar a arrastrar CIERRA la hoja: se pinta encima del panel del sprint, que es
-      // la zona donde hay que soltar. Una hoja abierta durante el arrastre taparía
-      // justamente el destino del gesto.
+      // Empezar a arrastrar CIERRA el modal: con un diálogo modal abierto no se puede
+      // interactuar legítimamente con ninguna zona de soltar del fondo.
       return {
         ...estado,
         arrastre: accion.arrastre,
@@ -441,7 +425,6 @@ export interface AccionesInterfaz {
   alternarNodo(id: string): void;
   expandir(ids: readonly string[]): void;
   colapsarTodo(): void;
-  cambiarPestana(pestana: PestanaArbol): void;
   alternarLateral(): void;
   /** El DOM ya movió el foco aquí. Solo se anota. */
   enfocarNodo(id: string): void;
@@ -482,7 +465,6 @@ export function ProveedorInterfaz({ children }: { children: ReactNode }) {
       alternarNodo: (id) => despachar({ tipo: 'alternarNodo', id }),
       expandir: (ids) => despachar({ tipo: 'expandir', ids }),
       colapsarTodo: () => despachar({ tipo: 'colapsarTodo' }),
-      cambiarPestana: (pestana) => despachar({ tipo: 'pestana', pestana }),
       alternarLateral: () => despachar({ tipo: 'alternarLateral' }),
       enfocarNodo: (id) => despachar({ tipo: 'enfocarNodo', id }),
       irANodo: (id) => despachar({ tipo: 'irANodo', id }),

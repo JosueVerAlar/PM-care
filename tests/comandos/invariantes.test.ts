@@ -44,7 +44,7 @@ import { type Aleatorio, elegir, entero, prng } from '../apoyo/generador';
 // --- 1. pureza --------------------------------------------------------------
 
 /**
- * Un caso por cada uno de los 33 comandos: el payload, y si se espera que pase o falle.
+ * Un caso por cada uno de los 42 comandos: el payload, y si se espera que pase o falle.
  *
  * La tabla se comprueba completa contra la unión discriminada: si `backend` añade el
  * comando 31 y no lo pone aquí, la prueba de cobertura se pone en rojo. Eso es lo que
@@ -67,6 +67,16 @@ function casosPorComando(): { comando: Comando; doc: Documento }[] {
   const cerrado = aplicar(conSprints, { comando: 'cerrarProyecto', clave: 'PM' });
   const planeacionCerrada = aplicar(conSprints, { comando: 'cerrarPlaneacion', proyecto: 'PM' });
   const sinAna = aplicar(conSprints, { comando: 'desactivarPersona', id: 'ana' });
+  /** Dos equipos en el mismo proyecto, con Ana dentro de uno: el caso que N11 abrió. */
+  const conEquipos = aplicarTodos(conSprints, [
+    { comando: 'crearEquipo', proyecto: 'PM', id: 'pm-frontend', nombre: 'Frontend' },
+    { comando: 'crearEquipo', proyecto: 'PM', id: 'pm-backend', nombre: 'Backend' },
+    {
+      comando: 'editarEquipo',
+      equipoId: 'pm-frontend',
+      miembros: [{ persona_id: 'ana', responsabilidades: ['backend'], capacidad: 5 }],
+    },
+  ]);
   /** Dos épicas y dos historias en la primera: sin hermanos no hay orden que cambiar. */
   const dosEpicas = aplicarTodos(conSprints, [
     { comando: 'crearEpica', proyecto: 'PM', titulo: 'Segunda épica' },
@@ -117,10 +127,16 @@ function casosPorComando(): { comando: Comando; doc: Documento }[] {
       doc: conSprints,
     },
     { comando: { comando: 'desbloquear', tareaId: 'PM-T2' }, doc: conSprints },
+    // Los equipos (M6). `conEquipos` trae DOS en el mismo proyecto: con uno solo,
+    // `moverMiembro` no tendría a dónde mover y mediría siempre el rechazo.
+    { comando: { comando: 'crearEquipo', proyecto: 'PM', id: 'pm-datos', nombre: 'Datos' }, doc: conEquipos },
     {
-      comando: { comando: 'editarEquipo', proyecto: 'PM', miembros: [{ persona_id: 'ana', responsabilidades: [], capacidad: null }] },
-      doc: conSprints,
+      comando: { comando: 'editarEquipo', equipoId: 'pm-frontend', nombre: 'Front', miembros: [{ persona_id: 'beto', responsabilidades: ['vistas'], capacidad: 3 }] },
+      doc: conEquipos,
     },
+    { comando: { comando: 'eliminarEquipo', equipoId: 'pm-backend' }, doc: conEquipos },
+    { comando: { comando: 'moverMiembro', personaId: 'ana', desde: 'pm-frontend', hacia: 'pm-backend' }, doc: conEquipos },
+    { comando: { comando: 'asignarEquipo', tareaId: 'PM-T1', equipoId: 'pm-frontend' }, doc: conEquipos },
     // Los sprints por proyecto. `crearSprint` va sobre `conTodo` en fechas que no solapan
     // con los que ya tiene: el reductor rechaza el solape, y un caso que siempre rechaza
     // no mide nada.
@@ -136,13 +152,13 @@ function casosPorComando(): { comando: Comando; doc: Documento }[] {
   ];
 }
 
-describe('la tabla de casos cubre los 38 comandos', () => {
+describe('la tabla de casos cubre los 42 comandos', () => {
   it('no falta ninguno de la unión discriminada: un comando nuevo sin caso pone esto en rojo', () => {
     const conCaso = new Set(casosPorComando().map((c) => c.comando.comando));
     const declarados = EsquemaComando.options.map(
       (opcion) => opcion.shape.comando.value as NombreComando,
     );
-    expect(declarados).toHaveLength(38);
+    expect(declarados).toHaveLength(42);
     expect([...declarados].filter((n) => !conCaso.has(n))).toEqual([]);
   });
 });
@@ -275,6 +291,8 @@ interface Inventario {
   historias: string[];
   tareas: string[];
   personas: string[];
+  /** Ids de equipo de TODOS los proyectos: son únicos en el documento entero. */
+  equipos: string[];
   sprints: { id: string; estado: string }[];
   /**
    * De cada épica, historia y tarea, el id de su padre. Lo necesitan los `reordenar*`:
@@ -291,6 +309,7 @@ function inventariar(doc: Documento): Inventario {
     historias: [],
     tareas: [],
     personas: doc.personas.map((p) => p.id),
+    equipos: doc.proyectos.flatMap((p) => p.equipos).map((e) => e.id),
     sprints: doc.sprints.map((s) => ({ id: s.id, estado: s.estado })),
     padre: new Map(),
   };
@@ -339,6 +358,8 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
   const tarea = unId(inv.tareas, 'FANTASMA-T1');
   const sprint = inv.sprints.length > 0 && rng() < 0.9 ? elegir(rng, inv.sprints).id : 'S-FANTASMA';
   const persona = unId(inv.personas, 'fantasma');
+  const equipo = unId(inv.equipos, 'equipo-fantasma');
+  const otroEquipo = unId(inv.equipos, 'otro-fantasma');
   // Sesgos deliberados hacia lo que SÍ puede prosperar. Sin ellos `sacarDelSprint` casi
   // siempre nombra una tarea que no está en ese sprint y `activarSprint` uno ya activo:
   // la secuencia seguiría verde midiendo solo rechazos, que es la peor clase de verde.
@@ -367,14 +388,9 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
     () => ({
       comando: 'crearPersona',
       nombre: elegir(rng, NOMBRES),
-      equipos: talVez(inv.proyectos.filter(() => rng() < 0.5)),
+      equipos: talVez(inv.equipos.filter(() => rng() < 0.5)),
     }),
-    () => ({
-      comando: 'editarPersona',
-      id: persona,
-      nombre: talVez(`P${entero(rng, 1, 99)}`),
-      equipos: talVez(inv.proyectos.filter(() => rng() < 0.5)),
-    }),
+    () => ({ comando: 'editarPersona', id: persona, nombre: `P${entero(rng, 1, 99)}` }),
     () => ({ comando: 'desactivarPersona', id: persona }),
     () => ({ comando: 'reactivarPersona', id: persona }),
     () => ({ comando: 'eliminarPersona', id: persona }),
@@ -469,11 +485,30 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
       motivo: 'generado',
     }),
     () => ({ comando: 'desbloquear', tareaId: tarea }),
+    // El id del equipo lo teclea el usuario (N11), así que aquí se inventa uno del
+    // patrón. Sale casi siempre nuevo: repetirlo se rechaza, y una opción que siempre
+    // rechaza deja la máquina midiendo solo negativas.
+    () => ({
+      comando: 'crearEquipo',
+      proyecto,
+      id: `${proyecto.toLowerCase()}-e${entero(rng, 1, 400)}`,
+      nombre: `Equipo ${entero(rng, 1, 99)}`,
+    }),
     () => ({
       comando: 'editarEquipo',
-      proyecto,
-      miembros: inv.personas.filter(() => rng() < 0.4).map((id) => ({ persona_id: id, responsabilidades: [], capacidad: null })),
+      equipoId: equipo,
+      nombre: talVez(`Equipo ${entero(rng, 1, 99)}`),
+      miembros: talVez(
+        inv.personas
+          .filter(() => rng() < 0.4)
+          .map((id) => ({ persona_id: id, responsabilidades: [], capacidad: rng() < 0.5 ? entero(rng, 1, 8) : null })),
+      ),
     }),
+    () => ({ comando: 'eliminarEquipo', equipoId: equipo }),
+    () => ({ comando: 'moverMiembro', personaId: persona, desde: equipo, hacia: otroEquipo }),
+    // `null` de vez en cuando: dejar una tarea sin equipo es una rama propia y tiene que
+    // sobrevivir a la máquina igual que asignarla.
+    () => ({ comando: 'asignarEquipo', tareaId: tarea, equipoId: rng() < 0.2 ? null : equipo }),
   ];
   return elegir(rng, opciones)();
 }
@@ -761,7 +796,7 @@ describe('la red de seguridad del reductor', () => {
 });
 
 describe('la secuencia generada de verdad llega a algún sitio', () => {
-  it('los 30 comandos se aplican con ÉXITO al menos una vez: sin esto la máquina mediría solo rechazos', () => {
+  it('los 42 comandos se aplican con ÉXITO al menos una vez: sin esto la máquina mediría solo rechazos', () => {
     // La trampa que esta prueba cierra: un generador que propone comandos imposibles deja
     // las invariantes de arriba en verde sin haber ejecutado nunca el cuerpo de un `case`.
     const exitos = new Set<string>();

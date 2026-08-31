@@ -20,9 +20,11 @@ eso: **Zod**.
   **Registro** (Terminadas · Backlog del área · Tiempos) · **Gente** (Carga por persona ·
   Equipos · Personas). No existe un grupo «Administración»: nombraba una categoría, no un
   contenido. **Equipos existe UNA vez** y esa única pantalla muestra y edita.
-- **De proyecto:** dos paneles. Izquierda, árbol épica → historia → tarea, con los niveles
-  que el proyecto tenga (ver regla 18). Derecha, el sprint filtrado a ese proyecto.
-  *Terminadas* es una pestaña dentro de la vista, **no** un tercer panel.
+- **[SUPERADO — 2026-08-31, decisión del usuario en E14]** La vista de proyecto tenía dos
+  paneles y *Terminadas* era una pestaña dentro del árbol.
+- **De proyecto:** tres paneles. Izquierda, backlog en árbol épica → historia → tarea;
+  centro, el mismo árbol filtrado a tareas aceptadas; derecha, el sprint del proyecto.
+  *Terminadas* dejó de ser pestaña para que backlog, completadas y sprint se vean a la vez.
 
 ## Estructura de carpetas
 

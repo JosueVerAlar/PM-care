@@ -16,19 +16,23 @@ import { useSyncExternalStore } from 'react';
 
 /** El umbral duro de E0: por debajo, un solo panel. Idéntico al `@media` de `base.css`. */
 export const ANCHO_DOS_PANELES = 1040;
+/** Por debajo, la columna de completadas deja sitio al backlog y al sprint. */
+export const ANCHO_TRES_PANELES = 1320;
 
-const CONSULTA = `(min-width: ${ANCHO_DOS_PANELES + 1}px)`;
+function consulta(ancho: number): string {
+  return `(min-width: ${ancho + 1}px)`;
+}
 
-function suscribir(alCambiar: () => void): () => void {
+function suscribir(ancho: number, alCambiar: () => void): () => void {
   if (typeof window === 'undefined' || !window.matchMedia) return () => {};
-  const lista = window.matchMedia(CONSULTA);
+  const lista = window.matchMedia(consulta(ancho));
   lista.addEventListener('change', alCambiar);
   return () => lista.removeEventListener('change', alCambiar);
 }
 
-function leer(): boolean {
+function leer(ancho: number): boolean {
   if (typeof window === 'undefined' || !window.matchMedia) return true;
-  return window.matchMedia(CONSULTA).matches;
+  return window.matchMedia(consulta(ancho)).matches;
 }
 
 /**
@@ -39,5 +43,18 @@ function leer(): boolean {
  * monte el formulario en el panel oculto y lo mueva un tic después.
  */
 export function useDosPaneles(): boolean {
-  return useSyncExternalStore(suscribir, leer, () => true);
+  return useSyncExternalStore(
+    (alCambiar) => suscribir(ANCHO_DOS_PANELES, alCambiar),
+    () => leer(ANCHO_DOS_PANELES),
+    () => true,
+  );
+}
+
+/** ¿Se están pintando backlog, completadas y sprint a la vez? */
+export function useTresPaneles(): boolean {
+  return useSyncExternalStore(
+    (alCambiar) => suscribir(ANCHO_TRES_PANELES, alCambiar),
+    () => leer(ANCHO_TRES_PANELES),
+    () => true,
+  );
 }

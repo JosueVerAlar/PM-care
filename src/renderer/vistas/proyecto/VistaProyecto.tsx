@@ -1,9 +1,8 @@
 /**
- * La vista de proyecto: dos paneles. Es el hito de E6 y el terreno de juego de E7.
+ * La vista de proyecto: tres paneles. Es el hito de E6 y el terreno de juego de E7/E14.
  *
- * Izquierda, el árbol de tres niveles con su leyenda. Derecha, el sprint activo filtrado
- * a este proyecto. «Terminadas» es una PESTAÑA de este panel, no un tercer panel: bajo
- * 1040 px el sprint ya no cabe y un tercero no cabría nunca.
+ * Izquierda, backlog; centro, el mismo árbol filtrado a completadas; derecha, el sprint.
+ * Las consultas de medio retiran primero completadas y después el sprint.
  *
  * La vista no calcula: pide `avanceDeProyecto` y `sprintActivo` al dominio y reparte.
  *
@@ -12,8 +11,7 @@
  * - **Árbol → sprint**: comprometer. Lo maneja `PanelSprint`.
  * - **Sprint → árbol**: sacar del sprint conservando lo escrito. Se maneja aquí, y la
  *   zona es el CUERPO del árbol, no la sección entera.
- * - **Sobre «Terminadas», nada.** La pestaña vive en la cabecera del panel, que queda
- *   fuera de la zona; y con la pestaña activa el cuerpo tampoco acepta nada. Dar algo
+ * - **Sobre completadas, nada.** Ese panel no es zona ni origen de arrastre. Dar algo
  *   por terminado exige pasar por el estado de la tarea, no por un resbalón del ratón:
  *   ni se suelta ni se ilumina.
  */
@@ -26,7 +24,6 @@ import {
   sprintActivo,
   tareasDe,
 } from '../../../compartido/dominio/derivar';
-import { estaHecha } from '../../../compartido/dominio/clasificar';
 import type { Documento, Fecha, Proyecto } from '../../../compartido/modelo/tipos';
 import { Mas } from '../../componentes/iconos';
 import { Medidor } from '../../componentes/Medidor';
@@ -35,11 +32,12 @@ import { useAccionesSprint } from '../../estado/acciones-sprint';
 import { useAccionesInterfaz, useInterfaz } from '../../estado/interfaz';
 import { useSoloLectura } from '../../estado/mutaciones';
 import { esArrastreDeTarea, TIPO_TAREA } from '../../util/arrastre';
-import { useDosPaneles } from '../../util/medios';
+import { useDosPaneles, useTresPaneles } from '../../util/medios';
 import { Arbol } from './Arbol';
 import { HojaDetalle } from './HojaDetalle';
 import { Leyenda } from './Leyenda';
 import { PanelAyuda } from './PanelAyuda';
+import { PanelCompletadas } from './PanelCompletadas';
 import { PanelSprint } from './PanelSprint';
 import { PieEdicion } from './PieEdicion';
 
@@ -52,11 +50,10 @@ export function VistaProyecto({
   proyecto: Proyecto;
   hoy: Fecha;
 }) {
-  const { expandidos, pestana, arrastre, detalle } = useInterfaz();
+  const { expandidos, arrastre, detalle } = useInterfaz();
   const {
     expandir,
     colapsarTodo,
-    cambiarPestana,
     arrastrar,
     redactar,
     verDetalle,
@@ -65,6 +62,7 @@ export function VistaProyecto({
 
   const soloLectura = useSoloLectura();
   const dosPaneles = useDosPaneles();
+  const tresPaneles = useTresPaneles();
 
   const sprint = useMemo(() => sprintActivo(documento, proyecto.clave), [documento, proyecto.clave]);
   const avance = useMemo(() => avanceDeProyecto(proyecto), [proyecto]);
@@ -94,8 +92,7 @@ export function VistaProyecto({
   }, [proyecto]);
 
   const hayAlgoAbierto = expandidos.size > 0;
-  // La pestaña «Terminadas» es un registro de lo que pasó, no un sitio donde se opera.
-  const editable = !soloLectura && pestana === 'backlog';
+  const editable = !soloLectura;
 
   // --- zona de soltar: devolver una tarea del sprint al árbol ---------------
   const [sobre, setSobre] = useState(false);
@@ -157,69 +154,60 @@ export function VistaProyecto({
   return (
     <>
       <section className="panel panel--arbol" aria-label={`Árbol de ${proyecto.clave}`}>
-        <header className="cab">
-          <h2 className="cab__titulo" title={proyecto.nombre}>
-            {pestana === 'backlog' ? 'Backlog' : 'Terminadas'} de {proyecto.clave}
-          </h2>
-          <span className="crece" />
-
-          <div className="alternador" role="group" aria-label="Qué se muestra del árbol">
-            <button
-              type="button"
-              aria-pressed={pestana === 'backlog'}
-              onClick={() => cambiarPestana('backlog')}
-            >
-              En backlog
-            </button>
-            <button
-              type="button"
-              aria-pressed={pestana === 'terminadas'}
-              onClick={() => cambiarPestana('terminadas')}
-            >
-              Terminadas
-            </button>
+        {/* E14 · dos líneas. El título y el avance son lo que se LEE; los controles, lo
+            que se pulsa. En una sola línea los tres controles empujaban el título hasta
+            truncarlo ya con una clave de cinco letras, y el nombre del panel es
+            justamente lo que dice en cuál de los tres estás. */}
+        <header className="cab cab--doble">
+          <div className="cab__linea">
+            <h2 className="cab__titulo" title={proyecto.nombre}>
+              Backlog de {proyecto.clave}
+            </h2>
+            <span className="crece" />
+            <Medidor avance={avance} />
           </div>
 
-          <Medidor avance={avance} />
+          <div className="cab__linea cab__linea--controles">
+            {!tresPaneles && dosPaneles && (
+              <span className="cab__nota">Completadas ocultas por ancho</span>
+            )}
+            <span className="crece" />
 
-          <button
-            type="button"
-            className="cab__accion"
-            onClick={() => (hayAlgoAbierto ? colapsarTodo() : expandir(plegables))}
-          >
-            {hayAlgoAbierto ? 'Colapsar todo' : 'Expandir todo'}
-          </button>
+            <button
+              type="button"
+              className="cab__accion"
+              onClick={() => (hayAlgoAbierto ? colapsarTodo() : expandir(plegables))}
+            >
+              {hayAlgoAbierto ? 'Colapsar todo' : 'Expandir todo'}
+            </button>
 
-          {/* E13 · la ÚNICA captura que no cuelga de ninguna fila: una épica no tiene
-              padre donde poner un `＋`. Es también la única acción con relleno sólido del
-              panel — un solo primario a la vista, o no hay ninguno. */}
-          <button
-            type="button"
-            className="cab__primario"
-            disabled={!editable}
-            title={
-              editable
-                ? `Capturar una épica en ${proyecto.clave}`
-                : 'Aquí no se captura: la pestaña Terminadas es un registro, y en solo lectura no se escribe.'
-            }
-            onClick={() => redactar({ tipo: 'capturar', clase: 'epica', padreId: proyecto.clave })}
-          >
-            <Mas /> Nueva épica
-          </button>
+            {/* E13 · la ÚNICA captura que no cuelga de ninguna fila: una épica no tiene
+                padre donde poner un `＋`. Es también la única acción con relleno sólido
+                del panel — un solo primario a la vista, o no hay ninguno. */}
+            <button
+              type="button"
+              className="cab__primario"
+              disabled={!editable}
+              title={
+                editable
+                  ? `Capturar una épica en ${proyecto.clave}`
+                  : 'No se puede capturar en modo solo lectura.'
+              }
+              onClick={() => redactar({ tipo: 'capturar', clase: 'epica', padreId: proyecto.clave })}
+            >
+              <Mas /> Nueva épica
+            </button>
+          </div>
         </header>
 
 
-        {/* La zona de soltar es el CUERPO, no la sección: así la pestaña «Terminadas»,
-            que vive en la cabecera, nunca es un destino. */}
+        {/* La zona de soltar es el CUERPO del backlog, nunca el panel de completadas. */}
         <div className={`zona-arbol${sobre ? ' zona-arbol--soltar' : ''}`} {...zona}>
           <Arbol
             proyecto={proyecto}
             sprint={sprint}
             hoy={hoy}
-            // `estaHecha` es una función importada: su identidad no cambia entre renders,
-            // así que el `useMemo` del árbol no se invalida en cada tecla.
-            {...(pestana === 'terminadas' ? { predicado: estaHecha } : {})}
-            etiqueta={`${pestana === 'backlog' ? 'Backlog' : 'Tareas terminadas'} de ${proyecto.nombre}`}
+            etiqueta={`Backlog de ${proyecto.nombre}`}
             editable={editable}
           />
         </div>
@@ -236,6 +224,8 @@ export function VistaProyecto({
         {ayuda && <PanelAyuda cerrar={() => setAyuda(false)} />}
       </section>
 
+      <PanelCompletadas proyecto={proyecto} sprint={sprint} hoy={hoy} avance={avance} />
+
       <PanelSprint
         documento={documento}
         sprint={sprint}
@@ -245,9 +235,7 @@ export function VistaProyecto({
         dosPaneles={dosPaneles}
       />
 
-      {/* La hoja va DESPUÉS del panel del sprint y ocupa su misma celda de la rejilla:
-          se apila encima sin sacarlo del árbol de nodos, así que cerrar la hoja no
-          vuelve a montar el sprint ni pierde el desplazamiento de su lista. */}
+      {/* El detalle es modal y queda fuera de las celdas de los tres paneles. */}
       {detalle !== null && (
         <HojaDetalle
           // Remontar al cambiar de nodo. Sin la `key`, React reutiliza la instancia y con
@@ -261,8 +249,7 @@ export function VistaProyecto({
           hoy={hoy}
           detalle={detalle}
           indice={indice}
-          // Se LEE también en «Terminadas» y en solo lectura; lo que se apaga ahí es
-          // escribir el título y la descripción.
+          // En solo lectura se conserva toda la lectura y se apaga la escritura.
           editable={editable}
           cerrar={() => {
             verDetalle(null);

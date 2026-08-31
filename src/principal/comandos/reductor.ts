@@ -35,6 +35,7 @@ import { parsearId, siguienteId } from '../../compartido/modelo/ids';
 import type {
   Documento,
   Epica,
+  Equipo,
   EstadoTarea,
   Fecha,
   Historia,
@@ -365,7 +366,7 @@ function aplicar(
       doc.personas.push(persona);
 
       const equipos = comando.equipos ?? [];
-      const asignado = fijarEquiposDe(doc, persona.id, equipos);
+      const asignado = meterEnEquipos(doc, persona.id, equipos);
       if (!asignado.ok) return { ok: false, error: asignado.error };
 
       return {
@@ -381,31 +382,26 @@ function aplicar(
     case 'editarPersona': {
       const persona = doc.personas.find((p) => p.id === comando.id);
       if (persona === undefined) return falta(`la persona "${comando.id}"`);
-      if (comando.nombre === undefined && comando.equipos === undefined) return sinCambios();
+      // Solo el nombre. La adscripción a equipos se escribe desde el lado del equipo y la
+      // ficha de persona la muestra en solo lectura (M6): dos caminos para el mismo dato
+      // son la fuente de que un día se contradigan, y este era además el más pobre de los
+      // dos —una lista de ids no sabe con qué responsabilidades ni con qué capacidad
+      // entra alguien a un equipo—.
+      if (comando.nombre === undefined) return sinCambios();
 
       // Corregir el nombre NO regenera el id. El id ya está copiado en cada
       // `tarea.responsable` y en cada item de sprint —incluidos los cerrados—, así que
       // recalcularlo aquí reescribiría de quién fue el trabajo del mes pasado. Que el id
       // se derive del nombre es una comodidad del alta, no una relación que se mantenga.
-      const antes = { nombre: persona.nombre, equipos: equiposDe(doc, persona.id) };
-      if (comando.nombre !== undefined) persona.nombre = comando.nombre;
-
-      if (comando.equipos !== undefined) {
-        if (!persona.activa && comando.equipos.length > 0) {
-          return invalido(
-            `${persona.id} está desactivada; reactívala con "reactivarPersona" antes de meterla a un equipo`,
-          );
-        }
-        const asignado = fijarEquiposDe(doc, persona.id, comando.equipos);
-        if (!asignado.ok) return { ok: false, error: asignado.error };
-      }
+      const antes = persona.nombre;
+      persona.nombre = comando.nombre;
 
       return {
         ok: true,
         documento: doc,
         evento: anotar({
           resumen: `Persona editada: ${persona.nombre} (${persona.id})`,
-          detalle: { antes, despues: { nombre: persona.nombre, equipos: equiposDe(doc, persona.id) } },
+          detalle: { antes: { nombre: antes }, despues: { nombre: persona.nombre } },
         }),
       };
     }
@@ -420,14 +416,13 @@ function aplicar(
       // un solo item de sprint: su historia es suya y sigue diciendo su nombre.
       //
       // Por qué sacarla de los equipos en vez de dejarla y confiar en que cada vista
-      // filtre por `activa`: el equipo de un proyecto significa "quién está dedicado a
-      // esto HOY", que es exactamente lo que deja de ser cierto. Si el dato se quedara,
-      // la invariante viviría repartida en cada pantalla y la primera que se olvidara del
-      // filtro volvería a ofrecerla en un desplegable. De qué equipos salió queda en el
-      // detalle del evento, así que la baja es reversible a mano.
-      const salioDe = equiposDe(doc, persona.id);
-      const vaciado = fijarEquiposDe(doc, persona.id, []);
-      if (!vaciado.ok) return { ok: false, error: vaciado.error };
+      // filtre por `activa`: un equipo significa "quién está dedicado a esto HOY", que es
+      // exactamente lo que deja de ser cierto. Si el dato se quedara, la invariante
+      // viviría repartida en cada pantalla y la primera que se olvidara del filtro
+      // volvería a ofrecerla en un desplegable. De qué equipos salió queda en el detalle
+      // del evento —por id, que con varios equipos por proyecto es lo único que la hace
+      // reversible a mano: "salió de SICOE" ya no dice de cuál de sus equipos—.
+      const salioDe = sacarDeTodosLosEquipos(doc, persona.id);
       // Si era quien usa la app, el campo se limpia por lo mismo que se vacían sus
       // equipos: los dos son estado del PRESENTE, y "quién soy" deja de ser cierto en el
       // mismo momento que "a qué proyectos estoy dedicado". Dejarlo apuntando a alguien
@@ -453,9 +448,9 @@ function aplicar(
       if (persona === undefined) return falta(`la persona "${comando.id}"`);
       if (persona.activa) return invalido(`${persona.id} ya está activa`);
       persona.activa = true;
-      // No vuelve sola a sus equipos anteriores: a qué proyectos se dedica ahora es una
-      // decisión de hoy, no la restauración de cómo estaba hace seis meses. Se la mete
-      // con `editarPersona` o `editarEquipo`.
+      // No vuelve sola a sus equipos anteriores: en cuáles está ahora es una decisión de
+      // hoy, no la restauración de cómo estaba hace seis meses. Se la vuelve a meter con
+      // `editarEquipo`, que es donde vive la pertenencia.
 
       return {
         ok: true,
@@ -483,9 +478,7 @@ function aplicar(
       // Solo puede quedarle pertenencia a equipos, que es estado del presente y no
       // registro histórico: se retira aquí porque el esquema exige que todo `persona_id`
       // de un equipo exista, y queda anotada en el evento.
-      const salioDe = equiposDe(doc, persona.id);
-      const vaciado = fijarEquiposDe(doc, persona.id, []);
-      if (!vaciado.ok) return { ok: false, error: vaciado.error };
+      const salioDe = sacarDeTodosLosEquipos(doc, persona.id);
       // Mismo criterio que con los equipos, y por una razón más: si el campo se quedara
       // apuntando a alguien que ya no está en `personas`, la validación cruzada tumbaría
       // el documento y el comando fallaría con un `documento-invalido` que no le explica
@@ -1424,32 +1417,27 @@ function aplicar(
       };
     }
 
-    // --- equipo ---------------------------------------------------------
-    case 'editarEquipo': {
+    // --- equipos --------------------------------------------------------
+    case 'crearEquipo': {
       const proyecto = doc.proyectos.find((p) => p.clave === comando.proyecto);
       if (proyecto === undefined) return falta(`el proyecto "${comando.proyecto}"`);
 
-      const vistos = new Set<string>();
-      for (const miembro of comando.miembros) {
-        const problema = noAsignable(doc, miembro.persona_id);
-        if (problema !== null) return { ok: false, error: problema };
-        if (vistos.has(miembro.persona_id)) {
-          return { ok: false, error: { codigo: 'invalido', mensaje: `"${miembro.persona_id}" aparece dos veces en el equipo` } };
-        }
-        vistos.add(miembro.persona_id);
+      // El id es único en TODO el documento, no dentro del proyecto: así lo exige
+      // `validarDocumento` y así `tarea.equipo_id` se lee sin tener que saber antes de
+      // qué proyecto es la tarea. Se comprueba aquí, y no se deja caer a la red de
+      // seguridad, para poder decir CUÁL es el choque: un "documento-invalido" con la
+      // ruta `proyectos.2.equipos.1.id` no le explica nada a nadie.
+      const choque = buscarEquipo(doc, comando.id);
+      if (choque !== null) {
+        return invalido(
+          `ya existe un equipo con el id "${comando.id}": "${choque.equipo.nombre}" de ${choque.proyecto.clave}`,
+        );
       }
-      const antes = proyecto.equipos.flatMap((equipo) => equipo.miembros).map((m) => m.persona_id);
-      // El equipo NO restringe quién puede ser responsable: una tarea vieja puede apuntar
-      // a alguien que ya salió, y eso es correcto. Por eso sacar a alguien no toca tareas.
-      const general = proyecto.equipos[0] ?? {
-        id: `${proyecto.clave.toLowerCase()}-general`, nombre: 'General', miembros: [],
-      };
-      general.miembros = comando.miembros.map((m) => ({
-        ...m,
-        responsabilidades: m.responsabilidades,
-        capacidad: m.capacidad,
-      }));
-      if (proyecto.equipos.length === 0) proyecto.equipos.push(general);
+
+      // Nace VACÍO. Meter gente es `editarEquipo` o `moverMiembro`: un solo camino para
+      // la pertenencia, que es lo que impide que dos formas de escribirla divergan.
+      const equipo: Equipo = { id: comando.id, nombre: comando.nombre, miembros: [] };
+      proyecto.equipos.push(equipo);
 
       return {
         ok: true,
@@ -1457,8 +1445,169 @@ function aplicar(
         evento: anotar({
           proyecto_id: proyecto.clave,
           origen: rutaLegible([proyecto.clave]),
-          resumen: `Equipo de ${proyecto.clave}: ${comando.miembros.length} integrantes`,
-          detalle: { antes, despues: [...vistos] },
+          resumen: `Equipo creado: ${equipo.nombre} (${equipo.id}) en ${proyecto.clave}`,
+        }),
+      };
+    }
+
+    case 'editarEquipo': {
+      const sitio = buscarEquipo(doc, comando.equipoId);
+      if (sitio === null) return falta(`el equipo "${comando.equipoId}"`);
+      const { proyecto, equipo } = sitio;
+      if (comando.nombre === undefined && comando.miembros === undefined) return sinCambios();
+
+      // Toda la validación antes de la primera mutación: un rechazo a mitad de camino
+      // dejaría el nombre cambiado y la lista sin cambiar en el documento que se
+      // descarta, y esa asimetría es la que confunde al leer el código dentro de un año.
+      if (comando.miembros !== undefined) {
+        const vistos = new Set<string>();
+        for (const miembro of comando.miembros) {
+          const problema = noAsignable(doc, miembro.persona_id);
+          if (problema !== null) return { ok: false, error: problema };
+          if (vistos.has(miembro.persona_id)) {
+            return invalido(`"${miembro.persona_id}" aparece dos veces en el equipo`);
+          }
+          vistos.add(miembro.persona_id);
+        }
+      }
+
+      const antes = { nombre: equipo.nombre, miembros: equipo.miembros.map((m) => m.persona_id) };
+      if (comando.nombre !== undefined) equipo.nombre = comando.nombre;
+      if (comando.miembros !== undefined) {
+        // El equipo NO restringe quién puede ser responsable: una tarea vieja puede
+        // apuntar a alguien que ya salió, y eso es correcto. Por eso sacar a alguien de
+        // aquí no toca ni una tarea. Lo que queda de esa discordancia es una señal en
+        // pantalla —`responsableFueraDelEquipo`—, que informa sin rechazar nada.
+        equipo.miembros = comando.miembros.map((m) => ({ ...m }));
+      }
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          proyecto_id: proyecto.clave,
+          origen: rutaLegible([proyecto.clave, equipo.nombre]),
+          resumen: `Equipo editado: ${equipo.nombre} (${equipo.id}) — ${equipo.miembros.length} integrantes`,
+          detalle: {
+            antes,
+            despues: { nombre: equipo.nombre, miembros: equipo.miembros.map((m) => m.persona_id) },
+          },
+        }),
+      };
+    }
+
+    case 'eliminarEquipo': {
+      const sitio = buscarEquipo(doc, comando.equipoId);
+      if (sitio === null) return falta(`el equipo "${comando.equipoId}"`);
+      const { proyecto, equipo } = sitio;
+
+      // Se rechaza si alguna tarea lo tiene asignado, y no se le pone `equipo_id: null` a
+      // las tareas en silencio. La regla general dice que un puntero que describe el
+      // presente se suelta solo —así se hace con `usuario` al dar de baja a una persona—,
+      // pero ese es UN campo de UNA fila, recuperable de su evento. Aquí son treinta
+      // tareas que el usuario clasificó de una en una: soltarlas dejaría la mitad del
+      // tablero sin columna con un solo clic, y para que la baja fuera reversible a mano
+      // el evento tendría que cargar la lista entera. Así que se avisa con el conteo y se
+      // nombra la alternativa, igual que `eliminarPersona`.
+      const asignadas = tareasConEquipo(proyecto, equipo.id);
+      if (asignadas.length > 0) {
+        return invalido(
+          `no se puede eliminar el equipo "${equipo.id}" (${equipo.nombre}): ${asignadas.length} tarea(s) lo tienen asignado (${muestra(asignadas)}). Reasígnalas con "asignarEquipo" —a otro equipo o a ninguno— antes de eliminarlo`,
+        );
+      }
+
+      // La pertenencia sí se va con el equipo: es estado del presente, no registro
+      // histórico, y de quiénes eran queda constancia en el detalle del evento.
+      const miembros = equipo.miembros.map((m) => m.persona_id);
+      proyecto.equipos.splice(proyecto.equipos.indexOf(equipo), 1);
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          proyecto_id: proyecto.clave,
+          origen: rutaLegible([proyecto.clave]),
+          resumen: `Equipo eliminado: ${equipo.nombre} (${equipo.id}) de ${proyecto.clave}`,
+          detalle: { miembros },
+        }),
+      };
+    }
+
+    case 'moverMiembro': {
+      const origen = buscarEquipo(doc, comando.desde);
+      if (origen === null) return falta(`el equipo "${comando.desde}"`);
+      const destino = buscarEquipo(doc, comando.hacia);
+      if (destino === null) return falta(`el equipo "${comando.hacia}"`);
+      if (origen.equipo === destino.equipo) {
+        return invalido(`"${comando.desde}" es a la vez el origen y el destino`);
+      }
+
+      const miembro = origen.equipo.miembros.find((m) => m.persona_id === comando.personaId);
+      if (miembro === undefined) {
+        return invalido(`${comando.personaId} no está en el equipo "${origen.equipo.id}"`);
+      }
+      if (destino.equipo.miembros.some((m) => m.persona_id === comando.personaId)) {
+        return invalido(`${comando.personaId} ya está en el equipo "${destino.equipo.id}"`);
+      }
+      // Estar en un equipo es recibir trabajo, así que la puerta de las desactivadas se
+      // aplica también aquí. No es inalcanzable: el usuario edita el JSON a mano
+      // (regla 14) y puede haber dejado a alguien inactivo dentro de un equipo.
+      const problema = noAsignable(doc, comando.personaId);
+      if (problema !== null) return { ok: false, error: problema };
+
+      // Se mueve la ficha ENTERA, no `{persona_id}`: sus responsabilidades, su capacidad
+      // y cualquier campo que el usuario le haya escrito dentro (regla 14). Es lo que
+      // hace que partir el «General» de la migración no pierda ningún `rol`.
+      origen.equipo.miembros.splice(origen.equipo.miembros.indexOf(miembro), 1);
+      destino.equipo.miembros.push(miembro);
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          proyecto_id: destino.proyecto.clave,
+          origen: rutaLegible([destino.proyecto.clave, destino.equipo.nombre]),
+          resumen: `${comando.personaId}: de ${origen.equipo.nombre} (${origen.equipo.id}) a ${destino.equipo.nombre} (${destino.equipo.id})`,
+          detalle: { responsabilidades: miembro.responsabilidades, capacidad: miembro.capacidad },
+        }),
+      };
+    }
+
+    case 'asignarEquipo': {
+      const sitio = buscarTarea(doc, comando.tareaId);
+      if (sitio === null) return falta(`la tarea "${comando.tareaId}"`);
+      const { proyecto, tarea } = sitio;
+
+      // El equipo tiene que ser de SU proyecto. Lo exige el esquema, pero el mensaje que
+      // saldría de ahí sería un "documento-invalido"; aquí se distingue "no existe" de
+      // "existe pero es de otro proyecto", que son dos errores distintos del usuario.
+      if (comando.equipoId !== null && !proyecto.equipos.some((e) => e.id === comando.equipoId)) {
+        const otro = buscarEquipo(doc, comando.equipoId);
+        return invalido(
+          otro === null
+            ? `no existe el equipo "${comando.equipoId}"`
+            : `el equipo "${comando.equipoId}" es de ${otro.proyecto.clave} y ${tarea.id} es de ${proyecto.clave}`,
+        );
+      }
+      if (tarea.equipo_id === comando.equipoId) return sinCambios();
+
+      // No se comprueba ningún sprint cerrado, igual que en `editarTarea`: el item del
+      // sprint guarda su propia copia de lo comprometido y no lleva equipo, así que esto
+      // no reescribe nada de lo que ese sprint dice que pasó (regla 8).
+      const antes = tarea.equipo_id;
+      tarea.equipo_id = comando.equipoId;
+      const nombreDelEquipo = proyecto.equipos.find((e) => e.id === comando.equipoId)?.nombre;
+
+      return {
+        ok: true,
+        documento: doc,
+        evento: anotar({
+          ...ubicacionDeTarea(sitio),
+          resumen:
+            comando.equipoId === null
+              ? `${tarea.id} se queda sin equipo`
+              : `${tarea.id} es de ${nombreDelEquipo} (${comando.equipoId})`,
+          detalle: { antes, despues: comando.equipoId },
         }),
       };
     }
@@ -1469,6 +1618,29 @@ function aplicar(
 
 interface SitioEpica { proyecto: Proyecto; epica: Epica }
 interface SitioHistoria extends SitioEpica { historia: Historia }
+interface SitioEquipo { proyecto: Proyecto; equipo: Equipo }
+
+/**
+ * Dónde vive un equipo. Basta el id: es único en TODO el documento y así lo valida
+ * `validarDocumento`, que es lo que permite que los comandos de equipo identifiquen con
+ * un solo campo en vez de con el par (proyecto, id) —dos identificadores que pueden
+ * contradecirse son un rechazo esperando a ocurrir—.
+ */
+function buscarEquipo(doc: Documento, equipoId: string): SitioEquipo | null {
+  for (const proyecto of doc.proyectos) {
+    for (const equipo of proyecto.equipos) {
+      if (equipo.id === equipoId) return { proyecto, equipo };
+    }
+  }
+  return null;
+}
+
+/** Ids de las tareas del proyecto asignadas a ese equipo, colgadas del nivel que sea (N9). */
+function tareasConEquipo(proyecto: Proyecto, equipoId: string): string[] {
+  return tareasDeProyecto(proyecto)
+    .filter((tarea) => tarea.equipo_id === equipoId)
+    .map((tarea) => tarea.id);
+}
 
 /**
  * Dónde está una tarea, con la jerarquía que de verdad tenga (N9).
@@ -1716,49 +1888,60 @@ function soltarUsuario(doc: Documento, personaId: string): boolean {
   return true;
 }
 
-/** Claves de los proyectos en cuyo equipo aparece la persona. */
-function equiposDe(doc: Documento, personaId: string): string[] {
-  return doc.proyectos
-    .filter((proyecto) => proyecto.equipos.flatMap((equipo) => equipo.miembros).some((m) => m.persona_id === personaId))
-    .map((proyecto) => proyecto.clave);
-}
-
 type ResultadoEquipos =
   | { ok: true; despues: string[] }
   | { ok: false; error: ErrorComando };
 
 /**
- * Deja a la persona exactamente en los equipos de `claves` y en ninguno más.
+ * Mete a la persona en esos equipos, con la ficha de miembro vacía.
  *
- * Es la relación equipo↔persona escrita desde el lado de la persona; `editarEquipo` la
- * escribe desde el lado del proyecto. Las dos tocan el mismo array porque un equipo no
- * es una entidad aparte: ES `proyecto.equipos.flatMap((equipo) => equipo.miembros)`. Duplicar la pertenencia en un segundo
- * lugar para que cada vista tuviera "su" copia es justo lo que haría que un día no
- * coincidieran.
+ * **Solo la usa `crearPersona`, y ahí está el argumento entero.** La pertenencia se
+ * escribe desde el lado del EQUIPO (`editarEquipo`, `moverMiembro`), que es el único que
+ * conoce las responsabilidades y la capacidad con las que alguien entra. El alta es la
+ * excepción que no puede contradecir a nada: la persona nace en ese mismo comando, así
+ * que no existe todavía ningún otro valor con el que discrepar.
  *
- * Donde la persona YA era miembro no se toca nada: su `rol` es un dato que esta lista no
- * conoce y no tiene por qué borrar.
+ * No es un "fijar": no saca a nadie de ningún sitio, porque en el alta no hay de dónde.
  */
-function fijarEquiposDe(doc: Documento, personaId: string, claves: readonly string[]): ResultadoEquipos {
-  const deseadas: string[] = [];
-  for (const clave of claves) {
-    if (!doc.proyectos.some((p) => p.clave === clave)) {
-      return { ok: false, error: { codigo: 'no-encontrado', mensaje: `no existe el proyecto "${clave}"` } };
+function meterEnEquipos(
+  doc: Documento,
+  personaId: string,
+  equipoIds: readonly string[],
+): ResultadoEquipos {
+  const destinos: Equipo[] = [];
+  for (const id of equipoIds) {
+    const sitio = buscarEquipo(doc, id);
+    if (sitio === null) {
+      return { ok: false, error: { codigo: 'no-encontrado', mensaje: `no existe el equipo "${id}"` } };
     }
-    if (!deseadas.includes(clave)) deseadas.push(clave);
+    if (!destinos.includes(sitio.equipo)) destinos.push(sitio.equipo);
   }
 
-  for (const proyecto of doc.proyectos) {
-    const general = proyecto.equipos[0] ?? {
-      id: `${proyecto.clave.toLowerCase()}-general`, nombre: 'General', miembros: [],
-    };
-    if (proyecto.equipos.length === 0) proyecto.equipos.push(general);
-    const indice = general.miembros.findIndex((m) => m.persona_id === personaId);
-    const debeEstar = deseadas.includes(proyecto.clave);
-    if (debeEstar && indice < 0) general.miembros.push({ persona_id: personaId, responsabilidades: [], capacidad: null });
-    else if (!debeEstar && indice >= 0) general.miembros.splice(indice, 1);
+  for (const equipo of destinos) {
+    if (equipo.miembros.some((m) => m.persona_id === personaId)) continue;
+    equipo.miembros.push({ persona_id: personaId, responsabilidades: [], capacidad: null });
   }
-  return { ok: true, despues: deseadas };
+  return { ok: true, despues: destinos.map((equipo) => equipo.id) };
+}
+
+/**
+ * Saca a la persona de TODOS los equipos. Devuelve de cuáles salió.
+ *
+ * Una sola función para las dos salidas de una persona (baja y borrado) por lo mismo que
+ * `soltarUsuario` es una sola: la próxima ruta que saque a alguien del documento tiene
+ * que llamar a esto, y encontrarlo escrito una vez lo hace evidente.
+ */
+function sacarDeTodosLosEquipos(doc: Documento, personaId: string): string[] {
+  const salioDe: string[] = [];
+  for (const proyecto of doc.proyectos) {
+    for (const equipo of proyecto.equipos) {
+      const miembro = equipo.miembros.find((m) => m.persona_id === personaId);
+      if (miembro === undefined) continue;
+      equipo.miembros.splice(equipo.miembros.indexOf(miembro), 1);
+      salioDe.push(equipo.id);
+    }
+  }
+  return salioDe;
 }
 
 /**

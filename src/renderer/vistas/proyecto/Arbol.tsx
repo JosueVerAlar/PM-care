@@ -7,12 +7,12 @@
  * `filas.ts`, que es puro y está probado aparte.
  *
  * **Un solo componente con un predicado por panel** (PLAN, E6), nunca tres árboles
- * copiados. La pestaña «Terminadas» es este mismo árbol con `predicado = estaHecha`.
+ * copiados. El panel «Completadas» es este mismo árbol con `predicado = estaHecha`.
  *
  * Dos decisiones que no son obvias:
  *
  * 1. **El predicado filtra lo que se PINTA, jamás lo que se CUENTA.** El avance de una
- *    épica sale siempre de todas sus hojas (`avanceDeEpica`), aunque la pestaña esté
+ *    épica sale siempre de todas sus hojas (`avanceDeEpica`), aunque el panel esté
  *    mostrando solo las terminadas. Si el filtro entrara al denominador, «Terminadas»
  *    diría 11/11 en todas partes.
  * 2. **Se renderiza una lista PLANA de filas visibles**, no un árbol anidado. Es lo que
@@ -410,8 +410,8 @@ export interface PropsArbol {
   predicado?: (tarea: Tarea) => boolean;
   etiqueta: string;
   /**
-   * `false` en la pestaña «Terminadas» y en modo solo lectura: ni arrastre, ni atajos que
-   * escriban, ni botones. La pestaña de terminadas es un registro de lo que pasó, no un
+   * `false` en el panel «Completadas» y en modo solo lectura: ni arrastre, ni atajos que
+   * escriban, ni botones. La columna de completadas es un registro de lo que pasó, no un
    * sitio donde se opera.
    */
   editable: boolean;
@@ -965,6 +965,7 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
             alternar={alternar}
             enfocar={enfocarNodo}
             capturar={capturarConBoton}
+            registro={Boolean(predicado)}
             cambiarEstado={cambiarEstado}
             ejecutar={ejecutarAccion}
             abrirDetalle={abrirDetalle}
@@ -1004,6 +1005,15 @@ interface PropsFila {
   enfocar: (id: string) => void;
   /** Abre la captura dentro de esta fila. Solo lo usan las que pueden tener hijos. */
   capturar: (fila: Fila) => void;
+  /**
+   * Este árbol es un REGISTRO, no un sitio donde se opera: el panel de completadas.
+   *
+   * No es lo mismo que `!editable`. En solo lectura el `＋` se sigue pintando apagado y
+   * su `title` explica por qué no se puede capturar (regla 20: la puerta se ve aunque
+   * esté cerrada). Aquí no hay puerta que enseñar —en un registro de lo aceptado no se
+   * captura NUNCA— y un botón muerto por fila es ruido repetido 300 veces.
+   */
+  registro: boolean;
   cambiarEstado: (tarea: Tarea, estado: EstadoTarea) => void;
   /** Lo que hace el menú `⋯`. Comparte implementación con el teclado, no la duplica. */
   ejecutar: (fila: Fila, accion: AccionFila) => void;
@@ -1027,6 +1037,7 @@ function FilaArbol({
   alternar,
   enfocar,
   capturar,
+  registro,
   cambiarEstado,
   ejecutar,
   abrirDetalle,
@@ -1229,7 +1240,8 @@ function FilaArbol({
       )}
 
       <ContadorBloqueos n={fila.bloqueadas} />
-      {historiaDelLote !== null && lote.length > 0 && (
+      {/* E14 · tampoco en el registro: manda tareas al sprint, y eso es escribir. */}
+      {!registro && historiaDelLote !== null && lote.length > 0 && (
         <button
           type="button"
           className="fila__accion"
@@ -1244,7 +1256,9 @@ function FilaArbol({
         </button>
       )}
       {/* E13 · la acción, pegada a la cosa sobre la que actúa. Sin parada de tabulador
-          propia: el árbol tiene una sola y 300 filas × 1 botón serían 300 más. */}
+          propia: el árbol tiene una sola y 300 filas × 1 botón serían 300 más.
+          E14 · en el panel de completadas no se pinta: ver `registro` en `PropsFila`. */}
+      {!registro && (
       <button
         type="button"
         className="fila__mas"
@@ -1253,7 +1267,7 @@ function FilaArbol({
         title={
           editable
             ? `${queCaptura} · tecla N`
-            : `${queCaptura}: no disponible en esta pestaña ni en solo lectura`
+            : `${queCaptura}: no disponible en este panel ni en solo lectura`
         }
         aria-label={editable ? `${queCaptura} · tecla N` : `${queCaptura} (no disponible)`}
         onClick={(evento) => {
@@ -1263,6 +1277,7 @@ function FilaArbol({
       >
         <Mas />
       </button>
+      )}
       <Medidor avance={fila.avance} conBarra={esEpica} />
 
       {editable && <MenuFila fila={fila} items={itemsDeFila(fila, false)} ejecutar={ejecutar} />}

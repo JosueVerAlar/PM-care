@@ -1,26 +1,26 @@
 /* ═══════════════════════════════════════════════════════════════
    HOJA DE DETALLE — lo que hay dentro de una épica, una historia
-   o una tarea. Se apila sobre la celda del sprint en la misma
-   rejilla de `.cuerpo`; no es un modal y no atrapa el foco.
+   o una tarea. Es un modal centrado con velo y trampa de foco.
    Ni un color literal: todo sale de los tokens de `base.css`.
    ═══════════════════════════════════════════════════════════════ */
 
-/* Misma celda que el sprint —tercera columna de `.cuerpo`—, encima de él. La colocación
-   explícita del árbol y del sprint vive en `base.css` y es lo que impide que compartir
-   celda empuje al sprint a una segunda fila. */
 .panel--detalle {
-  grid-column: 3;
-  grid-row: 1;
-  z-index: 3;
-  border-left: 1px solid var(--hairline);
-  background: var(--fondo-panel);
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--velo);
 }
 
-/* Bajo el umbral duro el sprint no se pinta y la rejilla es de dos columnas: la hoja
-   pasa a la segunda, que es la del árbol. Sin esto abriría una columna implícita fuera
-   de la pantalla y la hoja no se vería nunca. */
-@media (max-width: 1040px) {
-  .panel--detalle { grid-column: 2; }
+.panel--detalle-caja {
+  width: min(720px, 92vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: var(--fondo-panel);
 }
 
 .detalle {

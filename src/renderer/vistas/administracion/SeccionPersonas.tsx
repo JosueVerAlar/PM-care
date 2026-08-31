@@ -3,7 +3,7 @@
  *
  * ## Alta sin ceremonia
  *
- * El nombre y un proyecto inicial opcional. Nada más. **El identificador se deriva solo** del
+ * El nombre y un equipo inicial opcional. Nada más. **El identificador se deriva solo** del
  * nombre (`Ana García` → `ana-garcia`) y lo emite el reductor: no se le pregunta al
  * usuario por un dato que no le importa y que además no va a poder cambiar nunca —el id
  * está copiado en cada `tarea.responsable` y en cada item de sprint, incluidos los
@@ -22,13 +22,23 @@
  *
  * ## Los equipos se editan desde un solo lugar
  *
- * La ficha solo lee en qué proyectos está una persona. La conformación y el rol se cambian
- * en Equipos, donde la relación se ve completa y no puede quedar a medio editar.
+ * La ficha solo LEE en qué equipos está una persona, y esa es la decisión: dos caminos
+ * para el mismo dato es la fuente de que un día se contradigan. La conformación, las
+ * responsabilidades y la capacidad se cambian en Equipos, donde la relación se ve completa
+ * y no puede quedar a medio editar. Por eso `editarPersona` no tiene campo `equipos`.
+ *
+ * El alta es la única excepción, y se admite porque ahí no hay todavía ningún valor con el
+ * que pueda contradecirse: la persona nace en ese comando. **Lo que se elige es un EQUIPO,
+ * no un proyecto** (N11): con varios equipos por proyecto, «adscribir a SICOE» ya no dice
+ * a cuál. Antes de M6 este desplegable mandaba la clave del proyecto en un campo que ahora
+ * espera ids de equipo — compilaba y reventaba al usarlo, con un «no existe el equipo
+ * "SICOE"» en tiempo de ejecución.
  */
 
 import { useEffect, useMemo, useState } from 'react';
 
 import {
+  equiposParaAdmin,
   idSugerido,
   personasParaAdmin,
   type FilaPersonaAdmin,
@@ -47,20 +57,31 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
   const activas = personas.filter((persona) => persona.activa);
   const inactivas = personas.filter((persona) => !persona.activa);
 
-  /** Los proyectos a los que se puede adscribir a alguien: los que están en marcha. */
-  const proyectos = useMemo(
-    () =>
+  /**
+   * Los equipos a los que se puede adscribir a alguien, agrupados por proyecto. Solo los
+   * de proyectos en marcha: meter a alguien al equipo de un proyecto cerrado sería
+   * adscribirla a algo que ya no recibe trabajo.
+   *
+   * Se agrupan por proyecto porque el nombre de un equipo («Frontend») no dice de quién
+   * es, y con once proyectos habría cuatro «Frontend» indistinguibles en la lista.
+   */
+  const equipos = useMemo(() => {
+    const activos = new Set(
       documento.proyectos
         .filter((proyecto) => !proyecto.archivado && proyecto.cerrado_en === null)
-        .map((proyecto) => ({
-          clave: proyecto.clave,
-          nombre: nombreSinClave(proyecto.clave, proyecto.nombre) ?? proyecto.nombre,
-        })),
-    [documento.proyectos],
-  );
+        .map((proyecto) => proyecto.clave),
+    );
+    return equiposParaAdmin(documento)
+      .filter((proyecto) => activos.has(proyecto.clave) && proyecto.equipos.length > 0)
+      .map((proyecto) => ({
+        clave: proyecto.clave,
+        nombre: nombreSinClave(proyecto.clave, proyecto.nombre) ?? proyecto.nombre,
+        equipos: proyecto.equipos.map((equipo) => ({ id: equipo.id, nombre: equipo.nombre })),
+      }));
+  }, [documento]);
 
   const [nombre, setNombre] = useState('');
-  const [proyectoInicial, setProyectoInicial] = useState('');
+  const [equipoInicial, setEquipoInicial] = useState('');
   const [editando, setEditando] = useState<string | null>(null);
   const [borrando, setBorrando] = useState<string | null>(null);
 
@@ -77,13 +98,16 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
       {
         comando: 'crearPersona',
         nombre: nombre.trim(),
-        equipos: proyectoInicial === '' ? [] : [proyectoInicial],
+        // Ids de EQUIPO, nunca claves de proyecto: el campo se llama igual que antes de
+        // M6 y sigue siendo `string[]`, así que mandar una clave compila y revienta al
+        // usarlo. El valor sale del desplegable, que ofrece equipos.
+        equipos: equipoInicial === '' ? [] : [equipoInicial],
       },
       `Dar de alta a ${nombre.trim()}`,
     );
     if (!ok) return;
     setNombre('');
-    setProyectoInicial('');
+    setEquipoInicial('');
   };
 
   return (
@@ -123,30 +147,38 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
               </div>
 
               <label className="campo">
-                <span className="campo__etq">Proyecto inicial (opcional)</span>
-                {proyectos.length === 0 ? (
+                <span className="campo__etq">Equipo inicial (opcional)</span>
+                {equipos.length === 0 ? (
                   <p className="bloque__nota">
-                    No hay proyectos activos a los que adscribirla. Se puede dar de alta igual y
-                    meterla a un equipo después.
+                    No hay ningún equipo al que adscribirla. Se puede dar de alta igual y meterla
+                    a uno después; los equipos se crean en la sección Equipos.
                   </p>
                 ) : (
                   <select
-                    value={proyectoInicial}
-                    onChange={(evento) => setProyectoInicial(evento.target.value)}
+                    value={equipoInicial}
+                    onChange={(evento) => setEquipoInicial(evento.target.value)}
                   >
-                    <option value="">Sin proyecto inicial</option>
-                    {proyectos.map((proyecto) => (
-                      <option key={proyecto.clave} value={proyecto.clave}>
-                        {proyecto.clave} · {proyecto.nombre}
-                      </option>
+                    <option value="">Sin equipo inicial</option>
+                    {equipos.map((proyecto) => (
+                      <optgroup
+                        key={proyecto.clave}
+                        label={`${proyecto.clave} · ${proyecto.nombre}`}
+                      >
+                        {proyecto.equipos.map((equipo) => (
+                          <option key={equipo.id} value={equipo.id}>
+                            {equipo.nombre}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 )}
               </label>
 
               <p className="alta__pie">
-                El proyecto inicial es opcional. El rol dentro del equipo se pone después,
-                desde Equipos; se puede dejar en blanco todo el tiempo que haga falta.
+                El equipo inicial es opcional. Las responsabilidades y la capacidad dentro del
+                equipo se ponen después, desde Equipos; se pueden dejar en blanco todo el
+                tiempo que haga falta.
                 {idPropuesto !== '' && (
                   <>
                     {' '}
@@ -334,7 +366,10 @@ function FilaPersona({
     if (editando) setBorrador(persona.nombre);
   }, [editando, persona.nombre]);
 
-  const claves = persona.equipos.map((equipo) => equipo.clave);
+  // Una entrada por EQUIPO, no por proyecto: alguien que está en Frontend y en Backend
+  // del mismo proyecto está en dos equipos, y contar claves distintas lo enseñaría como
+  // uno solo — que es exactamente el defecto que `equiposDe` tenía antes de M6.
+  const adscripciones = persona.equipos;
 
   return (
     <div className="fila-persona">
@@ -371,17 +406,30 @@ function FilaPersona({
         )}
       </span>
 
+      {/* Solo lectura, y a propósito: la pertenencia se escribe por un único camino, el
+          del equipo. Aquí se muestra entera —las dos adscripciones de quien está en dos
+          proyectos— para que la ficha no obligue a ir a buscarla a otra pantalla. */}
       <span className="fila-persona__equipos">
-        {claves.length === 0 ? (
+        {adscripciones.length === 0 ? (
           <span className="etiqueta etiqueta--vacio">Sin equipo</span>
         ) : (
-          persona.equipos.map((equipo) => (
-            <span className="etiqueta" key={equipo.clave} title={equipo.nombre}>
-              {equipo.clave}
+          adscripciones.map((equipo) => (
+            <span
+              className="etiqueta"
+              key={equipo.equipoId}
+              title={
+                equipo.responsabilidades.length > 0
+                  ? `${equipo.nombre} · ${equipo.responsabilidades.join(', ')}`
+                  : equipo.nombre
+              }
+            >
+              {equipo.clave} · {equipo.equipo}
             </span>
           ))
         )}
-        {claves.length > 1 && <span className="multi">en {claves.length} equipos</span>}
+        {adscripciones.length > 1 && (
+          <span className="multi">en {adscripciones.length} equipos</span>
+        )}
       </span>
 
       <span className="fila-persona__carga tabular" title="Tareas abiertas de las que es responsable">

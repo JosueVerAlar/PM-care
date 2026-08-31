@@ -43,6 +43,7 @@ que la sostiene**, y sin evidencia la casilla dice «sin verificar», no `⬜`.
 | E11 | Carga por persona y Equipos | `frontend` + `data` | E7 | Mediano | ✅ | `VistaCarga.tsx`, `vistas/administracion/SeccionEquipos.tsx`; commit `0b8839e` |
 | E12 | Empaquetado | `infra` | E8–E11 | Mediano | ✅ | Bitácora 2026-08-27 · CSP estricta leída del `.app` en ejecución |
 | E13 | Uso real | usuario + `pm` | E12 | — | ⬜ | No empezada. Ver la ficha: su bloqueo por M2 quedó levantado el 2026-08-28 |
+| E14 | La vista de proyecto en tres columnas | `frontend` | E7 | Mediano | ✅ | Bitácora 2026-08-31 · «muere el alternador; el detalle pasa a modal centrada» |
 
 **Camino crítico:** E1 → E2 → E3 → E5 → E6 → E7 → E8 → E12 → E13.
 Todo retraso ahí retrasa el proyecto. E2 es el cuello de botella: cinco etapas la esperan.
@@ -309,6 +310,18 @@ el hallazgo es más valioso que cualquier etapa nueva: se revisa qué vista sobr
 
 ---
 
+## E14 · La vista de proyecto en tres columnas
+**Estado:** ✅ terminada · **Agente:** `frontend` · **Depende de:** E7 · **Tamaño:** mediano
+
+**Entrega:** backlog, completadas y sprint visibles como paneles hermanos; completadas
+reutiliza el árbol sin edición y sin contaminar sus conteos. La hoja lateral de detalle pasa
+a diálogo modal centrado, con velo, trampa de foco, Escape y retorno a la fila de origen.
+
+**Terminado cuando:** los tres paneles se ven a la vez sobre 1320 px; primero cae el registro
+de completadas y bajo 1040 px también cae el sprint; pruebas y tipos quedan en verde.
+
+---
+
 ## Decisiones pendientes
 
 **D1 · Undo/redo — YA DECIDIDO, no reabrir.**
@@ -497,6 +510,14 @@ protegía de verdad: **el pronóstico** —burndown, velocidad, fecha estimada d
 ## Bitácora
 
 <!-- Entradas nuevas arriba. Formato: **FECHA · etapa · qué pasó**, y el cuerpo debajo. -->
+
+**2026-08-31 · E14 · tres paneles visibles; muere el alternador y el detalle pasa a modal centrada.**
+
+La columna de completadas reutiliza `Arbol` con `estaHecha` y `editable={false}`. El
+predicado filtra únicamente lo pintado: una épica parcialmente aceptada conserva su 2/5.
+El layout cae en dos escalones, 1320 y 1040 px, y el modal conserva Escape, añade velo,
+trampa de foco, cierre exterior y retorno a la fila. No hubo cambios de dominio, IPC,
+comandos, esquema ni migraciones.
 
 **2026-08-28 · Reconciliación de los dos planes con el código. Ninguna línea de `src/` tocada.**
 

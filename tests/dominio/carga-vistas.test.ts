@@ -395,8 +395,8 @@ describe('personasEnEquipos: la misma relación leída desde la persona', () => 
       ],
     });
     expect(personasEnEquipos(doc)[0]?.equipos).toEqual([
-      { clave: 'ALFA', nombre: 'Alfa', responsabilidades: ['backend'], capacidad: null },
-      { clave: 'BETA', nombre: 'Beta', responsabilidades: [], capacidad: null },
+      { equipoId: 'alfa-general', equipo: 'General', clave: 'ALFA', nombre: 'Alfa', responsabilidades: ['backend'], capacidad: null },
+      { equipoId: 'beta-general', equipo: 'General', clave: 'BETA', nombre: 'Beta', responsabilidades: [], capacidad: null },
     ]);
   });
 

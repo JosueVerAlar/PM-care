@@ -222,7 +222,7 @@ describe('lo que la hoja enseña', () => {
     });
     montarHoja(proyecto, 'PM-H1', 'historia');
     expect(screen.getByText(/nadie ha escrito sus tareas/)).toBeTruthy();
-    expect(within(screen.getByLabelText('Detalle de PM-H1')).queryByText('0%')).toBeNull();
+    expect(within(screen.getByRole('dialog')).queryByText('0%')).toBeNull();
   });
 });
 

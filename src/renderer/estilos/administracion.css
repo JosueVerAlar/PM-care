@@ -305,6 +305,82 @@ p.equipo__nombre:hover { text-decoration: none; }
 .equipo__agregar--abierto:hover { background: var(--fondo-cabecera); }
 .equipo__nota { font-size: 11.5px; color: var(--tinta-3); max-width: 40ch; }
 
+/* La identidad del equipo son DOS cosas y las dos se enseñan: el nombre, que se edita, y
+   el id, que no. El id se lee en el JSON y lo nombran los rechazos del reductor, así que
+   esconderlo obligaría a abrir el archivo para entender un mensaje de error. */
+.equipo__identidad { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.equipo__campo {
+  width: 100%; height: 22px; padding: 0 4px;
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--tinta-1);
+  background: transparent; border: 1px solid transparent; border-radius: 3px;
+}
+.equipo__campo:hover { border-color: var(--hairline); }
+.equipo__campo:focus {
+  background: var(--fondo-panel); border-color: var(--hairline);
+  outline: 2px solid var(--foco); outline-offset: -1px;
+}
+.equipo__id { font-size: 10.5px; color: var(--tinta-3); padding-left: 5px; }
+
+/* La capacidad NUNCA va sola: el número y su cobertura son una sola pieza, así que viajan
+   en el mismo `span` y envuelven juntos. Es la regla 3 aplicada a una suma derivada. */
+.equipo__capacidad,
+.equipo__tareas { white-space: nowrap; }
+
+/* La capacidad de un miembro: campo estrecho al final de la fila, alineado con la columna
+   de carga que ocupaba antes. Vacío significa «sin dato», nunca cero. */
+.miembro__cap {
+  flex: 0 0 52px; height: 20px; padding: 0 4px;
+  font: inherit; font-size: 11px; text-align: right; color: var(--tinta-2);
+  background: transparent; border: 1px solid transparent; border-radius: 3px;
+}
+.miembro__cap:hover { border-color: var(--hairline); }
+.miembro__cap:focus {
+  color: var(--tinta-1); background: var(--fondo-panel); border-color: var(--hairline);
+  outline: 2px solid var(--foco); outline-offset: -1px;
+}
+.miembro__mover { flex: 0 0 auto; }
+.miembro__mover select { height: 22px; font-size: 11px; padding: 0 4px; max-width: 108px; }
+
+/* Un miembro dado de baja bloquea CUALQUIER edición del equipo: el aviso va en el canal
+   de bloqueo, no en el de nota al pie, porque hasta resolverlo la tarjeta no guarda nada. */
+.equipo__nota--alerta {
+  display: flex; align-items: flex-start; gap: 6px;
+  padding: 7px 12px; max-width: none;
+  color: var(--bloqueo-tinta); background: var(--bloqueo-fondo);
+  border-top: 1px solid var(--hairline);
+}
+
+.equipo__pie {
+  display: flex; justify-content: flex-end;
+  padding: 7px 12px;
+  border-top: 1px solid var(--hairline);
+}
+.equipo .peligro { margin: 0 12px 12px; }
+
+/* La tarjeta de alta comparte el marco de las demás: crear un equipo ocupa el hueco donde
+   va a quedar, no una barra aparte que se lee como otra cosa. */
+.equipo--alta {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 92px; padding: 12px;
+  color: var(--tinta-2); font-size: 12px;
+  border-style: dashed; background: transparent;
+}
+button.equipo--alta:hover { background: var(--hover); color: var(--tinta-1); }
+.equipo--alta-abierta {
+  display: block; text-align: left; cursor: default;
+  border-style: solid; background: var(--fondo-cabecera);
+}
+.equipo--alta-abierta .campo { margin-bottom: 8px; }
+
+/* La tarjeta EDITABLE lleva tres controles más por fila que la de consulta —capacidad,
+   mover y quitar—, así que con los 320 px de la rejilla compartida el nombre se queda en
+   tres letras. Aquí pide algo más de ancho; y hay que repetir el caso estrecho porque
+   esta regla es más específica que la de `globales.css` y ganaría también dentro de él. */
+.adm .rejilla--equipos { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); }
+@media (max-width: 760px) {
+  .adm .rejilla--equipos { grid-template-columns: 1fr; }
+}
+
 /* ── UMBRAL ESTRECHO ─────────────────────────────────────────── */
 /* Bajo 1040 px la tabla de personas pierde la columna de equipos como COLUMNA y la
    pone debajo, sangrada: partirla en dos líneas conserva el dato, esconderla lo pierde. */
