@@ -25,6 +25,7 @@ import {
   formaDeTarea,
   instanteCorto,
   ordinal,
+  tonoDeTarea,
 } from '../util/presentacion';
 
 /** Lo que se puede hacer con la tarjeta. `null` en solo lectura o en un sprint cerrado. */
@@ -46,6 +47,8 @@ export interface PropsTarjetaSprint {
    */
   mostrarProyecto: boolean;
   acciones: AccionesTarjeta | null;
+  /** Abre el detalle si la vista que monta la tarjeta también monta la hoja. */
+  abrirDetalle?: (() => void) | null;
   arrastrando: boolean;
   /**
    * El formulario de compromiso, si toca. Lo monta quien sabe dónde va —el panel del
@@ -59,6 +62,7 @@ export function TarjetaSprint({
   fila,
   mostrarProyecto,
   acciones,
+  abrirDetalle = null,
   arrastrando,
   formulario,
 }: PropsTarjetaSprint) {
@@ -110,8 +114,18 @@ export function TarjetaSprint({
       onDragEnd={acciones?.alTerminarArrastre}
     >
       <div className="tarjeta__cab">
-        <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} />
-        <span className="tarjeta__titulo">{tarea.titulo}</span>
+        <Glifo
+          forma={formaDeTarea(tarea.estado)}
+          etiqueta={etiquetaDeTarea(tarea.estado)}
+          tono={tonoDeTarea(tarea.estado)}
+        />
+        {abrirDetalle === null ? (
+          <span className="tarjeta__titulo">{tarea.titulo}</span>
+        ) : (
+          <button type="button" className="tarjeta__titulo" onClick={abrirDetalle}>
+            {tarea.titulo}
+          </button>
+        )}
         {acciones !== null && formulario === null && (
           <MenuFila
             identificador={tarea.id}

@@ -38,6 +38,7 @@
 
 .tarjeta__cab { display: flex; align-items: flex-start; gap: 7px; }
 .tarjeta__titulo { flex: 1; min-width: 0; line-height: 18px; }
+button.tarjeta__titulo { padding: 0; border: 0; color: inherit; background: none; font: inherit; text-align: left; cursor: pointer; }
 .tarjeta__cab .glifo { height: 18px; }
 .tarjeta__cab .clave { line-height: 18px; }
 

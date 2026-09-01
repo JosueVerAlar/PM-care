@@ -12,7 +12,7 @@
 
 import type { EstadoDerivado } from '../../compartido/dominio/derivar';
 import type { EstadoTarea, Fecha, Instante, TipoBloqueo } from '../../compartido/modelo/tipos';
-import type { FormaEstado } from '../componentes/iconos';
+import type { FormaEstado, TonoGlifo } from '../componentes/iconos';
 
 /**
  * Estado de tarea → silueta. **Inyectiva: seis estados, seis formas.**
@@ -68,6 +68,11 @@ const ETIQUETA_DERIVADA: Record<EstadoDerivado, string> = {
 
 export function formaDeTarea(estado: EstadoTarea): FormaEstado {
   return FORMA_TAREA[estado];
+}
+
+/** El tono es independiente de la silueta: `curso` también describe contenedores. */
+export function tonoDeTarea(estado: EstadoTarea): TonoGlifo | undefined {
+  return estado === 'en_pruebas' ? 'pruebas' : undefined;
 }
 
 export function etiquetaDeTarea(estado: EstadoTarea): string {

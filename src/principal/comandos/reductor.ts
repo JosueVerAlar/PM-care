@@ -57,6 +57,14 @@ import type { Comando, DestinoAlCerrar, NombreComando } from './tipos';
  */
 type DesenlaceDeCierre = 'completada' | 'arrastrada' | 'devuelta' | 'descartada' | 'cancelada';
 
+interface ItemCerradoEliminado {
+  sprint_id: string;
+  tarea_id: string;
+  desenlace: ItemSprint['desenlace'];
+  responsable: ItemSprint['responsable'];
+  fecha: ItemSprint['fecha_limite'];
+}
+
 export type CodigoError =
   /** El id no existe en el documento. */
   | 'no-encontrado'
@@ -314,6 +322,13 @@ function aplicar(
       }
       const proyecto = doc.proyectos.find((p) => p.clave === comando.clave);
       if (proyecto === undefined) return falta(`el proyecto "${comando.clave}"`);
+
+      // E20 abre una puerta para retirar items, no para borrar el sprint cerrado que los
+      // contenía. Después de depurar el último item, este sprint sigue siendo historia.
+      const cerradoPropio = doc.sprints.find(
+        (sprint) => sprint.estado === 'cerrado' && sprint.clave === proyecto.clave,
+      );
+      if (cerradoPropio !== undefined) return sprintCerrado(cerradoPropio);
 
       const tareas = idsDeTareasDeProyecto(proyecto);
       const cerrado = primerSprintCerradoCon(doc, tareas);
@@ -589,9 +604,14 @@ function aplicar(
       if (sitio === null) return falta(`la épica "${comando.id}"`);
       const tareas = idsDeTareasDeEpica(sitio.epica);
       const cerrado = primerSprintCerradoCon(doc, tareas);
-      if (cerrado !== null) return atadaASprintCerrado(cerrado, tareas);
+      if (cerrado !== null && comando.confirmacion !== 'confirmar') {
+        return atadaASprintCerrado(cerrado, tareas);
+      }
+
+      const itemsCerrados = itemsCerradosQueSeEliminan(doc, tareas);
 
       quitarDeSprintsAbiertos(doc, tareas);
+      quitarDeSprintsCerrados(doc, tareas);
       sitio.proyecto.epicas.splice(sitio.proyecto.epicas.indexOf(sitio.epica), 1);
 
       return {
@@ -603,7 +623,10 @@ function aplicar(
           epica_id: sitio.epica.id,
           item_id: sitio.epica.id,
           resumen: `Épica eliminada: ${sitio.epica.titulo} (${tareas.size} tareas)`,
-          detalle: { tareas: [...tareas] },
+          detalle: {
+            tareas: [...tareas],
+            ...(itemsCerrados.length > 0 ? { items_sprints_cerrados: itemsCerrados } : {}),
+          },
         }),
       };
     }
@@ -726,9 +749,14 @@ function aplicar(
       if (sitio === null) return falta(`la historia "${comando.id}"`);
       const tareas = new Set(sitio.historia.tareas.map((t) => t.id));
       const cerrado = primerSprintCerradoCon(doc, tareas);
-      if (cerrado !== null) return atadaASprintCerrado(cerrado, tareas);
+      if (cerrado !== null && comando.confirmacion !== 'confirmar') {
+        return atadaASprintCerrado(cerrado, tareas);
+      }
+
+      const itemsCerrados = itemsCerradosQueSeEliminan(doc, tareas);
 
       quitarDeSprintsAbiertos(doc, tareas);
+      quitarDeSprintsCerrados(doc, tareas);
       sitio.epica.historias.splice(sitio.epica.historias.indexOf(sitio.historia), 1);
 
       return {
@@ -741,7 +769,10 @@ function aplicar(
           historia_id: sitio.historia.id,
           item_id: sitio.historia.id,
           resumen: `Historia eliminada: ${sitio.historia.titulo} (${tareas.size} tareas)`,
-          detalle: { tareas: [...tareas] },
+          detalle: {
+            tareas: [...tareas],
+            ...(itemsCerrados.length > 0 ? { items_sprints_cerrados: itemsCerrados } : {}),
+          },
         }),
       };
     }
@@ -885,9 +916,14 @@ function aplicar(
       if (sitio === null) return falta(`la tarea "${comando.id}"`);
       const soloEsta = new Set([sitio.tarea.id]);
       const cerrado = primerSprintCerradoCon(doc, soloEsta);
-      if (cerrado !== null) return atadaASprintCerrado(cerrado, soloEsta);
+      if (cerrado !== null && comando.confirmacion !== 'confirmar') {
+        return atadaASprintCerrado(cerrado, soloEsta);
+      }
+
+      const itemsCerrados = itemsCerradosQueSeEliminan(doc, soloEsta);
 
       quitarDeSprintsAbiertos(doc, soloEsta);
+      quitarDeSprintsCerrados(doc, soloEsta);
       // Del contenedor que la tiene, sea historia, épica o el propio proyecto (N9).
       sitio.contenedor.tareas.splice(sitio.contenedor.tareas.indexOf(sitio.tarea), 1);
 
@@ -897,7 +933,10 @@ function aplicar(
         evento: anotar({
           ...ubicacionDeTarea(sitio),
           resumen: `Tarea eliminada: ${sitio.tarea.titulo}`,
-          detalle: { estado: sitio.tarea.estado },
+          detalle: {
+            estado: sitio.tarea.estado,
+            ...(itemsCerrados.length > 0 ? { items_sprints_cerrados: itemsCerrados } : {}),
+          },
         }),
       };
     }
@@ -2037,6 +2076,32 @@ function quitarDeSprintsAbiertos(doc: Documento, tareas: ReadonlySet<string>): v
     if (sprint.estado === 'cerrado') continue;
     sprint.items = sprint.items.filter((item) => !tareas.has(item.tarea_id));
   }
+}
+
+function quitarDeSprintsCerrados(doc: Documento, tareas: ReadonlySet<string>): void {
+  for (const sprint of doc.sprints) {
+    if (sprint.estado !== 'cerrado') continue;
+    sprint.items = sprint.items.filter((item) => !tareas.has(item.tarea_id));
+  }
+}
+
+function itemsCerradosQueSeEliminan(
+  doc: Documento,
+  tareas: ReadonlySet<string>,
+): ItemCerradoEliminado[] {
+  return doc.sprints.flatMap((sprint) =>
+    sprint.estado !== 'cerrado'
+      ? []
+      : sprint.items
+          .filter((item) => tareas.has(item.tarea_id))
+          .map((item) => ({
+            sprint_id: sprint.id,
+            tarea_id: item.tarea_id,
+            desenlace: item.desenlace,
+            responsable: item.responsable,
+            fecha: item.fecha_limite,
+          })),
+  );
 }
 
 /**

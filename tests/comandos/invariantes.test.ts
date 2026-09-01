@@ -396,7 +396,11 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
     () => ({ comando: 'eliminarPersona', id: persona }),
     () => ({ comando: 'crearEpica', proyecto, titulo: `Épica ${entero(rng, 1, 99)}` }),
     () => ({ comando: 'editarEpica', id: unId(inv.epicas, 'FANTASMA-E1'), titulo: 'Editada' }),
-    () => ({ comando: 'eliminarEpica', id: unId(inv.epicas, 'FANTASMA-E1') }),
+    () => ({
+      comando: 'eliminarEpica',
+      id: unId(inv.epicas, 'FANTASMA-E1'),
+      confirmacion: rng() < 0.5 ? 'confirmar' : rng() < 0.5 ? 'Confirmar' : undefined,
+    }),
     () => {
       const epicaId = unId(inv.epicas, 'FANTASMA-E1');
       // El índice se pide a veces más allá del final a propósito: topar en vez de
@@ -409,7 +413,11 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
       titulo: `Historia ${entero(rng, 1, 99)}`,
     }),
     () => ({ comando: 'editarHistoria', id: unId(inv.historias, 'FANTASMA-H1'), titulo: 'Editada' }),
-    () => ({ comando: 'eliminarHistoria', id: unId(inv.historias, 'FANTASMA-H1') }),
+    () => ({
+      comando: 'eliminarHistoria',
+      id: unId(inv.historias, 'FANTASMA-H1'),
+      confirmacion: rng() < 0.5 ? 'confirmar' : rng() < 0.5 ? 'confirmar ' : undefined,
+    }),
     () => {
       const historiaId = unId(inv.historias, 'FANTASMA-H1');
       return {
@@ -434,7 +442,11 @@ function proponerComando(rng: Aleatorio, doc: Documento, nuevaClave: () => strin
       responsable: talVez(rng() < 0.3 ? null : persona),
       prioridad: talVez(rng() < 0.3 ? null : elegir(rng, PRIORIDADES)),
     }),
-    () => ({ comando: 'eliminarTarea', id: tarea }),
+    () => ({
+      comando: 'eliminarTarea',
+      id: tarea,
+      confirmacion: rng() < 0.5 ? 'confirmar' : rng() < 0.5 ? '' : undefined,
+    }),
     () => ({
       comando: 'reordenarTarea',
       contenedorId: padreDe(tarea, 'FANTASMA-H1'),
@@ -679,21 +691,76 @@ describe('secuencias largas de comandos generados', () => {
     return resto;
   };
 
+  const idsDeTareas = (doc: Documento): Set<string> =>
+    new Set(doc.proyectos.flatMap((proyecto) => {
+      const ids = proyecto.tareas.map((tarea) => tarea.id);
+      for (const epica of proyecto.epicas) {
+        ids.push(...epica.tareas.map((tarea) => tarea.id));
+        for (const historia of epica.historias) ids.push(...historia.tareas.map((tarea) => tarea.id));
+      }
+      return ids;
+    }));
+
+  const tareasDelObjetivo = (doc: Documento, id: string): Set<string> => {
+    const ids = new Set<string>();
+    for (const proyecto of doc.proyectos) {
+      for (const tarea of proyecto.tareas) if (tarea.id === id) ids.add(tarea.id);
+      for (const epica of proyecto.epicas) {
+        if (epica.id === id) {
+          epica.tareas.forEach((tarea) => ids.add(tarea.id));
+          epica.historias.forEach((historia) => historia.tareas.forEach((tarea) => ids.add(tarea.id)));
+        }
+        epica.tareas.forEach((tarea) => { if (tarea.id === id) ids.add(tarea.id); });
+        for (const historia of epica.historias) {
+          if (historia.id === id) historia.tareas.forEach((tarea) => ids.add(tarea.id));
+          historia.tareas.forEach((tarea) => { if (tarea.id === id) ids.add(tarea.id); });
+        }
+      }
+    }
+    return ids;
+  };
+
+  /**
+   * La excepción mide exactamente la baja: parte del sprint anterior y solo retira los
+   * items cuyas tareas desaparecieron del árbol por uno de los tres comandos confirmados.
+   */
+  const esperadoTras = (sprint: Documento['sprints'][number], antes: Documento, despues: Documento, comando: Comando) => {
+    const copia = copiaProfunda(sprint);
+    if (
+      (comando.comando === 'eliminarTarea' ||
+        comando.comando === 'eliminarHistoria' ||
+        comando.comando === 'eliminarEpica') &&
+      comando.confirmacion === 'confirmar'
+    ) {
+      const vivas = idsDeTareas(despues);
+      const objetivo = tareasDelObjetivo(antes, comando.id);
+      copia.items = copia.items.filter(
+        (item) => !objetivo.has(item.tarea_id) || vivas.has(item.tarea_id),
+      );
+    }
+    return sinRetro(copia);
+  };
+
   it('regla 8: el sprint cerrado de partida sale igual que entró, salvo su retrospectiva', () => {
     for (const semilla of SEMILLAS_COMANDOS.slice(0, 60)) {
       const rng = prng(semilla);
       let clave = 0;
       const nuevaClave = () => `NUE${(clave += 1)}`;
       let doc = puntoDePartida();
-      const original = copiaProfunda(doc.sprints[0]);
-
       for (let paso = 0; paso < PASOS; paso += 1) {
-        const resultado = reducir(doc, proponerComando(rng, doc, nuevaClave), AHORA);
-        if (resultado.ok) doc = resultado.documento;
+        const comando = proponerComando(rng, doc, nuevaClave);
+        const antes = doc;
+        const resultado = reducir(doc, comando, AHORA);
+        if (!resultado.ok) continue;
+        doc = resultado.documento;
+        for (const original of antes.sprints.filter((sprint) => sprint.estado === 'cerrado')) {
+          const vigente = doc.sprints.find((sprint) => sprint.id === original.id);
+          expect(vigente, `semilla ${semilla}: el sprint cerrado desapareció`).toBeDefined();
+          expect(sinRetro(vigente), `semilla ${semilla}: el sprint cerrado cambió`).toEqual(
+            esperadoTras(original, antes, doc, comando),
+          );
+        }
       }
-      const viejo = doc.sprints.find((s) => s.id === 'S-viejo');
-      expect(viejo, `semilla ${semilla}: el sprint cerrado desapareció`).toBeDefined();
-      expect(sinRetro(viejo), `semilla ${semilla}: el sprint cerrado cambió`).toEqual(sinRetro(original));
     }
   });
 
@@ -703,23 +770,18 @@ describe('secuencias largas de comandos generados', () => {
       let clave = 0;
       const nuevaClave = () => `NUE${(clave += 1)}`;
       let doc = puntoDePartida();
-      const congelados = new Map<string, string>();
-
       for (let paso = 0; paso < PASOS; paso += 1) {
         const comando = proponerComando(rng, doc, nuevaClave);
+        const antes = doc;
         const resultado = reducir(doc, comando, AHORA);
         if (!resultado.ok) continue;
         doc = resultado.documento;
-        for (const sprint of doc.sprints) {
-          if (sprint.estado !== 'cerrado') continue;
-          const ahora = JSON.stringify(sinRetro(sprint));
-          const antes = congelados.get(sprint.id);
-          if (antes !== undefined && antes !== ahora) {
-            throw new Error(
-              `semilla ${semilla}, paso ${paso}: "${comando.comando}" modificó el sprint cerrado ${sprint.id}`,
-            );
-          }
-          congelados.set(sprint.id, ahora);
+        for (const original of antes.sprints.filter((sprint) => sprint.estado === 'cerrado')) {
+          const sprint = doc.sprints.find((actual) => actual.id === original.id);
+          expect(sprint, `semilla ${semilla}, paso ${paso}: desapareció ${original.id}`).toBeDefined();
+          expect(sinRetro(sprint), `semilla ${semilla}, paso ${paso}: "${comando.comando}" modificó ${original.id}`).toEqual(
+            esperadoTras(original, antes, doc, comando),
+          );
         }
       }
     }

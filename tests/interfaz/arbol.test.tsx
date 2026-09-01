@@ -508,11 +508,12 @@ describe('la leyenda de siete', () => {
       </ProveedorAlmacen>,
     );
 
-  /** Los cinco del flujo, el medio anillo compartido y los dos que no son pasos. */
+  /** Los cinco del flujo, el medio anillo derivado y los dos que no son pasos. */
   const ESPERADAS = [
     'Pendiente',
     'Iniciado',
-    'En pruebas · en movimiento',
+    'En pruebas',
+    'En movimiento',
     'Terminado',
     'Done',
     'Cancelada',

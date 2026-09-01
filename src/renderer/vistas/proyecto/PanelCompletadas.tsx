@@ -1,15 +1,17 @@
 import { estaHecha } from '../../../compartido/dominio/clasificar';
 import { tareasDeProyecto, type Avance } from '../../../compartido/dominio/derivar';
-import type { Fecha, Proyecto, Sprint } from '../../../compartido/modelo/tipos';
+import type { Documento, Fecha, Proyecto, Sprint } from '../../../compartido/modelo/tipos';
 import { Medidor } from '../../componentes/Medidor';
 import { Arbol } from './Arbol';
 
 export function PanelCompletadas({
+  documento,
   proyecto,
   sprint,
   hoy,
   avance,
 }: {
+  documento?: Documento;
   proyecto: Proyecto;
   sprint: Sprint | undefined;
   hoy: Fecha;
@@ -26,6 +28,7 @@ export function PanelCompletadas({
       </header>
       {hayCompletadas ? (
         <Arbol
+          documento={documento}
           proyecto={proyecto}
           sprint={sprint}
           hoy={hoy}

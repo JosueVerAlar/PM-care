@@ -75,7 +75,7 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
       .filter((proyecto) => activos.has(proyecto.clave) && proyecto.equipos.length > 0)
       .map((proyecto) => ({
         clave: proyecto.clave,
-        nombre: nombreSinClave(proyecto.clave, proyecto.nombre) ?? proyecto.nombre,
+        nombre: nombreSinClave(proyecto.clave, proyecto.nombre),
         equipos: proyecto.equipos.map((equipo) => ({ id: equipo.id, nombre: equipo.nombre })),
       }));
   }, [documento]);
@@ -162,7 +162,7 @@ export function SeccionPersonas({ documento }: { documento: Documento }) {
                     {equipos.map((proyecto) => (
                       <optgroup
                         key={proyecto.clave}
-                        label={`${proyecto.clave} · ${proyecto.nombre}`}
+                        label={`${proyecto.clave}${proyecto.nombre === null ? '' : ` · ${proyecto.nombre}`}`}
                       >
                         {proyecto.equipos.map((equipo) => (
                           <option key={equipo.id} value={equipo.id}>

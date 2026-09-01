@@ -21,7 +21,7 @@
 
 
 import { ChipNeutro } from '../../componentes/Chips';
-import { CuadroBloqueo, Glifo, type FormaEstado } from '../../componentes/iconos';
+import { CuadroBloqueo, Glifo, type FormaEstado, type TonoGlifo } from '../../componentes/iconos';
 
 /**
  * Los cinco pasos del pipeline EN ORDEN, y después los dos que no son pasos.
@@ -31,13 +31,12 @@ import { CuadroBloqueo, Glifo, type FormaEstado } from '../../componentes/iconos
  * cuadrante más—, y una leyenda que se saltara ¼ y ¾ enseñaría a leer mal justo la parte
  * que dejó de ser autoevidente. Se lee de izquierda a derecha como avanza el trabajo.
  */
-const ESTADOS: { forma: FormaEstado; etiqueta: string }[] = [
+const ESTADOS: { forma: FormaEstado; etiqueta: string; tono?: TonoGlifo }[] = [
   { forma: 'pendiente', etiqueta: 'Pendiente' },
   { forma: 'iniciado', etiqueta: 'Iniciado' },
-  // El medio anillo es la única silueta que dice dos cosas —el paso de una tarea y la
-  // marcha de un contenedor—, así que el glosario tiene que nombrar las dos. En la fila el
-  // nombre accesible sigue siendo el específico, nunca este par.
-  { forma: 'curso', etiqueta: 'En pruebas · en movimiento' },
+  // Comparten silueta, no significado ni tono: la leyenda tiene que enseñar ambos.
+  { forma: 'curso', etiqueta: 'En pruebas', tono: 'pruebas' },
+  { forma: 'curso', etiqueta: 'En movimiento' },
   { forma: 'terminado', etiqueta: 'Terminado' },
   { forma: 'hecha', etiqueta: 'Done' },
   { forma: 'cancelada', etiqueta: 'Cancelada' },
@@ -47,9 +46,9 @@ const ESTADOS: { forma: FormaEstado; etiqueta: string }[] = [
 export function Leyenda({ editable, abrirAyuda }: { editable: boolean; abrirAyuda: () => void }) {
   return (
     <footer className="leyenda" aria-label="Leyenda">
-      {ESTADOS.map(({ forma, etiqueta }) => (
-        <span className="leyenda__item" key={forma}>
-          <Glifo forma={forma} etiqueta={etiqueta} />
+      {ESTADOS.map(({ forma, etiqueta, tono }) => (
+        <span className="leyenda__item" key={etiqueta}>
+          <Glifo forma={forma} etiqueta={etiqueta} tono={tono} />
           <span aria-hidden="true">{etiqueta}</span>
         </span>
       ))}

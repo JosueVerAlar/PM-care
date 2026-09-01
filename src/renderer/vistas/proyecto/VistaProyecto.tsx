@@ -204,6 +204,7 @@ export function VistaProyecto({
         {/* La zona de soltar es el CUERPO del backlog, nunca el panel de completadas. */}
         <div className={`zona-arbol${sobre ? ' zona-arbol--soltar' : ''}`} {...zona}>
           <Arbol
+            documento={documento}
             proyecto={proyecto}
             sprint={sprint}
             hoy={hoy}
@@ -224,7 +225,7 @@ export function VistaProyecto({
         {ayuda && <PanelAyuda cerrar={() => setAyuda(false)} />}
       </section>
 
-      <PanelCompletadas proyecto={proyecto} sprint={sprint} hoy={hoy} avance={avance} />
+      <PanelCompletadas documento={documento} proyecto={proyecto} sprint={sprint} hoy={hoy} avance={avance} />
 
       <PanelSprint
         documento={documento}

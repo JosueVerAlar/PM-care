@@ -256,8 +256,8 @@
 
 /* ── EQUIPOS EDITABLES ───────────────────────────────────────── */
 
-/* La tarjeta de equipo se comparte con la vista de consulta; aquí solo se añade lo que
-   la edición necesita. El nombre es un `p`, no un botón: no lleva subrayado al pasar. */
+/* La tarjeta de equipo solo vive en esta vista editable. El nombre es un `p` en modo
+   lectura, no un botón: no lleva subrayado al pasar. */
 p.equipo__nombre:hover { text-decoration: none; }
 .equipo__dedicado {
   display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
@@ -308,7 +308,7 @@ p.equipo__nombre:hover { text-decoration: none; }
 /* La identidad del equipo son DOS cosas y las dos se enseñan: el nombre, que se edita, y
    el id, que no. El id se lee en el JSON y lo nombran los rechazos del reductor, así que
    esconderlo obligaría a abrir el archivo para entender un mensaje de error. */
-.equipo__identidad { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.equipo__identidad { flex: 1 1 100%; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .equipo__campo {
   width: 100%; height: 22px; padding: 0 4px;
   font: inherit; font-size: 13px; font-weight: 600; color: var(--tinta-1);
@@ -319,7 +319,11 @@ p.equipo__nombre:hover { text-decoration: none; }
   background: var(--fondo-panel); border-color: var(--hairline);
   outline: 2px solid var(--foco); outline-offset: -1px;
 }
-.equipo__id { font-size: 10.5px; color: var(--tinta-3); padding-left: 5px; }
+.equipo__id {
+  max-width: 100%; padding-left: 5px;
+  font-size: 10.5px; color: var(--tinta-3);
+  word-break: normal; overflow-wrap: anywhere;
+}
 
 /* La capacidad NUNCA va sola: el número y su cobertura son una sola pieza, así que viajan
    en el mismo `span` y envuelven juntos. Es la regla 3 aplicada a una suma derivada. */
@@ -372,10 +376,9 @@ button.equipo--alta:hover { background: var(--hover); color: var(--tinta-1); }
 }
 .equipo--alta-abierta .campo { margin-bottom: 8px; }
 
-/* La tarjeta EDITABLE lleva tres controles más por fila que la de consulta —capacidad,
-   mover y quitar—, así que con los 320 px de la rejilla compartida el nombre se queda en
-   tres letras. Aquí pide algo más de ancho; y hay que repetir el caso estrecho porque
-   esta regla es más específica que la de `globales.css` y ganaría también dentro de él. */
+/* La tarjeta editable lleva tres controles más por fila —capacidad, mover y quitar—. El
+   reparto flexible ya protege el nombre; 380 px conserva una densidad cómoda sin ser la
+   defensa contra el truncado. Se repite el caso estrecho por la especificidad de la regla. */
 .adm .rejilla--equipos { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); }
 @media (max-width: 760px) {
   .adm .rejilla--equipos { grid-template-columns: 1fr; }

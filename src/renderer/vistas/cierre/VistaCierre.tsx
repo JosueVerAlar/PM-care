@@ -51,7 +51,7 @@ import { CuadroBloqueo, Glifo } from '../../componentes/iconos';
 import { useAccionesCierre } from '../../estado/acciones-cierre';
 import { useAccionesInterfaz } from '../../estado/interfaz';
 import { useSoloLectura } from '../../estado/mutaciones';
-import { dias, etiquetaDeTarea, fechaCorta, formaDeTarea, ordinal } from '../../util/presentacion';
+import { dias, etiquetaDeTarea, fechaCorta, formaDeTarea, ordinal, tonoDeTarea } from '../../util/presentacion';
 import { ResumenCierre } from './ResumenCierre';
 
 /** Las etiquetas de pantalla de los tres destinos. El dominio solo conoce las claves. */
@@ -396,7 +396,7 @@ function CuerpoFila({
   return (
     <>
       <div className="item-cierre__cab">
-        <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} />
+        <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} tono={tonoDeTarea(tarea.estado)} />
         <span className="item-cierre__titulo">{tarea.titulo}</span>
         {fila.nuevo && <ChipNuevo />}
         <span className="clave">{tarea.id}</span>

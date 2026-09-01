@@ -168,7 +168,7 @@ export function SeccionEquipos({ documento }: { documento: Documento }) {
                       </span>
                       <span className="crece" />
                       <span className="cruce__carga tabular">
-                        {cuentaTareas(persona.abiertas)} abiertas en total
+                        {cuentaTareas(persona.abiertas)} {persona.abiertas === 1 ? 'abierta' : 'abiertas'} en total
                       </span>
                     </li>
                   ))}
@@ -213,12 +213,12 @@ function BloqueProyecto({
   ocupados: ReadonlyMap<string, string>;
   destinos: readonly Destino[];
 }) {
-  const nombre = nombreSinClave(proyecto.clave, proyecto.nombre) ?? proyecto.nombre;
+  const nombre = nombreSinClave(proyecto.clave, proyecto.nombre);
 
   return (
     <section className="seccion">
       <h3 className="seccion__titulo">
-        {proyecto.clave} · {nombre}
+        {proyecto.clave}{nombre === null ? '' : ` · ${nombre}`}
         <span className="seccion__n tabular">
           {cuenta(proyecto.equipos.length, 'equipo', 'equipos')}
         </span>
@@ -246,7 +246,11 @@ function BloqueProyecto({
           />
         ))}
         {!soloLectura && (
-          <AltaEquipo clave={proyecto.clave} nombreProyecto={nombre} ocupados={ocupados} />
+          <AltaEquipo
+            clave={proyecto.clave}
+            nombreProyecto={nombre ?? proyecto.clave}
+            ocupados={ocupados}
+          />
         )}
       </div>
     </section>
@@ -453,18 +457,20 @@ function TarjetaEquipo({
           ) : (
             cuenta(equipo.miembros.length, 'persona', 'personas')
           )}
+          {' · '}
           {/* Regla 2 y regla 3: la capacidad NUNCA sale sola. `null` cuando nadie tiene
               dato es «nadie lo ha escrito», no «no puede con nada», y el número va con
               cuántos miembros lo respaldan. Es derivada: no se persiste (prohibido). */}
           <span className="equipo__capacidad tabular">
             {equipo.capacidad.total === null
               ? 'sin capacidad declarada'
-              : `${equipo.capacidad.total} pts`}
+              : cuenta(equipo.capacidad.total, 'pt', 'pts')}
             {' · '}
             {equipo.capacidad.conDato} de {cuenta(equipo.capacidad.miembros, 'miembro', 'miembros')}
           </span>
           <span className="equipo__tareas tabular">
-            {cuentaTareas(equipo.tareas)} · {equipo.abiertas} abiertas
+            {cuentaTareas(equipo.tareas)} · {equipo.abiertas}{' '}
+            {equipo.abiertas === 1 ? 'abierta' : 'abiertas'}
           </span>
         </p>
       </div>
@@ -549,7 +555,7 @@ function TarjetaEquipo({
 
               {soloLectura ? (
                 <span className="miembro__carga tabular">
-                  {miembro.capacidad === null ? '—' : `${miembro.capacidad} pts`}
+                  {miembro.capacidad === null ? '—' : cuenta(miembro.capacidad, 'pt', 'pts')}
                 </span>
               ) : (
                 <input

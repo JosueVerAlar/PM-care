@@ -46,6 +46,9 @@ que la sostiene**, y sin evidencia la casilla dice «sin verificar», no `⬜`.
 | E14 | La vista de proyecto en tres columnas | `frontend` | E7 | Mediano | ✅ | Bitácora 2026-08-31 · «muere el alternador; el detalle pasa a modal centrada» |
 | E15 | El panel del sprint cabe en su ancho | `frontend` | E14 | Pequeño | ✅ | Bitácora 2026-08-31 · formulario apilado a 316 px útiles; sin divisores arrastrables |
 | E16 | Los cinco defectos del panel del sprint | `frontend` | E15 | Mediano | ✅ | Bitácora 2026-08-31 · acciones en menú visible, envío honesto y teclado consistente |
+| E17 | El detalle desde cualquier columna y el color de «en pruebas» | `frontend` | E16 | Mediano | ✅ | Bitácora 2026-08-31 · puerta común al detalle y tono ámbar sin teñir contenedores |
+| E18 | La vista de Equipos deja de romperse | `frontend` | — | Pequeño | ✅ | Bitácora 2026-08-31 · identidad con base real y corte de rutas localizado |
+| E20 | Depuración segura | `backend` + `frontend` | E18 | Mediano | ✅ | Bitácora 2026-08-31 · eliminación confirmada con registro defendible |
 
 **Camino crítico:** E1 → E2 → E3 → E5 → E6 → E7 → E8 → E12 → E13.
 Todo retraso ahí retrasa el proyecto. E2 es el cuello de botella: cinco etapas la esperan.
@@ -351,6 +354,47 @@ exactamente dos confirmaciones y la regresión del suelo angosto de E15 permanec
 
 ---
 
+## E17 · El detalle desde cualquier columna y el color de «en pruebas»
+**Estado:** ✅ terminada · **Agente:** `frontend` · **Depende de:** E16 · **Tamaño:** mediano
+
+**Entrega:** el título de la tarjeta del sprint abre la misma hoja de detalle que el árbol,
+sin quitar el arrastre ni el menú. `en_pruebas` usa ámbar como tinta del glifo mediante un
+tono opcional; las siete formas permanecen intactas y `en_movimiento` conserva el azul.
+
+**Terminado cuando:** la hoja abierta desde el sprint cambia el estado por el comando
+existente, los diez casos de E17 y las regresiones E14–E16 pasan, y ambos temas declaran el
+token medido sin invadir procedencia, bloqueo, medidores ni el verde reservado a `done`.
+
+---
+
+## E18 · La vista de Equipos deja de romperse
+**Estado:** ✅ terminada · **Agente:** `frontend` · **Depende de:** — · **Tamaño:** pequeño
+
+**Entrega:** la identidad ocupa una línea propia antes de repartir el espacio y la meta
+puede envolver sin separar capacidad de cobertura. Los ids ya no heredan el corte letra a
+letra reservado para rutas; nombres, conteos y separadores se leen sin duplicados ni falsas
+concordancias.
+
+**Terminado cuando:** `SICOE` no se convierte en `SICOE · SICOE`, una tarea dice «abierta»,
+los nombres de miembros reciben ancho útil y las pruebas fijan tanto el flex como los únicos
+dos contextos donde `break-all` sigue siendo intencional.
+
+---
+
+## E20 · Depuración segura
+**Estado:** ✅ terminada · **Agente:** `backend` + `frontend` · **Depende de:** E18 · **Tamaño:** mediano
+
+**Entrega:** tarea, historia o épica que aparece en un sprint cerrado se puede depurar
+escribiendo exactamente `confirmar`. Solo desaparecen sus items; el evento append-only
+conserva sprint, desenlace, responsable y fecha, y cualquier otra mutación del sprint
+cerrado sigue prohibida.
+
+**Terminado cuando:** los quince casos de E20 pasan, el documento resultante valida sin
+items huérfanos, los contadores no bajan y la máquina de invariantes tolera únicamente la
+baja confirmada del item.
+
+---
+
 ## Decisiones pendientes
 
 **D1 · Undo/redo — YA DECIDIDO, no reabrir.**
@@ -362,6 +406,9 @@ contenedor que tiene hijos, con el conteo en el texto ("Borrar E3 y sus 12 tarea
 de ser cierto: **son dos**, y la segunda es sacar una tarea del sprint. Lo demás de D1 sigue
 vigente y sigue sin reabrirse. `CLAUDE.md` regla 22 ya está en dos; esta línea era la última
 que decía «una».
+**[SUPERADO — 2026-08-31, decisión del usuario en E20]** «son dos» dejó de ser cierto tras
+discutir la depuración de capturas equivocadas ya pasadas por un sprint. Son tres: la nueva
+es fuerte, nombra los sprints cerrados afectados y exige escribir exactamente `confirmar`.
 *Por qué no se pospone:* el diseño de interacción se apoya en no confirmar nada, y añadirlo
 después obliga a reescribir el reductor entero para que sea puro y serializable. Hacerlo en
 E7 cuesta poco; hacerlo en la v2 cuesta el reductor completo.
@@ -539,6 +586,24 @@ protegía de verdad: **el pronóstico** —burndown, velocidad, fecha estimada d
 ## Bitácora
 
 <!-- Entradas nuevas arriba. Formato: **FECHA · etapa · qué pasó**, y el cuerpo debajo. -->
+
+**2026-08-31 · E18 · la identidad del equipo recupera su ancho y el id deja de apilarse.**
+
+La identidad tenía `flex-basis: 0` frente a una meta con base de contenido de casi 400 px:
+al faltar espacio, toda la contracción recaía en la meta y la identidad permanecía en 0 px.
+Ahora parte de `100%` y la cabecera envuelve. El `break-all` heredado de `pantallas.css`
+convertía ese ancho cero en una letra por renglón; se retiró del `<code>` global y quedó
+localizado en las rutas de SoloLectura y Avisos. El mismo barrido corrigió la clave repetida,
+los singulares, el separador de capacidad y el reparto de ancho de los miembros.
+
+**2026-08-31 · E17 · el detalle se abre desde el sprint y «en pruebas» gana tinta propia.**
+
+El título de cada tarjeta del panel de proyecto llama a `verDetalle`, el mismo camino del
+árbol; la prop queda explícitamente en `null` donde no se monta una hoja. El ámbar se aplica
+solo como tinta del glifo, nunca como fondo ni banda, porque esos canales ya significan
+procedencia. Se añadió `tono` a `Glifo` en vez de cambiar `.glifo--curso`: esa forma también
+la usa `en_movimiento`, que debe continuar azul. La leyenda separa ambas lecturas. Por ahora
+`terminado` se queda azul: cambiarlo ampliaría los dos colores que pidió el usuario.
 
 **2026-08-31 · E16 · las acciones dejan el hover y el formulario explica por qué no envía.**
 
@@ -1002,3 +1067,10 @@ documento de reglas se propaga a todos a la vez: revisarlo con más cuidado que 
 y E6, el hito donde el árbol y el sprint se ven con datos reales.
 **[SUPERADO — las dos cerraron]** esta línea es de 2026-08-26 y es la que da la evidencia
 de que E5 ya estaba escrita entonces. E5 y E6 quedaron marcadas `✅` el 2026-08-28.
+
+**2026-08-31 · E20 · depuración segura defendible.** La regla 8 bloqueaba un caso legítimo:
+una mala captura que ya había pasado por un sprint. Se abrió una excepción estrecha para
+retirar, solo tras confirmación fuerte, los items de las tareas eliminadas. La regla 7 hace
+defendible la decisión: `historial.jsonl` sobrevive al árbol vivo y conserva por item el
+sprint, desenlace, responsable y fecha. La regla 22 pasa de dos a tres confirmaciones por
+decisión explícita del usuario; la tercera exige escribir exactamente `confirmar`.

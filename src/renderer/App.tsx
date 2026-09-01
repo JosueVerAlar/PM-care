@@ -19,7 +19,7 @@
  *
  * - **`⌘Z`.** Un solo escucha en `window`, no uno por panel. La pila de 20 vive en el
  *   proceso principal y se vacía ante un cambio externo del archivo; aquí solo se llama.
- * - **Las dos confirmaciones de la app.** El diálogo se monta arriba del todo para que sea
+ * - **Las tres confirmaciones de la app.** El diálogo se monta arriba del todo para que sea
  *   modal de verdad, y borrar o sacar del sprint solo publican la intención.
  * - **El menú Edición ▸ Deshacer** (E13). El ítem vive en el proceso principal, pero lo
  *   que hace y cómo se llama se deciden aquí: es el mismo `alDeshacer` de `⌘Z`, para que
@@ -40,6 +40,7 @@ import { BarraHerramientas } from './armazon/BarraHerramientas';
 
 import { BarraLateral } from './armazon/BarraLateral';
 import { DialogoConfirmar } from './componentes/DialogoConfirmar';
+import { DialogoEliminarCerrado } from './componentes/DialogoEliminarCerrado';
 import { DialogoProyecto } from './componentes/DialogoProyecto';
 import { ProveedorAlmacen, useAccionesAlmacen, useAlmacen } from './estado/almacen';
 import {
@@ -148,7 +149,7 @@ function Aplicacion({
 }) {
   const { vista, lateralColapsada, aviso, confirmacion, revertible, proyectoEnCuestion } =
     useInterfaz();
-  const { alternarLateral, avisar, confirmar, ofrecerDeshacer, preguntarProyecto } =
+  const { alternarLateral, avisar, confirmar, ofrecerDeshacer, preguntarProyecto, irANodo } =
     useAccionesInterfaz();
   const { deshacer } = useAccionesAlmacen();
   const soloLectura = useSoloLectura();
@@ -388,6 +389,31 @@ function Aplicacion({
               { comando: 'sacarDelSprint', tareaId: objetivo.tareaId, sprintId: objetivo.sprintId },
               `Sacar ${objetivo.tareaId} del sprint`,
             );
+          }}
+        />
+      )}
+      {confirmacion?.tipo === 'eliminarDeSprintCerrado' && (
+        <DialogoEliminarCerrado
+          id={confirmacion.id}
+          titulo={confirmacion.titulo}
+          tareas={confirmacion.tareas}
+          sprints={confirmacion.sprints}
+          cancelar={() => {
+            const id = confirmacion.id;
+            confirmar(null);
+            irANodo(id);
+          }}
+          confirmar={() => {
+            const objetivo = confirmacion;
+            confirmar(null);
+            const comando = objetivo.clase === 'epica'
+              ? { comando: 'eliminarEpica' as const, id: objetivo.id, confirmacion: 'confirmar' }
+              : objetivo.clase === 'historia'
+                ? { comando: 'eliminarHistoria' as const, id: objetivo.id, confirmacion: 'confirmar' }
+                : { comando: 'eliminarTarea' as const, id: objetivo.id, confirmacion: 'confirmar' };
+            void mutar(comando, `Eliminar ${objetivo.id}`).then((ok) => {
+              if (ok) ofrecerDeshacer(`${objetivo.id} eliminada`);
+            });
           }}
         />
       )}

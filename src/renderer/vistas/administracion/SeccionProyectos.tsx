@@ -220,7 +220,7 @@ function FilaProyecto({
   alReabrir,
 }: PropsFila) {
   const cerrado = fila.cerradoEn !== null || fila.archivado;
-  const nombreCorto = nombreSinClave(fila.clave, fila.nombre) ?? fila.nombre;
+  const nombreCorto = nombreSinClave(fila.clave, fila.nombre);
 
   return (
     <div className={`fila-proy${cerrado ? ' fila-proy--cerrado' : ''}`}>
@@ -228,7 +228,7 @@ function FilaProyecto({
         {fila.sigla}
       </span>
       <span className="fila-proy__nombre">
-        <b>{fila.clave}</b> · {nombreCorto}
+        <b>{fila.clave}</b>{nombreCorto === null ? '' : ` · ${nombreCorto}`}
         {cerrado && (
           <span className="etiqueta">
             <Candado />

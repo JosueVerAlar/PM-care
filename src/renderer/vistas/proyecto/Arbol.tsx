@@ -86,6 +86,7 @@ import {
   estadoDerivado,
   tareasDe,
   tareasDeEpica,
+  sprintsCerradosAfectados,
   type Avance,
 } from '../../../compartido/dominio/derivar';
 import {
@@ -101,6 +102,7 @@ import type {
   Fecha,
   Historia,
   Proyecto,
+  Documento,
   Sprint,
   Tarea,
 } from '../../../compartido/modelo/tipos';
@@ -130,6 +132,7 @@ import {
   etiquetaDeTarea,
   formaDerivada,
   formaDeTarea,
+  tonoDeTarea,
 } from '../../util/presentacion';
 
 /**
@@ -357,6 +360,8 @@ function anuncioDeOrden(fila: Fila, aIndice: number): string {
 }
 
 export interface PropsArbol {
+  /** Documento completo para detectar historia cerrada; las lecturas aisladas pueden omitirlo. */
+  documento?: Documento;
   proyecto: Proyecto;
   /** El sprint activo, para marcar qué tareas ya están comprometidas. */
   sprint: Sprint | undefined;
@@ -372,7 +377,7 @@ export interface PropsArbol {
   editable: boolean;
 }
 
-export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: PropsArbol) {
+export function Arbol({ documento, proyecto, sprint, hoy, predicado, etiqueta, editable }: PropsArbol) {
   const { expandidos, nodoActivo, focoArbol, siguienteArbol, redaccion } = useInterfaz();
   const {
     alternarNodo: alternar,
@@ -553,6 +558,23 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
 
   const eliminar = useCallback(
     (fila: Fila) => {
+      const cerrados = documento === undefined ? [] : sprintsCerradosAfectados(documento, fila.id);
+      if (cerrados.length > 0) {
+        const tareas = fila.tipo === 'epica'
+          ? tareasDeEpica(fila.epica).length
+          : fila.tipo === 'historia'
+            ? tareasDe(fila.historia).length
+            : 1;
+        confirmar({
+          tipo: 'eliminarDeSprintCerrado',
+          clase: fila.tipo,
+          id: fila.id,
+          titulo: tituloDeFila(fila),
+          tareas,
+          sprints: cerrados.map(({ id, nombre }) => ({ id, nombre })),
+        });
+        return;
+      }
       if (fila.tipo === 'tarea') {
         // Sin hijos que llevarse por delante no hay pregunta: deshacer es más barato. Pero
         // «más barato» solo es cierto si se OFRECE: una tarea borrada no deja rastro en
@@ -583,7 +605,7 @@ export function Arbol({ proyecto, sprint, hoy, predicado, etiqueta, editable }: 
         tareas,
       });
     },
-    [confirmar, mutar, ofrecerDeshacer],
+    [confirmar, documento, mutar, ofrecerDeshacer],
   );
 
   const capturarEn = useCallback(
@@ -1106,10 +1128,10 @@ function FilaArbol({
               cambiarEstado(tarea, siguienteEstado);
             }}
           >
-            <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} />
+            <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} tono={tonoDeTarea(tarea.estado)} />
           </button>
         ) : (
-          <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} />
+          <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} tono={tonoDeTarea(tarea.estado)} />
         )}
 
         {editandoTitulo ? (

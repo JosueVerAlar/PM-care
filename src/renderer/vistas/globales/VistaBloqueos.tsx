@@ -41,6 +41,7 @@ import {
   instanteCorto,
   salidaBloqueo,
   tareas as cuentaTareas,
+  tonoDeTarea,
 } from '../../util/presentacion';
 import {
   BotonIrATarea,
@@ -191,7 +192,7 @@ function Fila({
       <div className="fila-bloqueo__cuerpo">
         <p className="fila-bloqueo__cab">
           {/* CANAL 1: el estado sigue siendo el suyo. El bloqueo no lo reemplaza. */}
-          <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} />
+          <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} tono={tonoDeTarea(tarea.estado)} />
           <span className="fila-bloqueo__titulo">{tarea.titulo}</span>
           {/* CANAL 2: procedencia, en su propio vehículo. */}
           {fila.nuevo && <ChipNuevo />}

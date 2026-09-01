@@ -76,6 +76,7 @@ import {
   formaDerivada,
   formaDeTarea,
   instanteCorto,
+  tonoDeTarea,
 } from '../../util/presentacion';
 
 /**
@@ -329,7 +330,7 @@ function ListaTareas({ tareas, sprint }: { tareas: readonly Tarea[]; sprint: Spr
     <ul className="detalle__hijos">
       {tareas.map((tarea) => (
         <li key={tarea.id}>
-          <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} />
+          <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} tono={tonoDeTarea(tarea.estado)} />
           <span className="detalle__hijo-texto">{tarea.titulo}</span>
           {estaEnSprint(tarea.id, sprint) && (
             <ChipNeutro texto="en el sprint" titulo="Comprometida en el sprint activo" />
@@ -371,7 +372,7 @@ function DetalleTarea({
   return (
     <>
       <Titular
-        glifo={<Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} />}
+        glifo={<Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} tono={tonoDeTarea(tarea.estado)} />}
         titulo={tarea.titulo}
         // La migaja omite los niveles que no existen (regla 18): se le quita la clave del
         // proyecto, que ya está en la barra superior y en el propio id.

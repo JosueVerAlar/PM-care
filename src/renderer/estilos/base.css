@@ -28,7 +28,7 @@
 
   /* ── ACENTO · canal de INTERACCIÓN, jamás de estado ──
      En claro es un petróleo profundo: más oscuro que cualquier estado. */
-  --acento:            #00464D;   /* 12.3:1 */
+  --acento:            #00464D;   /* 10.40:1 */
   --acento-apagado:    #1E767F;
   --acento-tenue:      #D1F2F5;
   --acento-contra:     #FCFDFF;
@@ -36,6 +36,7 @@
   /* ── CANAL 1 · estado — la forma manda; el color solo confirma ── */
   --estado-hecha:      #006443;   /* 7.1:1 */
   --estado-curso:      #345BC0;   /* 6.1:1 */
+  --estado-pruebas:    #927005;   /* 4.5:1 sobre --fondo-panel — ámbar oscuro, tinta de glifo */
   --estado-pendiente:  #666E7A;
   --estado-cancelada:  #666E7A;
   --estado-sindesglosar: #7F8590;
@@ -120,6 +121,7 @@
     --acento-contra:     #0B0F18;
     --estado-hecha:      #49CC95;
     --estado-curso:      #618DF3;
+    --estado-pruebas:    #FFE08A;   /* 14.2:1 */
     --estado-pendiente:  #90959F;
     --estado-cancelada:  #90959F;
     --estado-sindesglosar: #7C8089;

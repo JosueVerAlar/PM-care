@@ -129,11 +129,18 @@ export interface Arrastre {
 }
 
 /**
- * Las dos preguntas excepcionales: borrar un contenedor con hijos o sacar del sprint,
- * cuyo volcado de datos existe pero no se ve en pantalla.
+ * Las tres preguntas excepcionales: las dos simples y la fuerte de depuración E20.
  */
 export type Confirmacion =
   | { tipo: 'eliminarContenedor'; clase: 'epica' | 'historia'; id: string; titulo: string; tareas: number }
+  | {
+      tipo: 'eliminarDeSprintCerrado';
+      clase: 'epica' | 'historia' | 'tarea';
+      id: string;
+      titulo: string;
+      tareas: number;
+      sprints: { id: string; nombre: string }[];
+    }
   | { tipo: 'sacarDelSprint'; tareaId: string; sprintId: string };
 
 export interface EstadoInterfaz {

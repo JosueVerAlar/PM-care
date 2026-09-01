@@ -33,8 +33,14 @@ code {
   background: var(--chip-fondo);
   color: var(--chip-tinta);
   padding: 1px 4px; border-radius: 3px;
-  word-break: break-all;
 }
+
+/* Aquí sí son rutas de archivo y pueden carecer de puntos de corte naturales. */
+.solo-lectura code,
+.vacio__dato code { word-break: break-all; }
+
+/* Un id sigue legible aun cuando el mensaje de cierre tenga poco ancho. */
+.panel--cierre .vacio__nota code { word-break: normal; overflow-wrap: anywhere; }
 
 /* ── botones de las pantallas ─────────────────────────────────── */
 

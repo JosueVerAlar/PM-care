@@ -34,6 +34,7 @@ import {
   fechaCorta,
   formaDeTarea,
   tareas as cuentaTareas,
+  tonoDeTarea,
 } from '../../util/presentacion';
 import {
   BotonIrATarea,
@@ -196,7 +197,7 @@ function Fila({ fila, agrupacion }: { fila: FilaBacklog; agrupacion: AgrupacionB
       className={`fila-backlog${fila.nuevo ? ' fila-backlog--nuevo' : ''}${fila.enSprintActivo ? ' fila-backlog--en-sprint' : ''}`}
     >
       {/* CANAL 1 · estado: la forma del glifo, en su columna fija. */}
-      <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} />
+      <Glifo forma={formaDeTarea(tarea.estado)} etiqueta={etiquetaDeTarea(tarea.estado)} tono={tonoDeTarea(tarea.estado)} />
 
       <span className="fila-backlog__titulo" title={tarea.titulo}>
         {tarea.titulo}

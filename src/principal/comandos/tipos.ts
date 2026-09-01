@@ -261,7 +261,9 @@ const EditarEpica = z
   })
   .strict();
 
-const EliminarEpica = z.object({ comando: z.literal('eliminarEpica'), id: Id }).strict();
+const EliminarEpica = z
+  .object({ comando: z.literal('eliminarEpica'), id: Id, confirmacion: z.string().optional() })
+  .strict();
 
 /**
  * Índice de destino en la lista del padre, **contado sobre la lista ya sin el elemento que
@@ -330,7 +332,9 @@ const EditarHistoria = z
   })
   .strict();
 
-const EliminarHistoria = z.object({ comando: z.literal('eliminarHistoria'), id: Id }).strict();
+const EliminarHistoria = z
+  .object({ comando: z.literal('eliminarHistoria'), id: Id, confirmacion: z.string().optional() })
+  .strict();
 
 /**
  * Cambia el orden de una historia dentro de su épica. Se lleva sus tareas por el mismo
@@ -402,7 +406,9 @@ const EditarTarea = z
   })
   .strict();
 
-const EliminarTarea = z.object({ comando: z.literal('eliminarTarea'), id: Id }).strict();
+const EliminarTarea = z
+  .object({ comando: z.literal('eliminarTarea'), id: Id, confirmacion: z.string().optional() })
+  .strict();
 
 /**
  * Cambia el orden de una tarea dentro de su historia.

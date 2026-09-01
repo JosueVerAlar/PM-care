@@ -51,6 +51,8 @@ export type FormaEstado =
   | 'cancelada'
   | 'sindesglosar';
 
+export type TonoGlifo = 'pruebas';
+
 const COMUNES = { width: 14, height: 14, viewBox: '0 0 14 14', 'aria-hidden': true } as const;
 
 function Pendiente() {
@@ -153,10 +155,19 @@ const FORMAS: Record<FormaEstado, () => React.JSX.Element> = {
  * la única representación del estado en la fila. Va como `title` para el ratón y como
  * texto para lectores de pantalla.
  */
-export function Glifo({ forma, etiqueta }: { forma: FormaEstado; etiqueta: string }) {
+export function Glifo({
+  forma,
+  etiqueta,
+  tono,
+}: {
+  forma: FormaEstado;
+  etiqueta: string;
+  tono?: TonoGlifo;
+}) {
   const Dibujo = FORMAS[forma];
+  const claseTono = tono === undefined ? '' : ` glifo--tono-${tono}`;
   return (
-    <span className={`glifo glifo--${forma}`} title={etiqueta}>
+    <span className={`glifo glifo--${forma}${claseTono}`} title={etiqueta}>
       <Dibujo />
       <span className="solo-lectores">{etiqueta}</span>
     </span>

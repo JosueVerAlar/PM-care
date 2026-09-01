@@ -82,7 +82,7 @@ en un solo lugar.
 7. **`historial.jsonl` append-only desde el día uno**, aunque nada lo grafique todavía.
    Cada evento lleva `proyecto_id` y `origen` **desnormalizados**: si el reporte depende del
    árbol vivo, la historia se reescribe sola al reorganizar algo.
-8. **Los sprints cerrados son inmutables, salvo su `retrospectiva`.** Ningún comando toca
+8. **[SUPERADO — 2026-08-31, decisión del usuario en E20: la depuración confirmada puede retirar items de capturas equivocadas; la regla 7 conserva el registro.]** **Los sprints cerrados son inmutables, salvo su `retrospectiva`.** Ningún comando toca
    un desenlace, un responsable, una fecha, un item ni el nombre de un sprint cerrado.
    La única excepción es `escribirRetrospectiva`, y es un comando aparte —no un campo de
    `editarSprint`— justamente para que la puerta mida un campo de ancho: si la retro
@@ -94,6 +94,13 @@ en un solo lugar.
    rechaza: una retro a mitad de sprint habla de algo que todavía está cambiando.
    *Verificable:* la máquina de invariantes compara el sprint cerrado **excluyendo solo ese
    campo**; cualquier otro cambio la pone en rojo igual que antes.
+   **Texto vigente:** los sprints cerrados son inmutables salvo su `retrospectiva` y la
+   eliminación explícita de una tarea, historia o épica con `confirmacion === 'confirmar'`.
+   Esa segunda excepción solo puede retirar los items de las tareas que el mismo comando
+   elimina; no puede cambiar nombre, estado, desenlace, responsable, fecha ni añadir o
+   modificar items. Se admite para depurar capturas que nunca debieron entrar y exige que
+   el evento append-only preserve, por cada item retirado, sprint, desenlace, responsable
+   y fecha. La máquina de invariantes tolera exactamente esa desaparición y ninguna otra.
 9. **Las mutaciones van por comandos con nombre** (`moverAlSprint`, `cerrarSprint`,
    `bloquear`, `capturar`). *Verificable:* el renderer nunca envía el documento completo por
    IPC; grep de `enviar(` no debe mostrar payloads del documento entero.
@@ -180,10 +187,15 @@ en un solo lugar.
     - `aceptada_en` marca el `done`. `terminada_en` NO existe como campo: es el `hasta` del
       último tramo cerrado, y un campo que puede contradecir a los tramos es un campo que
       algún día los contradice.
-22. **Hay DOS confirmaciones en la app, y solo dos.** Borrar un contenedor con hijos, y
+22. **[SUPERADO — 2026-08-31, decisión del usuario en E20: se discutió y admitió una tercera confirmación, fuerte, solo al tocar un sprint cerrado.]** **Hay DOS confirmaciones en la app, y solo dos.** Borrar un contenedor con hijos, y
     **sacar una tarea del sprint**. La segunda se admite porque tiene una consecuencia
     invisible sobre datos que el usuario tecleó a mano —responsable, fecha, descripción— y
     porque el propio usuario la pidió. Una tercera exige la misma discusión que costó esta.
+    **Texto vigente:** hay TRES confirmaciones: borrar un contenedor con hijos; sacar una
+    tarea del sprint; y eliminar algo que toca un sprint cerrado. La tercera es fuerte:
+    nombra la entidad y los sprints afectados y exige escribir exactamente `confirmar`.
+    Solo se abre cuando se retirará al menos un item de un sprint cerrado; una tarea suelta
+    o comprometida únicamente en sprints abiertos se borra sin ceremonia nueva.
 23. **`esfuerzo` es Fibonacci `1·2·3·5·8` o `null`, y `null` es lo NORMAL.** Ninguna suma
     de esfuerzo se muestra sin cuántas tareas la componen y cuántas no están estimadas:
     «34 pts · 12 de 18 tareas», nunca «34 pts». Es la misma mentira que el `0%`.

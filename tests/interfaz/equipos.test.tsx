@@ -92,6 +92,34 @@ function dosProyectos(): Documento {
   ]);
 }
 
+/** El fixture que faltaba: la clave y el nombre visibles son exactamente iguales. */
+function nombreIgualALaClave(): Documento {
+  return aplicarTodos(arbolConTareas(1).doc, [
+    { comando: 'crearProyecto', clave: 'SICOE', nombre: 'SICOE' },
+  ]);
+}
+
+/** Una sola tarea abierta y una persona en dos equipos activan ambos plurales de E18. */
+function unaAbiertaEnDosEquipos(): Documento {
+  return aplicarTodos(arbolConTareas(1).doc, [
+    { comando: 'crearPersona', nombre: 'Ana García' },
+    { comando: 'crearEquipo', proyecto: 'PM', id: 'pm-frontend', nombre: 'Frontend' },
+    { comando: 'crearEquipo', proyecto: 'PM', id: 'pm-backend', nombre: 'Backend' },
+    {
+      comando: 'editarEquipo',
+      equipoId: 'pm-frontend',
+      miembros: [{ persona_id: 'ana-garcia', responsabilidades: [], capacidad: 1 }],
+    },
+    {
+      comando: 'editarEquipo',
+      equipoId: 'pm-backend',
+      miembros: [{ persona_id: 'ana-garcia', responsabilidades: [], capacidad: null }],
+    },
+    { comando: 'asignarEquipo', tareaId: 'PM-T1', equipoId: 'pm-frontend' },
+    { comando: 'editarTarea', id: 'PM-T1', responsable: 'ana-garcia' },
+  ]);
+}
+
 /**
  * La franja de aviso de la app vive en el armazón, no en la sección. Aquí se monta una
  * sonda equivalente —el mismo `aviso` del estado de interfaz— porque «no se traga el
@@ -168,6 +196,27 @@ describe('el id de equipo se pide, no se inventa (S5)', () => {
 // --- la pantalla ------------------------------------------------------------
 
 describe('proyecto → equipos → miembros', () => {
+  it('si nombre y clave son SICOE, la cabecera escribe SICOE una sola vez', () => {
+    const { container } = montarEquipos(nombreIgualALaClave());
+    const cabecera = [...container.querySelectorAll('h3')].find((nodo) =>
+      nodo.textContent?.startsWith('SICOE'),
+    );
+    expect(cabecera?.textContent).not.toContain('SICOE · SICOE');
+    expect(cabecera?.firstChild?.textContent).toBe('SICOE');
+  });
+
+  it('una tarea abierta concuerda en el total de la persona', () => {
+    montarEquipos(unaAbiertaEnDosEquipos());
+    expect(screen.getByText('1 tarea abierta en total')).toBeTruthy();
+    expect(screen.queryByText('1 tarea abiertas en total')).toBeNull();
+  });
+
+  it('una tarea abierta concuerda en el conteo del equipo', () => {
+    montarEquipos(unaAbiertaEnDosEquipos());
+    expect(tarjeta('Frontend').getByText(/1 tarea · 1 abierta/)).toBeTruthy();
+    expect(tarjeta('Frontend').queryByText(/1 tarea · 1 abiertas/)).toBeNull();
+  });
+
   it('un proyecto con dos equipos pinta los dos, cada uno con SUS miembros', () => {
     montarEquipos(dosEquipos());
     expect(tarjeta('Frontend').getByText('Ana García')).toBeTruthy();

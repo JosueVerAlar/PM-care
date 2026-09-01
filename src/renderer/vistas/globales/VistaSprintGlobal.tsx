@@ -304,6 +304,7 @@ export function VistaSprintGlobal({ documento, hoy }: { documento: Documento; ho
                     fila={fila}
                     mostrarProyecto
                     arrastrando={false}
+                    abrirDetalle={null}
                     acciones={
                       editable
                         ? {

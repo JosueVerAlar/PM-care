@@ -83,20 +83,18 @@
 
 /* CANAL 1 · ESTADO: columna fija de 14 px. Ni el bloqueo ni la procedencia entran aquí. */
 .glifo { flex: 0 0 14px; display: flex; align-items: center; justify-content: center; }
-/* Las siete formas contra los CINCO tokens de estado que ya existían. Los tres pasos que
-   están en marcha —¼, ½, ¾— comparten el azul a propósito, y no es economía:
+/* Las siete formas contra tokens de tinta independientes. La forma sigue mandando; E17
+   separa solo el tono de `en_pruebas` del azul compartido por la marcha:
 
    1. La regla 4 reserva el verde para `done`. `terminado` es «lo entregué, sin aceptar»,
       y darle verde sería el porcentaje inflado que esta app existe para no dar.
-   2. Un cuarto tono de estado no cabe. Con verde, azul, ámbar (procedencia) y rojo
-      (bloqueo) ya en uso, un barrido de 60 matices no encontró ninguno con separación
-      segura en las tres dicromacias; el mejor se quedaba pegado a uno de los cuatro.
-   3. Y sobre todo: si el color dijera el paso, el paso se perdería en escala de grises.
+   2. El ámbar nuevo es tinta de glifo, no la banda ni el fondo de procedencia: los canales
+      siguen separados y las cuatro visiones conservaron el contraste medido.
+   3. Si el color dijera por sí solo el paso, se perdería en escala de grises.
       Lo dice la forma, que es lo único que sobrevive a que el color falle. El azul dice
       «esto está en marcha»; el cuadrante dice cuánto.
 
-   Por eso MB no añade un solo token: la medición de E0 sigue siendo válida sin volver a
-   medir la paleta, y lo que se midió aquí fue la geometría. */
+   El tono opcional evita teñir `en_movimiento`, que comparte el medio anillo. */
 .glifo--pendiente    { color: var(--estado-pendiente); }
 .glifo--iniciado     { color: var(--estado-curso); }
 .glifo--curso        { color: var(--estado-curso); }
@@ -104,6 +102,7 @@
 .glifo--hecha        { color: var(--estado-hecha); }
 .glifo--cancelada    { color: var(--estado-cancelada); }
 .glifo--sindesglosar { color: var(--estado-sindesglosar); }
+.glifo--tono-pruebas { color: var(--estado-pruebas); }
 
 /* ── CONTENEDOR TERMINADO — el verde que RECULA ──────────────────
    `data-derivado="hecha"` significa que todas las tareas contables de esa épica o esa

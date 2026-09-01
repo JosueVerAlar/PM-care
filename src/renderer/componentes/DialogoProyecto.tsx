@@ -71,7 +71,7 @@ export function DialogoProyecto({
 
   const [escrito, setEscrito] = useState('');
   const contenido = contenidoDeProyecto(documento, proyecto);
-  const nombreCorto = nombreSinClave(proyecto.clave, proyecto.nombre) ?? proyecto.nombre;
+  const nombreCorto = nombreSinClave(proyecto.clave, proyecto.nombre);
 
   useEffect(() => {
     const nodo = dialogo.current;
@@ -127,7 +127,7 @@ export function DialogoProyecto({
             <Candado /> Cerrar {proyecto.clave}
           </h2>
           <p className="dialogo__detalle">
-            Cerrar <b>{nombreCorto}</b> conserva sus{' '}
+            Cerrar <b>{proyecto.clave}{nombreCorto === null ? '' : ` · ${nombreCorto}`}</b> conserva sus{' '}
             {cuenta(contenido.tareas, 'tarea', 'tareas')} y su historial, y lo saca del
             Panorama y de la vista diaria. <b>Se puede reabrir cuando quieras.</b>
           </p>

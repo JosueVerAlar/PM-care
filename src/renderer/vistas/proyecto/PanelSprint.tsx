@@ -62,7 +62,7 @@ export function PanelSprint({
   dosPaneles,
 }: PropsPanelSprint) {
   const { arrastre, redaccion, nodoActivo } = useInterfaz();
-  const { arrastrar, verCierre, redactar, irANodo, irASiguiente } = useAccionesInterfaz();
+  const { arrastrar, verCierre, verDetalle, redactar, irANodo, irASiguiente } = useAccionesInterfaz();
   const acciones = useAccionesSprint(sprint);
   const mutar = useMutar();
   const [formularioSprint, setFormularioSprint] = useState<'crear' | 'editar' | null>(null);
@@ -233,6 +233,7 @@ export function PanelSprint({
                   fila={fila}
                   mostrarProyecto={false}
                   arrastrando={arrastre?.tareaId === tarea.id}
+                  abrirDetalle={() => verDetalle({ id: tarea.id, clase: 'tarea' })}
                   acciones={
                     editable && sprint.estado !== 'cerrado'
                       ? {

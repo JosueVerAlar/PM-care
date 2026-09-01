@@ -354,3 +354,28 @@ export function sprintsCerrados(doc: Documento): Sprint[] {
     .slice()
     .sort((a, b) => (a.inicio < b.inicio ? -1 : a.inicio > b.inicio ? 1 : 0));
 }
+
+/**
+ * Sprints cerrados cuyos items desaparecerían al eliminar este nodo del árbol.
+ * Es cálculo de dominio porque decide qué salvaguarda exige una mutación; la vista solo
+ * usa el resultado para elegir la ceremonia y nombrar sus consecuencias.
+ */
+export function sprintsCerradosAfectados(doc: Documento, id: string): Sprint[] {
+  const tareas = new Set<string>();
+  for (const proyecto of doc.proyectos) {
+    for (const tarea of tareasDeProyecto(proyecto)) {
+      if (tarea.id === id) tareas.add(tarea.id);
+    }
+    for (const epica of proyecto.epicas) {
+      if (epica.id === id) tareasDeEpica(epica).forEach((tarea) => tareas.add(tarea.id));
+      for (const historia of epica.historias) {
+        if (historia.id === id) tareasDe(historia).forEach((tarea) => tareas.add(tarea.id));
+      }
+    }
+  }
+  if (tareas.size === 0) return [];
+  return doc.sprints.filter(
+    (sprint) =>
+      sprint.estado === 'cerrado' && sprint.items.some((item) => tareas.has(item.tarea_id)),
+  );
+}

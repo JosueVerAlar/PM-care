@@ -1,6 +1,6 @@
 /**
- * Las dos confirmaciones de la app: borrar un contenedor que se lleva hijos por delante
- * y sacar una tarea del sprint.
+ * Las dos confirmaciones simples: borrar un contenedor que se lleva hijos por delante
+ * y sacar una tarea del sprint. E20 añadió una tercera, fuerte, en su propio componente.
  *
  * Sacar se admite como segunda excepción porque tiene una consecuencia invisible sobre
  * datos tecleados a mano: responsable, fecha, prioridad, descripción y origen del reloj
